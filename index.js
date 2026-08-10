@@ -470,83 +470,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
     }
 
-    //Session Link Handler
-    if (
-      interaction.isButton() &&
-      (interaction.customId.startsWith("release_link_") ||
-        interaction.customId.startsWith("earlyaccess_link_") ||
-        interaction.customId.startsWith("reinvites_link_") ||
-        interaction.customId.startsWith("regen_link_"))
-    ) {
+    // NEW SESSION LINK HANDLER (short ID system)
+    if (interaction.isButton()) {
       await interaction.deferReply({ flags: 64 });
 
+      // Fetch recent messages to find the one containing the button
       const messages = await interaction.channel.messages.fetch({ limit: 50 });
-      const startupMessage = messages.find((m) =>
-        m.embeds[0]?.title?.includes("Session Startup"),
+
+      const msg = messages.find(
+        (m) =>
+          m.components.length > 0 &&
+          m.components[0].components[0].customId === interaction.customId,
       );
 
-      let reacted = false;
-      if (startupMessage) {
-        for (const reaction of startupMessage.reactions.cache.values()) {
-          const users = await reaction.users.fetch();
-          if (users.has(interaction.user.id)) {
-            reacted = true;
-            break;
-          }
-        }
-      }
-
-      if (!reacted) {
-        const { embed } = embedTemplate({
-          title: "... Access Denied ...",
-          description:
-            "> You must react to the Startup Embed before accessing the session link.",
+      if (!msg || !msg.sessionLink) {
+        return interaction.editReply({
+          content: "Link not found. The session message may be too old.",
         });
-        return interaction.editReply({ embeds: [embed] });
       }
 
-      let link = null;
-
-      if (interaction.customId.startsWith("release_link_")) {
-        link = decodeURIComponent(
-          interaction.customId.replace("release_link_", ""),
-        );
-      }
-
-      if (interaction.customId.startsWith("earlyaccess_link_")) {
-        link = decodeURIComponent(
-          interaction.customId.replace("earlyaccess_link_", ""),
-        );
-      }
-
-      if (interaction.customId.startsWith("reinvites_link_")) {
-        link = decodeURIComponent(
-          interaction.customId.replace("reinvites_link_", ""),
-        );
-      }
-
-      if (interaction.customId.startsWith("regen_link_")) {
-        link = decodeURIComponent(
-          interaction.customId.replace("regen_link_", ""),
-        );
-      }
-
-      const labels = {
-        release_link_: "Session Link",
-        earlyaccess_link_: "Early Access Link",
-        reinvites_link_: "Reinvite Link",
-        regen_link_: "Regenerated Link",
-      };
-
-      const prefix = Object.keys(labels).find((p) =>
-        interaction.customId.startsWith(p),
-      );
-
-      const linkLabel = labels[prefix] || "Link";
+      const link = msg.sessionLink;
 
       const { embed } = embedTemplate({
-        title: `${SUN} ${linkLabel} ${SUN}`,
-        description: `> ${ARROW} Here is your ${linkLabel.toLowerCase()}:\n${link}`,
+        title: `${SUN} Session Link ${SUN}`,
+        description: `> ${ARROW} Here is your link:\n${link}`,
       });
 
       return interaction.editReply({ embeds: [embed] });
