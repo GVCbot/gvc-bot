@@ -8,6 +8,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+// Persistent link storage
+const { saveSessionLink } = require("../../utils/sessionLinksDB");
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("reinvites")
@@ -68,9 +71,17 @@ module.exports = {
       banner: path.join(__dirname, "../../graphics/gvcreinvites.png"),
     });
 
+    // Generate short custom ID
+    const shortId = `ri_${Date.now().toString(36)}_${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+
+    // Save link persistently
+    await saveSessionLink(shortId, link);
+
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(`reinvites_link_${encodeURIComponent(link)}`)
+        .setCustomId(shortId)
         .setLabel("Get Reinvite Link")
         .setStyle(ButtonStyle.Success),
     );
@@ -98,8 +109,6 @@ module.exports = {
         allowedMentions: { parse: ["everyone", "roles"] },
       });
     }
-
-    sent.sessionLink = link;
 
     await interaction.editReply({
       content: "Reinvites embed sent successfully.",

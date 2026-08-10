@@ -53,7 +53,7 @@ module.exports = {
       allowedMentions: { parse: ["everyone"] },
     });
 
-    await sent.react("<:orangecheck:1518181035534188604>");
+    await sent.react("<:summeryes:1536265772379148298>");
 
     await interaction.editReply({
       content: "Startup embed sent successfully.",

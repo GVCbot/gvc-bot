@@ -8,6 +8,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+// Import DB helpers
+const { saveSessionLink } = require("../../utils/sessionLinksDB");
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("earlyaccess")
@@ -20,10 +23,12 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    // Anti-spam
     if (!protect.applyRateLimit(interaction.user.id)) {
       return interaction.reply({ content: "Slow down.", flags: 64 });
     }
 
+    // Staff-only
     const staffRoleId = "1350897509752373341";
     if (!interaction.member.roles.cache.has(staffRoleId)) {
       return interaction.reply({
@@ -53,22 +58,28 @@ module.exports = {
       banner: path.join(__dirname, "../../graphics/gvcearlyaccess.png"),
     });
 
+    // Generate short custom ID
+    const shortId = `ea_${Date.now().toString(36)}_${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+
+    // Save link persistently
+    await saveSessionLink(shortId, link);
+
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(`earlyaccess_link_${encodeURIComponent(link)}`)
+        .setCustomId(shortId)
         .setLabel("Get Early Access Link")
         .setStyle(ButtonStyle.Success),
     );
 
-    const sent = await interaction.channel.send({
+    await interaction.channel.send({
       content: "<@&1350870925582798848>",
       embeds: [embed],
       files,
       components: [row],
       allowedMentions: { parse: ["roles"] },
     });
-
-    sent.sessionLink = link;
 
     await interaction.editReply({
       content: "Early Access embed sent successfully.",

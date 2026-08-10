@@ -44,7 +44,12 @@ module.exports = {
 
     embed.setThumbnail(user.displayAvatarURL({ dynamic: true }));
 
-    await channel.send({ embeds: [embed] });
+    // Send suggestion
+    const sentMessage = await channel.send({ embeds: [embed] });
+
+    // Auto-react with yes/no emojis
+    await sentMessage.react("1536265772379148298"); // <:summeryes:...>
+    await sentMessage.react("1536265802649571349"); // <:summerno:...>
 
     const { embed: confirmEmbed } = embedTemplate({
       title: `${SUN} Suggestion Sent ${SUN}`,

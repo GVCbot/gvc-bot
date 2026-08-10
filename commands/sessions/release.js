@@ -8,6 +8,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+// Persistent link storage
+const { saveSessionLink } = require("../../utils/sessionLinksDB");
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("release")
@@ -88,22 +91,28 @@ module.exports = {
       banner: path.join(__dirname, "../../graphics/gvcrelease.png"),
     });
 
+    // Generate short custom ID
+    const shortId = `rl_${Date.now().toString(36)}_${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+
+    // Save link persistently
+    await saveSessionLink(shortId, link);
+
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(`release_link_${encodeURIComponent(link)}`)
+        .setCustomId(shortId)
         .setLabel("Get Session Link")
         .setStyle(ButtonStyle.Success),
     );
 
-    const sent = await interaction.channel.send({
+    await interaction.channel.send({
       content: "<@&1058636416164315147>",
       embeds: [embed],
       files,
       components: [row],
       allowedMentions: { parse: ["roles"] },
     });
-
-    sent.sessionLink = link;
 
     await interaction.editReply({
       content: "Session release embed sent successfully.",
