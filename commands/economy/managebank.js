@@ -17,13 +17,12 @@ module.exports = {
 
   async execute(interaction) {
     try {
-      // Defer reply safely
+      // Correct defer
       await interaction.deferReply({ flags: 64 });
 
       const userRecord = await getUserRecord(interaction.user.id);
       const banks = userRecord.banks ?? [];
 
-      // Handle no banks
       if (banks.length === 0) {
         const { embed } = embedTemplate({
           title: "🏦 No Banks",
@@ -33,7 +32,6 @@ module.exports = {
         return interaction.editReply({ embeds: [embed] });
       }
 
-      // Build dropdown options
       const bankOptions = banks.map((b) => ({
         label: `${b.type}`,
         description: `Balance: $${b.balance.toLocaleString()}`,
@@ -47,7 +45,6 @@ module.exports = {
 
       const components = [new ActionRowBuilder().addComponents(menu)];
 
-      // Build embed
       const { embed } = embedTemplate({
         title: `${SUN} Manage Your Banks ${SUN}`,
         description: `> ${ARROW} Choose a bank to view or manage.`,
@@ -56,7 +53,6 @@ module.exports = {
 
       embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
 
-      // Send response
       return interaction.editReply({ embeds: [embed], components });
     } catch (error) {
       console.error("ManageBank error:", error);
@@ -64,6 +60,7 @@ module.exports = {
         title: "⚠️ Error ⚠️",
         description: `> ${ARROW} There was an error executing this interaction.`,
       });
+
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({ embeds: [embed], flags: 64 });
       } else {
