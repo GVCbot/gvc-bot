@@ -1,13 +1,10 @@
-const {
-  SlashCommandBuilder,
-  ActionRowBuilder,
-  RoleSelectMenuBuilder,
-} = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
 const HR_ROLE_ID = "1350582607217430650"; // HR role ID
+const TARGET_CHANNEL_ID = "1350844469431504929"; // Channel where embed will be sent
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
@@ -89,7 +86,15 @@ module.exports = {
 
     embed.setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
-    await interaction.channel.send({
+    // Send to HR channel
+    const hrChannel = interaction.guild.channels.cache.get(TARGET_CHANNEL_ID);
+    if (!hrChannel) {
+      return interaction.editReply({
+        content: "❌ HR channel not found. Please check the ID.",
+      });
+    }
+
+    await hrChannel.send({
       content: `${targetUser}`, // ping outside embed
       embeds: [embed],
       files,
@@ -97,7 +102,7 @@ module.exports = {
     });
 
     await interaction.editReply({
-      content: `✅ Adjustment for ${targetUser.tag} (${type}) sent successfully.`,
+      content: `✅ Adjustment for ${targetUser.tag} (${type}) sent successfully to <#${TARGET_CHANNEL_ID}>.`,
     });
   },
 };
