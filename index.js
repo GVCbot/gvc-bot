@@ -275,10 +275,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       let targetLogChannel;
 
       if (
-        interaction.customId.startsWith("release_link_") ||
-        interaction.customId.startsWith("reinvites_link_") ||
-        interaction.customId.startsWith("earlyaccess_link_") ||
-        interaction.customId.startsWith("regen_link_")
+        interaction.customId.startsWith("rl_") || // release
+        interaction.customId.startsWith("ri_") || // reinvites
+        interaction.customId.startsWith("ea_") // earlyaccess
       ) {
         targetLogChannel = guild.channels.cache.get(SESSION_BUTTON_LOG);
       } else {
