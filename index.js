@@ -162,7 +162,7 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
   return interaction.reply({
     embeds: [embed],
     components: row.components.length ? [row] : [],
-    ephemeral: true,
+    flags: 64,
   });
 }
 
@@ -393,7 +393,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.reply({
         embeds: [embed],
         components: row ? [row] : [],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -468,7 +468,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           description: "> You are not in any banks.",
           noLogo: true,
         });
-        return interaction.reply({ embeds: [embed], files, ephemeral: true });
+        return interaction.reply({ embeds: [embed], files, flags: 64 });
       }
 
       const options = banks.map((b) => ({
@@ -494,7 +494,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         embeds: [embed],
         files,
         components: [row],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -509,7 +509,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!bank) {
         return interaction.reply({
           content: "❌ Bank not found.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -519,14 +519,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (isNaN(amount) || amount <= 0) {
         return interaction.reply({
           content: "❌ Invalid amount.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
       if (bank.balance < amount) {
         return interaction.reply({
           content: "❌ Not enough balance in this bank.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -544,7 +544,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         noLogo: true,
       });
 
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.reply({ embeds: [embed], files, flags: 64 });
     }
 
     if (
@@ -558,7 +558,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!bank) {
         return interaction.reply({
           content: "❌ Bank not found.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -574,7 +574,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (!bank) {
           return interaction.reply({
             content: "❌ Bank not found.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -609,7 +609,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({
           embeds: [embed],
           components: [row],
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -626,7 +626,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (!bank) {
           return interaction.reply({
             content: "❌ Bank not found.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -661,7 +661,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({
           embeds: [embed],
           components: [row],
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -677,7 +677,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (!bank) {
           return interaction.reply({
             content: "❌ Bank not found.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -687,7 +687,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           noLogo: true,
         });
 
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: 64 });
       }
 
       // WITHDRAW BUTTON HANDLER
@@ -702,7 +702,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (!bank) {
           return interaction.reply({
             content: "❌ Bank not found.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -731,7 +731,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({
           embeds: [embed],
           components: [row],
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -747,7 +747,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (!bank) {
           return interaction.reply({
             content: "❌ Bank not found.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -776,7 +776,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({
           embeds: [embed],
           components: [row],
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -786,14 +786,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (isNaN(amount) || amount <= 0) {
         return interaction.reply({
           content: "❌ Invalid amount.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
       if (userRecord.cash < amount) {
         return interaction.reply({
           content: "❌ Not enough cash.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -811,7 +811,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         noLogo: true,
       });
 
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.reply({ embeds: [embed], files, flags: 64 });
     }
 
     //Vehicle Handler
