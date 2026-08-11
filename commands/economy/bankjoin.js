@@ -15,12 +15,15 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    await interaction.deferReply({ flags: 64 });
+
     const userId = interaction.user.id;
     const password = protect.sanitize(
       interaction.options.getString("password"),
     );
 
-    const allUsers = interaction.client.users.cache;
+    // Search ALL users for a bank with this password
+    const allUsers = await interaction.client.users.fetch();
     let targetBank = null;
     let ownerRecord = null;
 
@@ -37,47 +40,55 @@ module.exports = {
     }
 
     if (!targetBank) {
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "❌ Bank Not Found",
         description: "> No bank matches that password.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
+    // Load joining user's record
     const userRecord = await getUserRecord(userId);
-    if (!userRecord.banks) userRecord.banks = [];
+    if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
 
-    if (userRecord.banks.length >= 2) {
-      const { embed, files } = embedTemplate({
+    // Limit: 2 banks total (owned + joined)
+    const totalBanks =
+      (userRecord.banks?.length || 0) + userRecord.joinedBanks.length;
+
+    if (totalBanks >= 2) {
+      const { embed } = embedTemplate({
         title: "❌ Bank Limit Reached",
         description: "> You are already in **2 banks**.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
+    // Already joined?
     if (targetBank.members.includes(userId)) {
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "❌ Already Joined",
         description: "> You are already a member of this bank.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
+    // Add member to owner’s bank
     targetBank.members.push(userId);
-    userRecord.banks.push(targetBank);
-
     await updateUserRecord(ownerRecord);
+
+    // Add bank ID to member’s joinedBanks
+    userRecord.joinedBanks.push(targetBank.id);
     await updateUserRecord(userRecord);
 
-    const { embed, files } = embedTemplate({
+    const { embed } = embedTemplate({
       title: "🏦 Bank Joined",
       description: `> You joined **${targetBank.type}** successfully.`,
       noLogo: true,
     });
 
-    return interaction.reply({ embeds: [embed], files, ephemeral: true });
+    return interaction.editReply({ embeds: [embed] });
   },
 };

@@ -15,43 +15,58 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    await interaction.deferReply({ flags: 64 });
+
     const userId = interaction.user.id;
     const password = protect.sanitize(
       interaction.options.getString("password"),
     );
 
-    const record = await getUserRecord(userId);
-    if (!record.banks) record.banks = [];
+    const ownerRecord = await getUserRecord(userId);
+    if (!ownerRecord.banks) ownerRecord.banks = [];
 
-    const bank = record.banks.find((b) => b.password === password);
+    const bank = ownerRecord.banks.find((b) => b.password === password);
 
     if (!bank) {
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "❌ Bank Not Found",
         description: "> No bank matches that password.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
     if (bank.owner !== userId) {
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "❌ Permission Denied",
         description: "> Only the **bank owner** can delete this bank.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
-    record.banks = record.banks.filter((b) => b.id !== bank.id);
-    await updateUserRecord(record);
+    // Remove bank ID from all members
+    for (const memberId of bank.members) {
+      const memberRecord = await getUserRecord(memberId);
 
-    const { embed, files } = embedTemplate({
+      if (memberRecord.joinedBanks) {
+        memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
+          (id) => id !== bank.id,
+        );
+        await updateUserRecord(memberRecord);
+      }
+    }
+
+    // Remove bank from owner
+    ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bank.id);
+    await updateUserRecord(ownerRecord);
+
+    const { embed } = embedTemplate({
       title: "🗑️ Bank Deleted",
       description: "> Your bank has been deleted successfully.",
       noLogo: true,
     });
 
-    return interaction.reply({ embeds: [embed], files, ephemeral: true });
+    return interaction.editReply({ embeds: [embed] });
   },
 };

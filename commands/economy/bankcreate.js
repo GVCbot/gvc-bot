@@ -6,6 +6,9 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const SUN = "<a:gvcsunspin:1527220557890850846>";
+const ARROW = "<:arrowright:1534182706836144158>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("bankcreate")
@@ -25,6 +28,8 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    await interaction.deferReply({ flags: 64 });
+
     const userId = interaction.user.id;
     const type = interaction.options.getString("type");
     const password = protect.sanitize(
@@ -34,24 +39,27 @@ module.exports = {
     const record = await getUserRecord(userId);
     if (!record.banks) record.banks = [];
 
+    // Limit: 2 banks per user
     if (record.banks.length >= 2) {
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "❌ Bank Limit Reached",
         description: "> You already have **2 banks**.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
+    // Require 100k cash
     if ((record.cash ?? 0) < 100000) {
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "❌ Insufficient Cash",
         description: "> You need **100,000 cash** to create a bank.",
         noLogo: true,
       });
-      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      return interaction.editReply({ embeds: [embed] });
     }
 
+    // Generate unique bank ID
     const bankId = `bank_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 
     const newBank = {
@@ -67,16 +75,16 @@ module.exports = {
     record.banks.push(newBank);
     await updateUserRecord(record);
 
-    const { embed, files } = embedTemplate({
-      title: "🏦 Bank Created",
+    const { embed } = embedTemplate({
+      title: `${SUN} Bank Created ${SUN}`,
       description:
-        `> **Type:** ${type}\n` +
-        `> **Bank ID:** ${bankId}\n` +
-        `> **Password:** ${password}\n` +
-        `> **Cost:** 100,000 cash`,
+        `> ${ARROW} **Type:** ${type}\n` +
+        `> ${ARROW} **Bank ID:** ${bankId}\n` +
+        `> ${ARROW} **Password:** ${password}\n` +
+        `> ${ARROW} **Cost:** 100,000 cash`,
       noLogo: true,
     });
 
-    return interaction.reply({ embeds: [embed], files, ephemeral: true });
+    return interaction.editReply({ embeds: [embed] });
   },
 };
