@@ -166,6 +166,25 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
   });
 }
 
+// Unified Bank Loader (owned + joined)
+async function loadAllBanks(userRecord) {
+  const owned = userRecord.banks || [];
+  const joinedIds = userRecord.joinedBanks || [];
+
+  const joined = [];
+
+  for (const bankId of joinedIds) {
+    const ownerId = bankId.split("_")[1];
+    const ownerRecord = await getUserRecord(ownerId);
+    if (!ownerRecord.banks) continue;
+
+    const bank = ownerRecord.banks.find((b) => b.id === bankId);
+    if (bank) joined.push(bank);
+  }
+
+  return [...owned, ...joined];
+}
+
 //Client Setup
 const client = new Client({
   intents: [
@@ -498,16 +517,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
+    // Withdraw Handler (Chunk 3A)
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("withdraw_select_")
     ) {
+      await interaction.deferReply({ flags: 64 });
+
       const [bankId, amountInput] = interaction.values[0].split("|");
       const userRecord = await getUserRecord(interaction.user.id);
 
-      const bank = userRecord.banks.find((b) => b.id === bankId);
+      const banks = await loadAllBanks(userRecord);
+      const bank = banks.find((b) => b.id === bankId);
+
       if (!bank) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "❌ Bank not found.",
           flags: 64,
         });
@@ -517,14 +541,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
         amountInput === "all" ? bank.balance : parseInt(amountInput, 10);
 
       if (isNaN(amount) || amount <= 0) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "❌ Invalid amount.",
           flags: 64,
         });
       }
 
       if (bank.balance < amount) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "❌ Not enough balance in this bank.",
           flags: 64,
         });
@@ -535,7 +559,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await updateUserRecord(userRecord);
 
-      const { embed, files } = embedTemplate({
+      const { embed } = embedTemplate({
         title: "🏦 Withdrawal Successful",
         description:
           `> Withdrew **$${amount.toLocaleString()}** from **${bank.type}**.\n\n` +
@@ -544,23 +568,61 @@ client.on(Events.InteractionCreate, async (interaction) => {
         noLogo: true,
       });
 
-      return interaction.reply({ embeds: [embed], files, flags: 64 });
+      return interaction.editReply({ embeds: [embed] });
     }
 
+    // Deposit Handler (Chunk 3B)
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("deposit_select_")
     ) {
+      await interaction.deferReply({ flags: 64 });
+
       const [bankId, amountInput] = interaction.values[0].split("|");
       const userRecord = await getUserRecord(interaction.user.id);
 
-      const bank = userRecord.banks.find((b) => b.id === bankId);
+      const banks = await loadAllBanks(userRecord);
+      const bank = banks.find((b) => b.id === bankId);
+
       if (!bank) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "❌ Bank not found.",
           flags: 64,
         });
       }
+
+      let amount =
+        amountInput === "all" ? userRecord.cash : parseInt(amountInput, 10);
+
+      if (isNaN(amount) || amount <= 0) {
+        return interaction.editReply({
+          content: "❌ Invalid amount.",
+          flags: 64,
+        });
+      }
+
+      if (userRecord.cash < amount) {
+        return interaction.editReply({
+          content: "❌ You don't have enough cash.",
+          flags: 64,
+        });
+      }
+
+      userRecord.cash -= amount;
+      bank.balance += amount;
+
+      await updateUserRecord(userRecord);
+
+      const { embed } = embedTemplate({
+        title: "🏦 Deposit Successful",
+        description:
+          `> Deposited **$${amount.toLocaleString()}** into **${bank.type}**.\n\n` +
+          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
+          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
     }
 
     //Vehicle Handler
@@ -607,8 +669,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
     }
 
-    // Bank Wipe Handler
-
+    // Bank Wipe Handler (Chunk 4A)
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("bankwipe_select_")
@@ -618,18 +679,143 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const targetId = interaction.customId.split("_")[2];
       const bankId = interaction.values[0];
 
-      const userRecord = await getUserRecord(targetId);
+      const ownerRecord = await getUserRecord(targetId);
 
-      userRecord.banks = userRecord.banks.filter((b) => b.id !== bankId);
-      await updateUserRecord(userRecord);
+      // Find the bank
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      // Remove bank from all members
+      for (const memberId of bank.members) {
+        const memberRecord = await getUserRecord(memberId);
+
+        if (memberRecord.joinedBanks) {
+          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
+            (id) => id !== bankId,
+          );
+          await updateUserRecord(memberRecord);
+        }
+      }
+
+      // Remove bank from owner
+      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
+      await updateUserRecord(ownerRecord);
 
       const { embed } = embedTemplate({
         title: "🏦 Bank Deleted",
-        description: `> ${ARROW} Bank **${bankId}** has been removed.`,
+        description: `> ${ARROW} Bank **${bankId}** has been permanently removed.`,
         noLogo: true,
       });
 
       return interaction.editReply({ embeds: [embed] });
+    }
+
+    // Delete Bank Button Handler (Chunk 4B)
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("bank_delete_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const bankId = interaction.customId.replace("bank_delete_", "");
+      const userId = interaction.user.id;
+
+      const ownerRecord = await getUserRecord(userId);
+
+      // Find the bank
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      // Only owner can delete
+      if (bank.owner !== userId) {
+        return interaction.editReply({
+          content: "❌ Only the bank owner can delete this bank.",
+          flags: 64,
+        });
+      }
+
+      // Remove bank from all members
+      for (const memberId of bank.members) {
+        const memberRecord = await getUserRecord(memberId);
+
+        if (memberRecord.joinedBanks) {
+          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
+            (id) => id !== bankId,
+          );
+          await updateUserRecord(memberRecord);
+        }
+      }
+
+      // Remove bank from owner
+      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
+      await updateUserRecord(ownerRecord);
+
+      const { embed } = embedTemplate({
+        title: "🗑️ Bank Deleted",
+        description: `> ${ARROW} Your bank **${bank.type}** has been deleted.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    // Managebank Handler
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("managebank_select_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const bankId = interaction.values[0];
+      const userRecord = await getUserRecord(interaction.user.id);
+
+      // Load all banks (owned + joined)
+      const banks = await loadAllBanks(userRecord);
+      const bank = banks.find((b) => b.id === bankId);
+
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      const { embed } = embedTemplate({
+        title: `${SUN} ${bank.type} ${SUN}`,
+        description:
+          `> ${ARROW} **Bank ID:** ${bank.id}\n` +
+          `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
+          `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
+          `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}`,
+        noLogo: true,
+      });
+
+      const buttons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`bank_withdraw_${bank.id}`)
+          .setLabel("Withdraw")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId(`bank_deposit_${bank.id}`)
+          .setLabel("Deposit")
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`bank_delete_${bank.id}`)
+          .setLabel("Delete Bank")
+          .setStyle(ButtonStyle.Danger),
+      );
+
+      return interaction.editReply({ embeds: [embed], components: [buttons] });
     }
 
     // NEW SESSION LINK HANDLER (short ID system)

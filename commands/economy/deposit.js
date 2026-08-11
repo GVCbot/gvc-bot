@@ -3,25 +3,41 @@ const {
   ActionRowBuilder,
   StringSelectMenuBuilder,
 } = require("discord.js");
+
 const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+async function loadAllBanks(userRecord) {
+  const owned = userRecord.banks || [];
+  const joinedIds = userRecord.joinedBanks || [];
+
+  const joined = [];
+
+  for (const bankId of joinedIds) {
+    const ownerId = bankId.split("_")[1];
+    const ownerRecord = await getUserRecord(ownerId);
+    if (!ownerRecord.banks) continue;
+
+    const bank = ownerRecord.banks.find((b) => b.id === bankId);
+    if (bank) joined.push(bank);
+  }
+
+  return [...owned, ...joined];
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("deposit")
     .setDescription("Deposit money into one of your banks.")
     .addStringOption((opt) =>
-      opt
-        .setName("amount")
-        .setDescription("Amount to deposit or 'all'")
-        .setRequired(true),
+      opt.setName("amount").setDescription("Amount or 'all'").setRequired(true),
     ),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
 
     const amountInput = interaction.options
       .getString("amount")
@@ -29,30 +45,20 @@ module.exports = {
       .toLowerCase();
     const userRecord = await getUserRecord(interaction.user.id);
 
-    const banks = userRecord.banks ?? [];
-
-    if (banks.length === 0) {
-      const { embed, files } = embedTemplate({
-        title: "❌ No Banks Found",
-        description: "> You are not in any banks.",
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
+    const banks = await loadAllBanks(userRecord);
 
     if (banks.length === 0) {
       const { embed } = embedTemplate({
         title: "❌ No Banks Found",
-        description: "> You do not have any banks to deposit into.",
+        description: "> You are not in any banks.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Ask which bank to deposit into
     const options = banks.map((b) => ({
       label: `${b.type} (${b.id})`,
-      description: `Balance: $${b.balance}`,
+      description: `Balance: $${b.balance.toLocaleString()}`,
       value: `${b.id}|${amountInput}`,
     }));
 
@@ -63,16 +69,12 @@ module.exports = {
         .addOptions(options),
     );
 
-    const { embed, files } = embedTemplate({
+    const { embed } = embedTemplate({
       title: "🏦 Select a Bank",
       description: "> Choose which bank you want to deposit into.",
       noLogo: true,
     });
 
-    return interaction.editReply({
-      embeds: [embed],
-      files,
-      components: [row],
-    });
+    return interaction.editReply({ embeds: [embed], components: [row] });
   },
 };
