@@ -1,4 +1,8 @@
-const { SlashCommandBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+} = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
@@ -8,57 +12,58 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("withdraw")
-    .setDescription("Withdraw money from your bank.")
-    .addStringOption((option) =>
-      option
+    .setDescription("Withdraw money from one of your banks.")
+    .addStringOption((opt) =>
+      opt
         .setName("amount")
         .setDescription("Amount to withdraw or 'all'")
         .setRequired(true),
     ),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
-    const input = interaction.options.getString("amount").trim().toLowerCase();
-    const user = await getUserRecord(interaction.user.id);
+    const amountInput = interaction.options
+      .getString("amount")
+      .trim()
+      .toLowerCase();
+    const userRecord = await getUserRecord(interaction.user.id);
 
-    let amount = 0;
+    const banks = userRecord.banks ?? [];
 
-    if (input === "all") {
-      amount = user.bank ?? 0;
-    } else {
-      amount = parseInt(input, 10);
+    if (banks.length === 0) {
+      const { embed, files } = embedTemplate({
+        title: "❌ No Banks Found",
+        description: "> You are not in any banks.",
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
-    if (isNaN(amount) || amount <= 0) {
-      return interaction.editReply(
-        "❌ Please provide a valid positive number or type `'all'`.",
-      );
-    }
+    // Ask which bank to withdraw from
+    const options = banks.map((b) => ({
+      label: `${b.type} (${b.id})`,
+      description: `Balance: $${b.balance}`,
+      value: `${b.id}|${amountInput}`,
+    }));
 
-    if ((user.bank ?? 0) < amount) {
-      return interaction.editReply(
-        "❌ You don't have enough money in your bank.",
-      );
-    }
+    const row = new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`withdraw_select_${interaction.user.id}`)
+        .setPlaceholder("Choose a bank to withdraw from")
+        .addOptions(options),
+    );
 
-    user.bank = (user.bank ?? 0) - amount;
-    user.cash = (user.cash ?? 0) + amount;
-
-    await updateUserRecord(user);
-
-    const desc =
-      `> <:arrowright:1534182706836144158> Withdrew **$${amount.toLocaleString()}** from your bank.\n\n` +
-      `• **New Cash:** $${user.cash.toLocaleString()}\n` +
-      `• **New Bank:** $${user.bank.toLocaleString()}`;
-
-    const { embed } = embedTemplate({
-      title:
-        "<a:gvcsunspin:1527220557890850846> Withdrawal Successful <a:gvcsunspin:1527220557890850846>",
-      description: desc,
+    const { embed, files } = embedTemplate({
+      title: "🏦 Select a Bank",
+      description: "> Choose which bank you want to withdraw from.",
       noLogo: true,
     });
 
-    await interaction.editReply({ embeds: [embed] });
+    return interaction.editReply({
+      embeds: [embed],
+      files,
+      components: [row],
+    });
   },
 };

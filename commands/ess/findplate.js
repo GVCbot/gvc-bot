@@ -99,11 +99,6 @@ module.exports = {
         .setCustomId(`viewRecords_${interaction.user.id}_${owner.id}`)
         .setLabel("View Owner's Records")
         .setStyle(ButtonStyle.Secondary),
-
-      new ButtonBuilder()
-        .setCustomId(`viewBalance_${interaction.user.id}_${owner.id}`)
-        .setLabel("View Owner's Balance")
-        .setStyle(ButtonStyle.Success),
     );
 
     return interaction.editReply({ embeds: [embed], components: [row] });

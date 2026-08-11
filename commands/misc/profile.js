@@ -35,7 +35,7 @@ module.exports = {
     const workMessages = await loadWorkMessages();
 
     const cash = userRecord.cash ?? 0;
-    const bank = userRecord.bank ?? 0;
+    const banks = userRecord.banks ?? [];
     const lastCollect = userRecord.lastCollect ?? 0;
     const lastWork = userRecord.lastWork ?? 0;
     const vehicles = userRecord.vehicles ?? [];
@@ -59,7 +59,14 @@ module.exports = {
     let desc = "";
 
     desc += `> ${ARROW} **Cash:** $${cash}\n`;
-    desc += `> ${ARROW} **Bank:** $${bank}\n`;
+    if (banks.length === 0) {
+      desc += `> ${ARROW} **Banks:** None\n`;
+    } else {
+      desc += `> ${ARROW} **Banks:**\n`;
+      for (const b of banks) {
+        desc += `> • ${b.type} — $${b.balance.toLocaleString()}\n`;
+      }
+    }
     desc += `> ${ARROW} **Last Collected:** ${
       lastCollect ? `<t:${Math.floor(lastCollect / 1000)}:R>` : "Never"
     }\n`;

@@ -96,6 +96,8 @@ async function getUserRecord(userId) {
     await collection.insertOne(user);
   }
 
+  if (!user.banks) user.banks = [];
+
   return user;
 }
 
@@ -109,7 +111,7 @@ async function updateUserRecord(user) {
   await collection.updateOne(
     { userId: user.userId },
     { $set: user },
-    { upsert: true }
+    { upsert: true },
   );
   console.log(`💾 Updated user record for ${user.userId}`);
 }

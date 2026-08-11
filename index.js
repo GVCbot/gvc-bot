@@ -459,26 +459,141 @@ client.on(Events.InteractionCreate, async (interaction) => {
     ) {
       const [, viewerId, targetId] = interaction.customId.split("_");
       const targetRecord = await getUserRecord(targetId);
-      const cash = targetRecord.cash ?? 0;
-      const bank = targetRecord.bank ?? 0;
 
-      const desc =
-        `> ${ARROW} **Cash:** $${cash.toLocaleString()}\n` +
-        `> ${ARROW} **Bank:** $${bank.toLocaleString()}`;
+      const banks = targetRecord.banks ?? [];
 
-      const { embed } = embedTemplate({
-        title: `${SUN} ${viewerId === targetId ? "Your" : "Their"} Balance Overview ${SUN}`,
-        description: desc,
+      if (banks.length === 0) {
+        const { embed, files } = embedTemplate({
+          title: "🏦 No Banks",
+          description: "> You are not in any banks.",
+          noLogo: true,
+        });
+        return interaction.reply({ embeds: [embed], files, ephemeral: true });
+      }
+
+      const options = banks.map((b) => ({
+        label: `${b.type} (${b.id})`,
+        description: `Balance: $${b.balance}`,
+        value: b.id,
+      }));
+
+      const row = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`bank_select_${targetId}`)
+          .setPlaceholder("Choose a bank to view")
+          .addOptions(options),
+      );
+
+      const { embed, files } = embedTemplate({
+        title: "🏦 Select a Bank",
+        description: "> Choose which bank you want to view.",
         noLogo: true,
       });
 
-      const targetMember = interaction.guild.members.cache.get(targetId);
-      embed.setThumbnail(
-        targetMember?.user.displayAvatarURL({ dynamic: true }) ||
-          interaction.user.displayAvatarURL({ dynamic: true }),
-      );
+      return interaction.reply({
+        embeds: [embed],
+        files,
+        components: [row],
+        ephemeral: true,
+      });
+    }
 
-      return interaction.reply({ embeds: [embed], flags: 64 });
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("withdraw_select_")
+    ) {
+      const [bankId, amountInput] = interaction.values[0].split("|");
+      const userRecord = await getUserRecord(interaction.user.id);
+
+      const bank = userRecord.banks.find((b) => b.id === bankId);
+      if (!bank) {
+        return interaction.reply({
+          content: "❌ Bank not found.",
+          ephemeral: true,
+        });
+      }
+
+      let amount =
+        amountInput === "all" ? bank.balance : parseInt(amountInput, 10);
+
+      if (isNaN(amount) || amount <= 0) {
+        return interaction.reply({
+          content: "❌ Invalid amount.",
+          ephemeral: true,
+        });
+      }
+
+      if (bank.balance < amount) {
+        return interaction.reply({
+          content: "❌ Not enough balance in this bank.",
+          ephemeral: true,
+        });
+      }
+
+      bank.balance -= amount;
+      userRecord.cash += amount;
+
+      await updateUserRecord(userRecord);
+
+      const { embed, files } = embedTemplate({
+        title: "🏦 Withdrawal Successful",
+        description:
+          `> Withdrew **$${amount.toLocaleString()}** from **${bank.type}**.\n\n` +
+          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
+          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
+        noLogo: true,
+      });
+
+      return interaction.reply({ embeds: [embed], files, ephemeral: true });
+    }
+
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("deposit_select_")
+    ) {
+      const [bankId, amountInput] = interaction.values[0].split("|");
+      const userRecord = await getUserRecord(interaction.user.id);
+
+      const bank = userRecord.banks.find((b) => b.id === bankId);
+      if (!bank) {
+        return interaction.reply({
+          content: "❌ Bank not found.",
+          ephemeral: true,
+        });
+      }
+
+      let amount =
+        amountInput === "all" ? userRecord.cash : parseInt(amountInput, 10);
+
+      if (isNaN(amount) || amount <= 0) {
+        return interaction.reply({
+          content: "❌ Invalid amount.",
+          ephemeral: true,
+        });
+      }
+
+      if (userRecord.cash < amount) {
+        return interaction.reply({
+          content: "❌ Not enough cash.",
+          ephemeral: true,
+        });
+      }
+
+      userRecord.cash -= amount;
+      bank.balance += amount;
+
+      await updateUserRecord(userRecord);
+
+      const { embed, files } = embedTemplate({
+        title: "🏦 Deposit Successful",
+        description:
+          `> Deposited **$${amount.toLocaleString()}** into **${bank.type}**.\n\n` +
+          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
+          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
+        noLogo: true,
+      });
+
+      return interaction.reply({ embeds: [embed], files, ephemeral: true });
     }
 
     //Vehicle Handler
@@ -526,13 +641,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // NEW SESSION LINK HANDLER (short ID system)
-    // NEW SESSION LINK HANDLER (short ID system)
     if (
       interaction.isButton() &&
-      !interaction.customId.startsWith("release_link_") &&
-      !interaction.customId.startsWith("reinvites_link_") &&
-      !interaction.customId.startsWith("earlyaccess_link_") &&
-      !interaction.customId.startsWith("regen_link_")
+      (interaction.customId.startsWith("rl_") ||
+        interaction.customId.startsWith("ri_") ||
+        interaction.customId.startsWith("ea_") ||
+        interaction.customId.startsWith("regen_"))
     ) {
       await interaction.deferReply({ flags: 64 });
 
