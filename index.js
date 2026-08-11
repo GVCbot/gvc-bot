@@ -607,6 +607,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
     }
 
+    // Bank Wipe Handler
+
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("bankwipe_select_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const targetId = interaction.customId.split("_")[2];
+      const bankId = interaction.values[0];
+
+      const userRecord = await getUserRecord(targetId);
+
+      userRecord.banks = userRecord.banks.filter((b) => b.id !== bankId);
+      await updateUserRecord(userRecord);
+
+      const { embed } = embedTemplate({
+        title: "🏦 Bank Deleted",
+        description: `> ${ARROW} Bank **${bankId}** has been removed.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
     // NEW SESSION LINK HANDLER (short ID system)
     if (
       interaction.isButton() &&
