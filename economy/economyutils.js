@@ -96,21 +96,6 @@ async function getUserRecord(userId) {
     await collection.insertOne(user);
   }
 
-  // MIGRATE OLD BANK BALANCE INTO NEW SYSTEM
-  if (user.bank && user.bank > 0 && user.banks.length === 0) {
-    user.banks.push({
-      id: `bank_migrated_${user.userId}`,
-      type: "foxbank",
-      password: "migrated",
-      owner: user.userId,
-      members: [user.userId],
-      balance: user.bank,
-    });
-
-    // Remove old bank field
-    delete user.bank;
-  }
-
   return user;
 }
 
