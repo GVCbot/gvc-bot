@@ -62,17 +62,6 @@ module.exports = {
     // Build profile description
     let desc = "";
 
-    desc += `> ${ARROW} **Cash:** $${cash.toLocaleString()}\n`;
-
-    if (banks.length === 0) {
-      desc += `> ${ARROW} **Banks:** None\n`;
-    } else {
-      desc += `> ${ARROW} **Banks:** ${banks.length} total\n`;
-      for (const b of banks) {
-        desc += `> • ${b.type} — $${b.balance.toLocaleString()}\n`;
-      }
-    }
-
     desc += `\n> ${ARROW} **Last Collected:** ${
       lastCollect ? `<t:${Math.floor(lastCollect / 1000)}:R>` : "Never"
     }\n`;
@@ -100,24 +89,6 @@ module.exports = {
     });
 
     embed.setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
-
-    // Bank select menu (if banks exist)
-    let components = [];
-
-    if (banks.length > 0) {
-      const bankOptions = banks.map((b) => ({
-        label: `${b.type} (${b.id})`,
-        description: `Balance: $${b.balance.toLocaleString()}`,
-        value: `${b.id}`,
-      }));
-
-      const bankMenu = new StringSelectMenuBuilder()
-        .setCustomId(`profile_bank_select_${targetUser.id}`)
-        .setPlaceholder("Select a bank to manage")
-        .addOptions(bankOptions);
-
-      components.push(new ActionRowBuilder().addComponents(bankMenu));
-    }
 
     // Buttons
     const row = new ActionRowBuilder().addComponents(

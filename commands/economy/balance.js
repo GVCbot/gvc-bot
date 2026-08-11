@@ -3,7 +3,7 @@ const {
   ActionRowBuilder,
   StringSelectMenuBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
 } = require("discord.js");
 
 const embedTemplate = require("../../utils/embedTemplate");
@@ -40,7 +40,7 @@ module.exports = {
     const { embed } = embedTemplate({
       title: `${SUN} Your Balance ${SUN}`,
       description: desc,
-      noLogo: true
+      noLogo: true,
     });
 
     embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
@@ -49,10 +49,10 @@ module.exports = {
     let components = [];
 
     if (banks.length > 0) {
-      const bankOptions = banks.map(b => ({
-        label: `${b.type} (${b.id})`,
+      const bankOptions = banks.map((b) => ({
+        label: `${b.type}`,
         description: `Balance: $${b.balance.toLocaleString()}`,
-        value: b.id
+        value: b.id,
       }));
 
       const menu = new StringSelectMenuBuilder()
@@ -64,5 +64,5 @@ module.exports = {
     }
 
     return interaction.editReply({ embeds: [embed], components });
-  }
+  },
 };
