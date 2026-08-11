@@ -3,13 +3,18 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
 } = require("discord.js");
+
 const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
   loadRoleIncome,
   loadWorkMessages,
 } = require("../../economy/economyutils");
+
+const SUN = "<a:gvcsunspin:1527220557890850846>";
+const ARROW = "<:arrowright:1534182706836144158>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -25,8 +30,6 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
-    const ARROW = "<:arrowright:1534182706836144158>";
-
     const targetUser = interaction.options.getUser("user") || interaction.user;
     const targetMember = interaction.guild.members.cache.get(targetUser.id);
 
@@ -38,8 +41,8 @@ module.exports = {
     const banks = userRecord.banks ?? [];
     const lastCollect = userRecord.lastCollect ?? 0;
     const lastWork = userRecord.lastWork ?? 0;
-    const vehicles = userRecord.vehicles ?? [];
 
+    // Income breakdown
     let incomeBreakdown = "";
     let totalRoleIncome = 0;
 
@@ -47,7 +50,7 @@ module.exports = {
       if (targetMember.roles.cache.has(roleId)) {
         const role = interaction.guild.roles.cache.get(roleId);
         const roleName = role ? role.name : `Unknown (${roleId})`;
-        incomeBreakdown += `> • ${roleName}: $${amount}\n`;
+        incomeBreakdown += `> ${ARROW} ${roleName}: $${amount}\n`;
         totalRoleIncome += amount;
       }
     }
@@ -56,20 +59,24 @@ module.exports = {
       incomeBreakdown = `> ${ARROW} No income roles.`;
     }
 
+    // Build profile description
     let desc = "";
 
-    desc += `> ${ARROW} **Cash:** $${cash}\n`;
+    desc += `> ${ARROW} **Cash:** $${cash.toLocaleString()}\n`;
+
     if (banks.length === 0) {
       desc += `> ${ARROW} **Banks:** None\n`;
     } else {
-      desc += `> ${ARROW} **Banks:**\n`;
+      desc += `> ${ARROW} **Banks:** ${banks.length} total\n`;
       for (const b of banks) {
         desc += `> • ${b.type} — $${b.balance.toLocaleString()}\n`;
       }
     }
-    desc += `> ${ARROW} **Last Collected:** ${
+
+    desc += `\n> ${ARROW} **Last Collected:** ${
       lastCollect ? `<t:${Math.floor(lastCollect / 1000)}:R>` : "Never"
     }\n`;
+
     desc += `> ${ARROW} **Last Work:** ${
       lastWork ? `<t:${Math.floor(lastWork / 1000)}:R>` : "Never"
     }\n\n`;
@@ -77,32 +84,47 @@ module.exports = {
     desc += `> ${ARROW} **Account Created:** <t:${Math.floor(
       targetUser.createdTimestamp / 1000,
     )}:D>\n`;
+
     desc += `> ${ARROW} **Joined Server:** <t:${Math.floor(
       targetMember.joinedTimestamp / 1000,
     )}:D>\n\n`;
 
     desc += `> ${ARROW} **Role Income:**\n${incomeBreakdown}\n`;
-    desc += `> ${ARROW} **Total Role Income:** $${totalRoleIncome}\n\n`;
+    desc += `> ${ARROW} **Total Role Income:** $${totalRoleIncome.toLocaleString()}\n\n`;
 
     desc += `> ${ARROW} **Work Messages Loaded:** ${workMessages.length}`;
 
     const { embed } = embedTemplate({
-      title: `<a:gvcsunspin:1527220557890850846> ${targetUser.username}'s Profile <a:gvcsunspin:1527220557890850846>`,
+      title: `${SUN} ${targetUser.username}'s Profile ${SUN}`,
       description: desc,
     });
 
     embed.setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
+    // Bank select menu (if banks exist)
+    let components = [];
+
+    if (banks.length > 0) {
+      const bankOptions = banks.map((b) => ({
+        label: `${b.type} (${b.id})`,
+        description: `Balance: $${b.balance.toLocaleString()}`,
+        value: `${b.id}`,
+      }));
+
+      const bankMenu = new StringSelectMenuBuilder()
+        .setCustomId(`profile_bank_select_${targetUser.id}`)
+        .setPlaceholder("Select a bank to manage")
+        .addOptions(bankOptions);
+
+      components.push(new ActionRowBuilder().addComponents(bankMenu));
+    }
+
+    // Buttons
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`viewVehicles_${interaction.user.id}_${targetUser.id}`)
-        .setLabel("View All Vehicles")
+        .setLabel("View Vehicles")
         .setStyle(ButtonStyle.Primary),
-
-      new ButtonBuilder()
-        .setCustomId(`viewBalance_${interaction.user.id}_${targetUser.id}`)
-        .setLabel("View Balance")
-        .setStyle(ButtonStyle.Secondary),
 
       new ButtonBuilder()
         .setCustomId(`viewRecords_${interaction.user.id}_${targetUser.id}`)
@@ -110,6 +132,8 @@ module.exports = {
         .setStyle(ButtonStyle.Danger),
     );
 
-    return interaction.editReply({ embeds: [embed], components: [row] });
+    components.push(row);
+
+    return interaction.editReply({ embeds: [embed], components });
   },
 };

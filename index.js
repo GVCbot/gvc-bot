@@ -562,6 +562,224 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
+      // BALANCE COMMAND — BANK SELECT HANDLER
+      if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId.startsWith("balance_bank_select_")
+      ) {
+        const bankId = interaction.values[0];
+        const userRecord = await getUserRecord(interaction.user.id);
+
+        const bank = userRecord.banks.find((b) => b.id === bankId);
+        if (!bank) {
+          return interaction.reply({
+            content: "❌ Bank not found.",
+            ephemeral: true,
+          });
+        }
+
+        const desc =
+          `${ARROW} **Bank Type:** ${bank.type}\n` +
+          `${ARROW} **Bank ID:** ${bank.id}\n` +
+          `${ARROW} **Balance:** $${bank.balance.toLocaleString()}\n`;
+
+        const { embed } = embedTemplate({
+          title: `${SUN} Bank Details ${SUN}`,
+          description: desc,
+          noLogo: true,
+        });
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`bank_withdraw_${bank.id}`)
+            .setLabel("Withdraw")
+            .setStyle(ButtonStyle.Primary),
+
+          new ButtonBuilder()
+            .setCustomId(`bank_deposit_${bank.id}`)
+            .setLabel("Deposit")
+            .setStyle(ButtonStyle.Success),
+
+          new ButtonBuilder()
+            .setCustomId(`bank_password_${bank.id}`)
+            .setLabel("View Password")
+            .setStyle(ButtonStyle.Secondary),
+        );
+
+        return interaction.reply({
+          embeds: [embed],
+          components: [row],
+          ephemeral: true,
+        });
+      }
+
+      // PROFILE — BANK SELECT HANDLER
+      if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId.startsWith("profile_bank_select_")
+      ) {
+        const bankId = interaction.values[0];
+        const targetId = interaction.customId.split("_")[3];
+        const userRecord = await getUserRecord(targetId);
+
+        const bank = userRecord.banks.find((b) => b.id === bankId);
+        if (!bank) {
+          return interaction.reply({
+            content: "❌ Bank not found.",
+            ephemeral: true,
+          });
+        }
+
+        const desc =
+          `${ARROW} **Bank Type:** ${bank.type}\n` +
+          `${ARROW} **Bank ID:** ${bank.id}\n` +
+          `${ARROW} **Balance:** $${bank.balance.toLocaleString()}\n`;
+
+        const { embed } = embedTemplate({
+          title: `${SUN} Bank Details ${SUN}`,
+          description: desc,
+          noLogo: true,
+        });
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`bank_withdraw_${bank.id}`)
+            .setLabel("Withdraw")
+            .setStyle(ButtonStyle.Primary),
+
+          new ButtonBuilder()
+            .setCustomId(`bank_deposit_${bank.id}`)
+            .setLabel("Deposit")
+            .setStyle(ButtonStyle.Success),
+
+          new ButtonBuilder()
+            .setCustomId(`bank_password_${bank.id}`)
+            .setLabel("View Password")
+            .setStyle(ButtonStyle.Secondary),
+        );
+
+        return interaction.reply({
+          embeds: [embed],
+          components: [row],
+          ephemeral: true,
+        });
+      }
+
+      // VIEW BANK PASSWORD — EPHEMERAL
+      if (
+        interaction.isButton() &&
+        interaction.customId.startsWith("bank_password_")
+      ) {
+        const bankId = interaction.customId.replace("bank_password_", "");
+        const userRecord = await getUserRecord(interaction.user.id);
+
+        const bank = userRecord.banks.find((b) => b.id === bankId);
+        if (!bank) {
+          return interaction.reply({
+            content: "❌ Bank not found.",
+            ephemeral: true,
+          });
+        }
+
+        const { embed } = embedTemplate({
+          title: `${SUN} Bank Password ${SUN}`,
+          description: `${ARROW} **Password:** \`${bank.password}\``,
+          noLogo: true,
+        });
+
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
+
+      // WITHDRAW BUTTON HANDLER
+      if (
+        interaction.isButton() &&
+        interaction.customId.startsWith("bank_withdraw_")
+      ) {
+        const bankId = interaction.customId.replace("bank_withdraw_", "");
+        const userRecord = await getUserRecord(interaction.user.id);
+
+        const bank = userRecord.banks.find((b) => b.id === bankId);
+        if (!bank) {
+          return interaction.reply({
+            content: "❌ Bank not found.",
+            ephemeral: true,
+          });
+        }
+
+        const desc =
+          `${ARROW} Enter an amount to withdraw from **${bank.type}**.\n` +
+          `${ARROW} **Balance:** $${bank.balance.toLocaleString()}`;
+
+        const { embed } = embedTemplate({
+          title: `${SUN} Withdraw Money ${SUN}`,
+          description: desc,
+          noLogo: true,
+        });
+
+        const row = new ActionRowBuilder().addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId(`withdraw_select_${bank.id}`)
+            .setPlaceholder("Select amount")
+            .addOptions([
+              { label: "Withdraw All", value: `${bank.id}|all` },
+              { label: "100", value: `${bank.id}|100` },
+              { label: "500", value: `${bank.id}|500` },
+              { label: "1000", value: `${bank.id}|1000` },
+            ]),
+        );
+
+        return interaction.reply({
+          embeds: [embed],
+          components: [row],
+          ephemeral: true,
+        });
+      }
+
+      // DEPOSIT BUTTON HANDLER
+      if (
+        interaction.isButton() &&
+        interaction.customId.startsWith("bank_deposit_")
+      ) {
+        const bankId = interaction.customId.replace("bank_deposit_", "");
+        const userRecord = await getUserRecord(interaction.user.id);
+
+        const bank = userRecord.banks.find((b) => b.id === bankId);
+        if (!bank) {
+          return interaction.reply({
+            content: "❌ Bank not found.",
+            ephemeral: true,
+          });
+        }
+
+        const desc =
+          `${ARROW} Enter an amount to deposit into **${bank.type}**.\n` +
+          `${ARROW} **Your Cash:** $${userRecord.cash.toLocaleString()}`;
+
+        const { embed } = embedTemplate({
+          title: `${SUN} Deposit Money ${SUN}`,
+          description: desc,
+          noLogo: true,
+        });
+
+        const row = new ActionRowBuilder().addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId(`deposit_select_${bank.id}`)
+            .setPlaceholder("Select amount")
+            .addOptions([
+              { label: "Deposit All", value: `${bank.id}|all` },
+              { label: "100", value: `${bank.id}|100` },
+              { label: "500", value: `${bank.id}|500` },
+              { label: "1000", value: `${bank.id}|1000` },
+            ]),
+        );
+
+        return interaction.reply({
+          embeds: [embed],
+          components: [row],
+          ephemeral: true,
+        });
+      }
+
       let amount =
         amountInput === "all" ? userRecord.cash : parseInt(amountInput, 10);
 
