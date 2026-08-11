@@ -2,8 +2,6 @@ const {
   SlashCommandBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  ButtonBuilder,
-  ButtonStyle,
 } = require("discord.js");
 
 const embedTemplate = require("../../utils/embedTemplate");
@@ -18,42 +16,59 @@ module.exports = {
     .setDescription("Manage your bank accounts."),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      // Defer reply safely
+      await interaction.deferReply({ flags: 64 });
 
-    const user = await getUserRecord(interaction.user.id);
-    const banks = user.banks ?? [];
+      const userRecord = await getUserRecord(interaction.user.id);
+      const banks = userRecord.banks ?? [];
 
-    if (banks.length === 0) {
+      // Handle no banks
+      if (banks.length === 0) {
+        const { embed } = embedTemplate({
+          title: "🏦 No Banks",
+          description: "> You are not in any banks.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // Build dropdown options
+      const bankOptions = banks.map((b) => ({
+        label: `${b.type}`,
+        description: `Balance: $${b.balance.toLocaleString()}`,
+        value: b.id,
+      }));
+
+      const menu = new StringSelectMenuBuilder()
+        .setCustomId(`balance_bank_select_${interaction.user.id}`)
+        .setPlaceholder("Select a bank to manage")
+        .addOptions(bankOptions);
+
+      const components = [new ActionRowBuilder().addComponents(menu)];
+
+      // Build embed
       const { embed } = embedTemplate({
-        title: "🏦 No Banks",
-        description: "> You are not in any banks.",
+        title: `${SUN} Manage Your Banks ${SUN}`,
+        description: `> ${ARROW} Choose a bank to view or manage.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+
+      embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
+
+      // Send response
+      return interaction.editReply({ embeds: [embed], components });
+    } catch (error) {
+      console.error("ManageBank error:", error);
+      const { embed } = embedTemplate({
+        title: "⚠️ Error ⚠️",
+        description: `> ${ARROW} There was an error executing this interaction.`,
+      });
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ embeds: [embed], flags: 64 });
+      } else {
+        await interaction.reply({ embeds: [embed], flags: 64 });
+      }
     }
-
-    const bankOptions = banks.map((b) => ({
-      label: `${b.type}`,
-      description: `Balance: $${b.balance.toLocaleString()}`,
-      value: b.id,
-    }));
-
-    const menu = new StringSelectMenuBuilder()
-      .setCustomId(`balance_bank_select_${interaction.user.id}`)
-      .setPlaceholder("Select a bank to manage")
-      .addOptions(bankOptions);
-
-    const { embed } = embedTemplate({
-      title: `${SUN} Manage Your Banks ${SUN}`,
-      description: "> Choose a bank to view or manage.",
-      noLogo: true,
-    });
-
-    embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
-
-    return interaction.editReply({
-      embeds: [embed],
-      components: [new ActionRowBuilder().addComponents(menu)],
-    });
   },
 };
