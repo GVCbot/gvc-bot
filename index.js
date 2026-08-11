@@ -236,6 +236,54 @@ client.on(Events.InteractionCreate, async (interaction) => {
       )
         logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
     } else if (interaction.isButton()) {
+      // ------------------------------
+      // BUTTON CLICK LOGGING (LONG ID SYSTEM)
+      // ------------------------------
+      const SESSION_BUTTON_LOG = "1515684241101295646"; // session button logs
+      const OTHER_BUTTON_LOG = "1536797059355508826"; // all other button logs
+
+      const guild = interaction.guild;
+      const unix = Math.floor(Date.now() / 1000);
+      const timestamp = `<t:${unix}:F>`;
+      const user = interaction.user;
+
+      const logDescription =
+        `> ${ARROW} **User:** ${user}\n` +
+        `> ${ARROW} **User ID:** ${user.id}\n` +
+        `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
+        `> ${ARROW} **Channel:** ${interaction.channel} (${interaction.channel.id})\n` +
+        (interaction.message
+          ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
+          : "") +
+        `> ${ARROW} **Clicked At:** ${timestamp}`;
+
+      const { embed } = embedTemplate({
+        title: `${SUN} Button Click Logged ${SUN}`,
+        description: logDescription,
+        noLogo: true,
+      });
+
+      // Determine which log channel to use based on LONG IDs
+      let targetLogChannel;
+
+      if (
+        interaction.customId.startsWith("release_link_") ||
+        interaction.customId.startsWith("reinvites_link_") ||
+        interaction.customId.startsWith("earlyaccess_link_") ||
+        interaction.customId.startsWith("regen_link_")
+      ) {
+        targetLogChannel = guild.channels.cache.get(SESSION_BUTTON_LOG);
+      } else {
+        targetLogChannel = guild.channels.cache.get(OTHER_BUTTON_LOG);
+      }
+
+      if (targetLogChannel) {
+        targetLogChannel.send({ embeds: [embed] }).catch(() => {});
+      }
+      // ------------------------------
+      // END BUTTON CLICK LOGGING
+      // ------------------------------
+
       logTitle = `${SUN} Button Clicked ${SUN}`;
 
       let linkInfo = "";
