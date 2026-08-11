@@ -105,6 +105,6 @@ module.exports = {
 
     components.push(row);
 
-    return interaction.editReply({ embeds: [embed], components });
+    return interaction.editReply({ embeds: [embed], components: [row] });
   },
 };

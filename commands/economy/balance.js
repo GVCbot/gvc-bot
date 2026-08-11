@@ -1,11 +1,4 @@
-const {
-  SlashCommandBuilder,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} = require("discord.js");
-
+const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const { getUserRecord } = require("../../economy/economyutils");
 
@@ -15,13 +8,12 @@ const ARROW = "<:arrowright:1534182706836144158>";
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("balance")
-    .setDescription("View your cash and manage your bank accounts."),
+    .setDescription("View your cash and bank accounts."),
 
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     const user = await getUserRecord(interaction.user.id);
-
     const cash = user.cash ?? 0;
     const banks = user.banks ?? [];
 
@@ -45,24 +37,6 @@ module.exports = {
 
     embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
 
-    // If user has banks, show select menu
-    let components = [];
-
-    if (banks.length > 0) {
-      const bankOptions = banks.map((b) => ({
-        label: `${b.type}`,
-        description: `Balance: $${b.balance.toLocaleString()}`,
-        value: b.id,
-      }));
-
-      const menu = new StringSelectMenuBuilder()
-        .setCustomId(`balance_bank_select_${interaction.user.id}`)
-        .setPlaceholder("Select a bank to manage")
-        .addOptions(bankOptions);
-
-      components.push(new ActionRowBuilder().addComponents(menu));
-    }
-
-    return interaction.editReply({ embeds: [embed], components });
+    return interaction.editReply({ embeds: [embed] });
   },
 };
