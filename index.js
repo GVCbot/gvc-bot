@@ -796,6 +796,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           `> ${ARROW} **Bank ID:** ${bank.id}\n` +
           `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
           `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
+          `> ${ARROW} **Password:** ${bank.password ? bank.password : "None Set"}\n` +
           `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}`,
         noLogo: true,
       });
@@ -816,70 +817,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
 
       return interaction.editReply({ embeds: [embed], components: [buttons] });
-    }
-
-    // Withdraw Button Handler
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("bank_withdraw_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.customId.replace("bank_withdraw_", "");
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      const banks = await loadAllBanks(userRecord);
-      const bank = banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      // Ask for amount
-      const { embed } = embedTemplate({
-        title: "💸 Withdraw Funds",
-        description:
-          `> ${ARROW} Enter the amount to withdraw using **/withdraw amount:<value>**.\n` +
-          `> ${ARROW} Bank: **${bank.type}** — Balance: $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Deposit Button Handler
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("bank_deposit_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.customId.replace("bank_deposit_", "");
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      const banks = await loadAllBanks(userRecord);
-      const bank = banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      // Ask for amount
-      const { embed } = embedTemplate({
-        title: "💰 Deposit Funds",
-        description:
-          `> ${ARROW} Enter the amount to deposit using **/deposit amount:<value>**.\n` +
-          `> ${ARROW} Bank: **${bank.type}** — Balance: $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
     }
 
     // NEW SESSION LINK HANDLER (short ID system)
