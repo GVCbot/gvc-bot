@@ -69,7 +69,7 @@ module.exports = {
 
     let desc = "";
     desc += `> <:arrowright:1534182706836144158> **Total Collected:** $${totalIncome}\n`;
-    desc += `> <:arrowright:1534182706836144158> **New Balance:** $${user.cash}\n\n`;
+    desc += `> <:arrowright:1534182706836144158> **New Cash Balance:** $${user.cash.toLocaleString()}\n\n`;
     desc += `> <:arrowright:1534182706836144158> **Income Breakdown:**\n`;
 
     for (const entry of earnedFrom) {

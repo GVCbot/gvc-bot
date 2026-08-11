@@ -15,8 +15,7 @@ function getWorkPayout() {
   if (roll > 0.9) return 1500; // 10% chance
   if (roll > 0.7) return 800; // 20% chance
 
-  // Common payout: 100–500
-  return Math.floor(Math.random() * 400) + 100;
+  return Math.floor(Math.random() * 400) + 100; // Common payout
 }
 
 module.exports = {
@@ -28,11 +27,10 @@ module.exports = {
     const userId = interaction.user.id;
     const user = await getUserRecord(userId);
 
-    // Bypass cooldown using ROLE
     const bypassRole = "1368142895181205636";
     const isBypass = interaction.member.roles.cache.has(bypassRole);
 
-    const cooldown = 60 * 60 * 1000; // 1 hour
+    const cooldown = 60 * 60 * 1000;
     const now = Date.now();
 
     if (!isBypass && user.lastWork && now - user.lastWork < cooldown) {
@@ -48,15 +46,13 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Load messages from MongoDB
     const workMessages = await loadWorkMessages();
     const message =
       workMessages[Math.floor(Math.random() * workMessages.length)];
 
-    // NEW: Random payout instead of extracting from message
     const payout = getWorkPayout();
 
-    user.cash += payout;
+    user.cash = (user.cash ?? 0) + payout;
     user.lastWork = now;
 
     await updateUserRecord(user);
@@ -64,7 +60,7 @@ module.exports = {
     const desc =
       `> <:arrowright:1534182706836144158> ${message}\n` +
       `> <:arrowright:1534182706836144158> You earned **$${payout.toLocaleString()}**!\n\n` +
-      `> <:arrowright:1534182706836144158> **New Balance:** $${user.cash.toLocaleString()}`;
+      `> <:arrowright:1534182706836144158> **New Cash Balance:** $${user.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title:

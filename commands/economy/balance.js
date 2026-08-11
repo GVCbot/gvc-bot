@@ -5,26 +5,26 @@ const { getUserRecord } = require("../../economy/economyutils");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("balance")
-    .setDescription("Check your current cash and bank balance."),
+    .setDescription("Check your current cash and bank balances."),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
-    const userId = interaction.user.id;
-    const user = await getUserRecord(userId);
+    const user = await getUserRecord(interaction.user.id);
 
     const cash = user.cash ?? 0;
-    const bank = user.bank ?? 0;
-    const lastCollect = user.lastCollect ?? 0;
+    const banks = user.banks ?? [];
 
-    const desc =
-      `> <:arrowright:1534182706836144158> **Cash:** $${cash.toLocaleString()}\n` +
-      `> <:arrowright:1534182706836144158> **Bank:** $${bank.toLocaleString()}\n` +
-      `> <:arrowright:1534182706836144158> **Last Collected:** ${
-        lastCollect
-          ? `<t:${Math.floor(lastCollect / 1000)}:R>`
-          : "Never collected"
-      }`;
+    let desc = `> <:arrowright:1534182706836144158> **Cash:** $${cash.toLocaleString()}\n`;
+
+    if (banks.length === 0) {
+      desc += `> <:arrowright:1534182706836144158> **Banks:** None\n`;
+    } else {
+      desc += `> <:arrowright:1534182706836144158> **Banks:**\n`;
+      for (const b of banks) {
+        desc += `> • ${b.type} — $${b.balance.toLocaleString()}\n`;
+      }
+    }
 
     const { embed } = embedTemplate({
       title:
@@ -35,8 +35,6 @@ module.exports = {
 
     embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
 
-    await interaction.editReply({
-      embeds: [embed],
-    });
+    return interaction.editReply({ embeds: [embed] });
   },
 };

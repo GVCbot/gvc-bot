@@ -15,7 +15,7 @@ module.exports = {
     .setDescription("Pay one of your outstanding citations."),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);
@@ -27,6 +27,7 @@ module.exports = {
           "<a:gvcsunspin:1527220557890850846> No Citations <a:gvcsunspin:1527220557890850846>",
         description:
           "> <:arrowright:1534182706836144158> You have no outstanding citations.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -39,6 +40,7 @@ module.exports = {
           "<a:gvcsunspin:1527220557890850846> No Citations <a:gvcsunspin:1527220557890850846>",
         description:
           "> <:arrowright:1534182706836144158> You have no outstanding citations.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -62,6 +64,7 @@ module.exports = {
         "<a:gvcsunspin:1527220557890850846> Pay a Citation <a:gvcsunspin:1527220557890850846>",
       description:
         "> <:arrowright:1534182706836144158> Select a citation from the menu below.",
+      noLogo: true,
     });
 
     await interaction.editReply({ embeds: [embed], components: [row] });

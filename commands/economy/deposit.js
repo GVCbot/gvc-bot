@@ -40,6 +40,15 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    if (banks.length === 0) {
+      const { embed } = embedTemplate({
+        title: "❌ No Banks Found",
+        description: "> You do not have any banks to deposit into.",
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed] });
+    }
+
     // Ask which bank to deposit into
     const options = banks.map((b) => ({
       label: `${b.type} (${b.id})`,

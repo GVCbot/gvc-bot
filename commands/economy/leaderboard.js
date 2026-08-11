@@ -37,8 +37,18 @@ module.exports = {
 
     // Sort descending based on selected type
     const sorted = [...economy].sort((a, b) => {
-      const valA = isBank ? (a.bank ?? 0) : (a.cash ?? 0);
-      const valB = isBank ? (b.bank ?? 0) : (b.cash ?? 0);
+      const valA = isBank
+        ? a.banks
+          ? a.banks.reduce((sum, b) => sum + (b.balance ?? 0), 0)
+          : 0
+        : (a.cash ?? 0);
+
+      const valB = isBank
+        ? b.banks
+          ? b.banks.reduce((sum, b) => sum + (b.balance ?? 0), 0)
+          : 0
+        : (b.cash ?? 0);
+
       return valB - valA;
     });
 
@@ -52,7 +62,11 @@ module.exports = {
       const name = member
         ? member.user.username
         : `Unknown User (${user.userId})`;
-      const amount = isBank ? (user.bank ?? 0) : (user.cash ?? 0);
+      const amount = isBank
+        ? user.banks
+          ? user.banks.reduce((sum, b) => sum + (b.balance ?? 0), 0)
+          : 0
+        : (user.cash ?? 0);
 
       desc += `> <:bulletpoint:1534184707900837961> **#${index + 1}** — ${name}: $${amount.toLocaleString()}\n`;
     });

@@ -13,13 +13,13 @@ module.exports = {
       option
         .setName("user")
         .setDescription("The user you want to pay.")
-        .setRequired(true)
+        .setRequired(true),
     )
     .addStringOption((option) =>
       option
         .setName("amount")
         .setDescription("Amount to pay (number or 'all').")
-        .setRequired(true)
+        .setRequired(true),
     ),
 
   async execute(interaction) {
@@ -34,7 +34,8 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:bulletpoint:1534184707900837961> You cannot pay yourself."
+          "> <:bulletpoint:1534184707900837961> You cannot pay yourself.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -50,13 +51,14 @@ module.exports = {
     if (amountInput.toLowerCase() === "all") {
       amount = sender.cash;
     } else {
-      amount = parseInt(amountInput);
+      amount = parseInt(amountInput, 10);
       if (isNaN(amount)) {
         const { embed } = embedTemplate({
           title:
             "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
           description:
-            "> <:bulletpoint:1534184707900837961> Amount must be a number or 'all'."
+            "> <:bulletpoint:1534184707900837961> Amount must be a number or 'all'.",
+          noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
@@ -67,7 +69,8 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:bulletpoint:1534184707900837961> Amount must be greater than 0."
+          "> <:bulletpoint:1534184707900837961> Amount must be greater than 0.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -77,7 +80,8 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:bulletpoint:1534184707900837961> You do not have enough money to make this payment."
+          "> <:bulletpoint:1534184707900837961> You do not have enough cash to make this payment.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -89,15 +93,15 @@ module.exports = {
     await updateUserRecord(sender);
     await updateUserRecord(receiverRecord);
 
-    // Sender embed
     const desc =
-      `> <:bulletpoint:1534184707900837961> **You paid:** <@${receiver.id}> $${amount}\n` +
-      `> <:bulletpoint:1534184707900837961> **Your new balance:** $${sender.cash}`;
+      `> <:bulletpoint:1534184707900837961> **You paid:** <@${receiver.id}> $${amount.toLocaleString()}\n` +
+      `> <:bulletpoint:1534184707900837961> **Your new cash balance:** $${sender.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title:
         "<a:gvcsunspin:1527220557890850846> Payment Sent <a:gvcsunspin:1527220557890850846>",
-      description: desc
+      description: desc,
+      noLogo: true,
     });
 
     embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
@@ -111,8 +115,9 @@ module.exports = {
           "<a:gvcsunspin:1527220557890850846> Payment Received <a:gvcsunspin:1527220557890850846>",
         description:
           `> <:bulletpoint:1534184707900837961> **From:** ${interaction.user.username}\n` +
-          `> <:bulletpoint:1534184707900837961> **Amount:** $${amount}\n` +
-          `> <:bulletpoint:1534184707900837961> **New Balance:** $${receiverRecord.cash}`
+          `> <:bulletpoint:1534184707900837961> **Amount:** $${amount.toLocaleString()}\n` +
+          `> <:bulletpoint:1534184707900837961> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
+        noLogo: true,
       });
 
       dmEmbed.setThumbnail(receiver.displayAvatarURL({ dynamic: true }));
@@ -121,5 +126,5 @@ module.exports = {
     } catch {
       // Ignore if DMs are closed
     }
-  }
+  },
 };

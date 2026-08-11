@@ -10,18 +10,18 @@ const HR_ROLE_ID = "1350582607217430650"; // HR Staff role
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ecoadd")
-    .setDescription("HR: Add money to a user's balance.")
+    .setDescription("HR: Add money to a user's cash balance.")
     .addUserOption((option) =>
       option
         .setName("user")
         .setDescription("The user to give money to.")
-        .setRequired(true)
+        .setRequired(true),
     )
     .addIntegerOption((option) =>
       option
         .setName("amount")
         .setDescription("Amount of money to add.")
-        .setRequired(true)
+        .setRequired(true),
     ),
 
   async execute(interaction) {
@@ -33,8 +33,8 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:arrowright:1534182706836144158> Only HR staff can use this command."
-        // No color → uses DEFAULT_COLOR (0xFFAD65)
+          "> <:arrowright:1534182706836144158> Only HR staff can use this command.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -48,14 +48,16 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Invalid Amount <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:arrowright:1534182706836144158> Amount must be greater than 0."
+          "> <:arrowright:1534182706836144158> Amount must be greater than 0.",
+        noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Load user record from MongoDB
+    // Load user record
     const receiverRecord = await getUserRecord(receiver.id);
 
+    // Add to CASH (correct for new system)
     receiverRecord.cash = receiverRecord.cash ?? 0;
     receiverRecord.cash += amount;
 
@@ -63,17 +65,16 @@ module.exports = {
 
     const desc =
       `> <:bulletpoint:1534184707900837961> **Added to:** <@${receiver.id}>\n` +
-      `> <:bulletpoint:1534184707900837961> **Amount:** $${amount}\n` +
-      `> <:bulletpoint:1534184707900837961> **New Balance:** $${receiverRecord.cash}`;
+      `> <:bulletpoint:1534184707900837961> **Amount:** $${amount.toLocaleString()}\n` +
+      `> <:bulletpoint:1534184707900837961> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title:
         "<a:gvcsunspin:1527220557890850846> Money Added <a:gvcsunspin:1527220557890850846>",
-      description: desc
-      // No color → uses DEFAULT_COLOR (0xFFAD65)
+      description: desc,
+      noLogo: true,
     });
 
-    // Add thumbnail properly
     embed.setThumbnail(receiver.displayAvatarURL({ dynamic: true }));
 
     await interaction.editReply({ embeds: [embed] });
@@ -85,8 +86,9 @@ module.exports = {
           "<a:gvcsunspin:1527220557890850846> Money Received <a:gvcsunspin:1527220557890850846>",
         description:
           `> <:bulletpoint:1524621721318195230> **From:** ${hrMember.user.username} (HR)\n` +
-          `> <:bulletpoint:1524621721318195230> **Amount:** $${amount}\n` +
-          `> <:bulletpoint:1524621721318195230> **New Balance:** $${receiverRecord.cash}`
+          `> <:bulletpoint:1524621721318195230> **Amount:** $${amount.toLocaleString()}\n` +
+          `> <:bulletpoint:1524621721318195230> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
+        noLogo: true,
       });
 
       dmEmbed.setThumbnail(receiver.displayAvatarURL({ dynamic: true }));
