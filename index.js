@@ -240,17 +240,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // BUTTON CLICK LOGGING (LONG ID SYSTEM)
       // ------------------------------
       const SESSION_BUTTON_LOG = "1515684241101295646"; // session button logs
-      const OTHER_BUTTON_LOG = "1536797059355508826"; // all other button logs
+      const OTHER_BUTTON_LOG = "1536797059355508826"; // misc button logs
 
       const guild = interaction.guild;
       const unix = Math.floor(Date.now() / 1000);
       const timestamp = `<t:${unix}:F>`;
       const user = interaction.user;
 
+      // Try to get the button label (button name)
+      let buttonName = "Unknown Button";
+      try {
+        buttonName = interaction.component?.label || "Unknown Button";
+      } catch {}
+
+      // Build log description
       const logDescription =
         `> ${ARROW} **User:** ${user}\n` +
         `> ${ARROW} **User ID:** ${user.id}\n` +
         `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
+        `> ${ARROW} **Button Name:** ${buttonName}\n` +
         `> ${ARROW} **Channel:** ${interaction.channel} (${interaction.channel.id})\n` +
         (interaction.message
           ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
@@ -519,7 +527,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // NEW SESSION LINK HANDLER (short ID system)
-    if (interaction.isButton()) {
+    // NEW SESSION LINK HANDLER (short ID system)
+    if (
+      interaction.isButton() &&
+      !interaction.customId.startsWith("release_link_") &&
+      !interaction.customId.startsWith("reinvites_link_") &&
+      !interaction.customId.startsWith("earlyaccess_link_") &&
+      !interaction.customId.startsWith("regen_link_")
+    ) {
       await interaction.deferReply({ flags: 64 });
 
       // Fetch recent messages to find the one containing the button
