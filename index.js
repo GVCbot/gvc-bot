@@ -803,14 +803,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`bank_withdraw_${bank.id}`)
-          .setLabel("Withdraw")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId(`bank_deposit_${bank.id}`)
-          .setLabel("Deposit")
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
           .setCustomId(`bank_delete_${bank.id}`)
           .setLabel("Delete Bank")
           .setStyle(ButtonStyle.Danger),
