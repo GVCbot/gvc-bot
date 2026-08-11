@@ -3,8 +3,8 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
-const HR_ROLE_ID = "1350582607217430650"; // HR role ID
-const TARGET_CHANNEL_ID = "1350844469431504929"; // Channel where embed will be sent
+const HR_ROLE_ID = "1350582607217430650";
+const TARGET_CHANNEL_ID = "1350844469431504929";
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
@@ -40,12 +40,10 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    // Anti-spam
     if (!protect.applyRateLimit(interaction.user.id)) {
       return interaction.reply({ content: "Slow down.", flags: 64 });
     }
 
-    // HR-only check
     if (!interaction.member.roles.cache.has(HR_ROLE_ID)) {
       return interaction.reply({
         content: "You do not have permission to use this command.",
@@ -60,7 +58,7 @@ module.exports = {
     const reason = protect.sanitize(interaction.options.getString("reason"));
     const executor = interaction.user;
 
-    // Banner selection based on type
+    // Banner selection
     const bannerMap = {
       handpick: "gvchandpick.png",
       promotion: "gvcpromotion.png",
@@ -73,20 +71,20 @@ module.exports = {
     const bannerFile = path.join(__dirname, "../../graphics", bannerMap[type]);
 
     const description =
-      `> ${ARROW} **User:** ${targetUser} (${targetUser.id})\n` +
+      `> ${ARROW} **User:** ${targetUser}\n` +
       `> ${ARROW} **Type:** ${type.charAt(0).toUpperCase() + type.slice(1)}\n` +
       `> ${ARROW} **Reason:** ${reason}\n` +
-      `> ${ARROW} **Carried Out By:** ${executor} (${executor.id})`;
+      `> ${ARROW} **Carried Out By:** ${executor}`;
 
     const { embed, files } = embedTemplate({
-      title: `${SUN} Staff Adjustment ${SUN}`,
+      title: `${SUN} ${type.charAt(0).toUpperCase() + type.slice(1)} ${SUN}`,
       description,
       banner: bannerFile,
+      noLogo: true, // ✅ disables the big GVC thumbnail
     });
 
     embed.setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
-    // Send to HR channel
     const hrChannel = interaction.guild.channels.cache.get(TARGET_CHANNEL_ID);
     if (!hrChannel) {
       return interaction.editReply({
@@ -102,7 +100,7 @@ module.exports = {
     });
 
     await interaction.editReply({
-      content: `✅ Adjustment for ${targetUser.tag} (${type}) sent successfully to <#${TARGET_CHANNEL_ID}>.`,
+      content: `✅ ${type.charAt(0).toUpperCase() + type.slice(1)} for ${targetUser.tag} sent successfully to <#${TARGET_CHANNEL_ID}>.`,
     });
   },
 };
