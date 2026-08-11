@@ -103,8 +103,6 @@ module.exports = {
         .setStyle(ButtonStyle.Danger),
     );
 
-    components.push(row);
-
     return interaction.editReply({ embeds: [embed], components: [row] });
   },
 };
