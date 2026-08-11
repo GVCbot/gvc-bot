@@ -4,6 +4,7 @@ const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
   updateUserRecord,
+  getAllUserRecords,
 } = require("../../economy/economyutils");
 
 module.exports = {
@@ -18,20 +19,20 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const userId = interaction.user.id;
-    const password = protect.sanitize(
+    const passwordInput = protect.sanitize(
       interaction.options.getString("password"),
     );
 
-    // Search ALL users for a bank with this password
-    const allUsers = await interaction.client.users.fetch();
+    // Load ALL user records from your database
+    const allRecords = await getAllUserRecords();
+
     let targetBank = null;
     let ownerRecord = null;
 
-    for (const user of allUsers.values()) {
-      const rec = await getUserRecord(user.id);
+    for (const rec of allRecords) {
       if (!rec.banks) continue;
 
-      const found = rec.banks.find((b) => b.password === password);
+      const found = rec.banks.find((b) => b.password === passwordInput);
       if (found) {
         targetBank = found;
         ownerRecord = rec;
@@ -41,7 +42,7 @@ module.exports = {
 
     if (!targetBank) {
       const { embed } = embedTemplate({
-        title: "❌ Bank Not Found",
+        title: "❌ Invalid Password",
         description: "> No bank matches that password.",
         noLogo: true,
       });

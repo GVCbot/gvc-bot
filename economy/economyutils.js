@@ -114,6 +114,10 @@ async function updateUserRecord(user) {
   console.log(`💾 Updated user record for ${user.userId}`);
 }
 
+async function getAllUserRecords() {
+  return await db.collection("economy").find({}).toArray();
+}
+
 module.exports = {
   loadEconomy,
   loadRoleIncome,

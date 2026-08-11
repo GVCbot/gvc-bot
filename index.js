@@ -783,6 +783,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const banks = await loadAllBanks(userRecord);
       const bank = banks.find((b) => b.id === bankId);
 
+      if (bank.owner !== interaction.user.id) {
+        const { embed } = embedTemplate({
+          title: "❌ Access Denied",
+          description: "> Only the **bank owner** can manage this bank.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
       if (!bank) {
         return interaction.editReply({
           content: "❌ Bank not found.",
