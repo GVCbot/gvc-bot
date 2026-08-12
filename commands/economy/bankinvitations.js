@@ -7,13 +7,12 @@ const {
 const {
   getUserRecord,
   updateUserRecord,
-  getUserRecord: getRecord,
 } = require("../../economy/economyutils");
 const embedTemplate = require("../../utils/embedTemplate");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("bankinvitations")
+    .setName("bankinvitation")
     .setDescription("View and manage pending bank join requests."),
 
   async execute(interaction) {
@@ -22,14 +21,17 @@ module.exports = {
     const ownerId = interaction.user.id;
     const ownerRecord = await getUserRecord(ownerId);
 
+    // ✅ Check if joinRequests exist
     if (!ownerRecord.joinRequests || ownerRecord.joinRequests.length === 0) {
-      return interaction.editReply({
-        content: "📭 You have no pending bank join requests.",
-        flags: 64,
+      const { embed } = embedTemplate({
+        title: "📭 No Pending Requests",
+        description: "> You have no pending bank join requests.",
+        noLogo: true,
       });
+      return interaction.editReply({ embeds: [embed], flags: 64 });
     }
 
-    // Show each request separately
+    // ✅ Show each request separately
     for (const req of ownerRecord.joinRequests) {
       const requester = await interaction.client.users.fetch(req.userId);
       const bank = ownerRecord.banks.find((b) => b.id === req.bankId);
