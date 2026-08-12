@@ -544,6 +544,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    //Modlogs Handler
+    if (interaction.isButton() && interaction.customId.startsWith("modlogs_")) {
+      const cmd = client.commands.get("modlogs");
+      if (cmd && cmd.handleButton) {
+        return cmd.handleButton(interaction);
+      }
+    }
+
     //Bank Balance Handler
     if (
       interaction.isButton() &&
