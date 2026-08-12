@@ -787,7 +787,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Bank Join Accept
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("bankjoin_accept_")
@@ -810,9 +809,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       bank.members.push(userId);
       userRecord.joinedBanks.push(bankId);
-
-      // Make them co-owner
-      bank.owner = interaction.user.id; // or push into a coOwners array if you prefer
 
       await updateUserRecord(ownerRecord);
       await updateUserRecord(userRecord);
