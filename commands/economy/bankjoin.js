@@ -26,24 +26,24 @@ module.exports = {
     console.log("🔍 /bankjoin triggered by:", userId);
     console.log("🪪 Bank ID input:", bankIdInput);
 
+    // Load all records to find the bank
     const allRecords = await getAllUserRecords();
     console.log("📂 Loaded all user records:", allRecords.length);
 
     let targetBank = null;
-    let ownerRecord = null;
+    let ownerId = null;
 
     for (const rec of allRecords) {
       if (!rec.banks) continue;
       const found = rec.banks.find((b) => b.id === bankIdInput);
       if (found) {
         targetBank = found;
-        ownerRecord = rec;
+        ownerId = rec.id;
         break;
       }
     }
 
     if (!targetBank) {
-      console.warn("❌ Invalid bank ID:", bankIdInput);
       const { embed } = embedTemplate({
         title: "❌ Invalid Bank ID",
         description: "> No bank matches that ID.",
@@ -53,13 +53,27 @@ module.exports = {
     }
 
     console.log("🏦 Target bank found:", targetBank.name);
-    console.log("👑 Bank owner:", targetBank.owner);
+    console.log("👑 Bank owner:", ownerId);
 
+    // 🔥 RELOAD FULL OWNER RECORD (THIS FIXES EVERYTHING)
+    const ownerRecord = await getUserRecord(ownerId);
+
+    if (!ownerRecord) {
+      console.error("❌ Owner record missing in database.");
+      const { embed } = embedTemplate({
+        title: "⚠️ Internal Error",
+        description: "> Could not load the bank owner's record.",
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    // Load user record
     const userRecord = await getUserRecord(userId);
     if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
 
+    // Already a member?
     if (targetBank.members.includes(userId)) {
-      console.warn("⚠️ User already a member:", userId);
       const { embed } = embedTemplate({
         title: "❌ Already Joined",
         description: "> You are already a member of this bank.",
@@ -68,14 +82,13 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // 🚫 Prevent duplicate invitations
+    // Duplicate request?
+    ownerRecord.joinRequests = ownerRecord.joinRequests || [];
     if (
-      ownerRecord.joinRequests &&
       ownerRecord.joinRequests.some(
         (r) => r.bankId === targetBank.id && r.userId === userId,
       )
     ) {
-      console.warn("⚠️ Duplicate invitation attempt:", userId);
       const { embed } = embedTemplate({
         title: "❌ Invitation Already Sent",
         description:
@@ -83,12 +96,10 @@ module.exports = {
           `> Wait for the owner to accept or deny it.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed], flags: 64 });
+      return interaction.editReply({ embeds: [embed] });
     }
 
-    // 📩 Store join request in owner's record
-    if (!ownerRecord.joinRequests) ownerRecord.joinRequests = [];
-
+    // Add join request safely
     const newRequest = {
       bankId: targetBank.id,
       userId: userId,
@@ -96,27 +107,22 @@ module.exports = {
     };
 
     console.log("📩 New join request created:", newRequest);
-    console.log("📂 Owner record before update:", ownerRecord.joinRequests);
 
     ownerRecord.joinRequests.push(newRequest);
-    await updateUserRecord(ownerRecord);
 
-    console.log("💾 Updated owner record for:", targetBank.owner);
-    console.log("✅ Owner record after update:", ownerRecord.joinRequests);
+    // 🔥 SAFE UPDATE — DOES NOT WIPE BANKS
+    await updateUserRecord(ownerRecord);
 
     const { embed } = embedTemplate({
       title: "📨 Invitation Added",
       description:
         `> Your invitation has been added to the bank owner's invites list.\n` +
         `> **Bank:** ${targetBank.name}\n` +
-        `> **Owner:** <@${targetBank.owner}>`,
+        `> **Owner:** <@${ownerId}>`,
       noLogo: true,
     });
 
-    console.log(
-      "📨 Join request successfully saved for owner:",
-      targetBank.owner,
-    );
+    console.log("📨 Join request successfully saved for owner:", ownerId);
 
     return interaction.editReply({ embeds: [embed], flags: 64 });
   },
