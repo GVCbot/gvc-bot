@@ -2,6 +2,24 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const { loadEconomy } = require("../../economy/economyutils");
 
+async function loadAllBanksForUser(userRecord, allRecords) {
+  const owned = userRecord.banks || [];
+  const joinedIds = userRecord.joinedBanks || [];
+  const joined = [];
+
+  for (const bankId of joinedIds) {
+    for (const rec of allRecords) {
+      const bank = (rec.banks || []).find((b) => b.id === bankId);
+      if (bank) {
+        joined.push(bank);
+        break;
+      }
+    }
+  }
+
+  return [...owned, ...joined];
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("leaderboard")
@@ -35,45 +53,36 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Sort descending based on selected type
-    const sorted = [...economy].sort((a, b) => {
-      const valA = isBank
-        ? a.banks
-          ? a.banks.reduce((sum, b) => sum + (b.balance ?? 0), 0)
-          : 0
-        : (a.cash ?? 0);
+    // Build sorted list
+    const sorted = [];
+    for (const u of economy) {
+      const allBanks = await loadAllBanksForUser(u, economy);
+      const bankTotal = allBanks.reduce((sum, b) => sum + (b.balance ?? 0), 0);
+      const cash = u.cash ?? 0;
 
-      const valB = isBank
-        ? b.banks
-          ? b.banks.reduce((sum, b) => sum + (b.balance ?? 0), 0)
-          : 0
-        : (b.cash ?? 0);
+      const val = isBank ? bankTotal : cash;
+      sorted.push({ user: u, val });
+    }
 
-      return valB - valA;
-    });
+    sorted.sort((a, b) => b.val - a.val);
 
     // Top 10
     const top = sorted.slice(0, 10);
 
     let desc = "";
 
-    top.forEach((user, index) => {
-      const member = interaction.guild.members.cache.get(user.userId);
-      const name = member
-        ? member.user.username
-        : `Unknown User (${user.userId})`;
-      const amount = isBank
-        ? user.banks
-          ? user.banks.reduce((sum, b) => sum + (b.balance ?? 0), 0)
-          : 0
-        : (user.cash ?? 0);
+    top.forEach((entry, index) => {
+      const u = entry.user;
+      const member = interaction.guild.members.cache.get(u.userId);
+      const name = member ? member.user.username : `Unknown User (${u.userId})`;
 
-      desc += `> <:bulletpoint:1534184707900837961> **#${index + 1}** — ${name}: $${amount.toLocaleString()}\n`;
+      desc += `> <:bulletpoint:1534184707900837961> **#${index + 1}** — ${name}: $${entry.val.toLocaleString()}\n`;
     });
 
     // Personal rank
     const yourRank =
-      sorted.findIndex((u) => u.userId === interaction.user.id) + 1;
+      sorted.findIndex((entry) => entry.user.userId === interaction.user.id) +
+      1;
 
     desc += `\n> <:arrowright:1534182706836144158> **Your ${label} Rank:** #${yourRank > 0 ? yourRank : "N/A"}`;
 

@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const {
   getAllUserRecords,
+  getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
 
@@ -34,23 +35,27 @@ module.exports = {
     let totalBanksProcessed = 0;
     let totalMoneyMoved = 0;
 
-    for (const record of allRecords) {
-      if (!record.banks || record.banks.length === 0) continue;
+    // Loop through every user (owners only)
+    for (const ownerRecord of allRecords) {
+      const banks = ownerRecord.banks || [];
+      if (banks.length === 0) continue;
 
-      let userMoved = 0;
+      let ownerMoved = 0;
 
-      for (const bank of record.banks) {
-        if (bank.balance > 0) {
-          userMoved += bank.balance;
-          totalMoneyMoved += bank.balance;
+      for (const bank of banks) {
+        const balance = Number(bank.balance) || 0;
+
+        if (balance > 0) {
+          ownerMoved += balance;
+          totalMoneyMoved += balance;
           bank.balance = 0;
           totalBanksProcessed++;
         }
       }
 
-      if (userMoved > 0) {
-        record.cash = (record.cash ?? 0) + userMoved;
-        await updateUserRecord(record);
+      if (ownerMoved > 0) {
+        ownerRecord.cash = (Number(ownerRecord.cash) || 0) + ownerMoved;
+        await updateUserRecord(ownerRecord);
       }
     }
 
@@ -59,7 +64,7 @@ module.exports = {
       description:
         `> ${ARROW} **Total Banks Processed:** ${totalBanksProcessed}\n` +
         `> ${ARROW} **Total Money Moved:** $${totalMoneyMoved.toLocaleString()}\n\n` +
-        `> ${ARROW} All bank balances have been moved into user cash balances.`,
+        `> ${ARROW} All bank balances have been moved into their respective owners' cash balances.`,
       noLogo: true,
     });
 

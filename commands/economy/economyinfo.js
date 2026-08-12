@@ -2,6 +2,24 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const { loadEconomy, loadRoleIncome } = require("../../economy/economyutils");
 
+async function loadAllBanksForUser(userRecord, allRecords) {
+  const owned = userRecord.banks || [];
+  const joinedIds = userRecord.joinedBanks || [];
+  const joined = [];
+
+  for (const bankId of joinedIds) {
+    for (const rec of allRecords) {
+      const bank = (rec.banks || []).find((b) => b.id === bankId);
+      if (bank) {
+        joined.push(bank);
+        break;
+      }
+    }
+  }
+
+  return [...owned, ...joined];
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("economyinfo")
@@ -25,31 +43,32 @@ module.exports = {
     }
 
     // Helper: total net worth = cash + all bank balances
-    const getTotal = (u) => {
+    const getTotal = async (u) => {
       const cash = u.cash ?? 0;
-      const banks = u.banks ?? [];
-      const bankTotal = banks.reduce((sum, b) => sum + (b.balance ?? 0), 0);
+      const allBanks = await loadAllBanksForUser(u, economy);
+      const bankTotal = allBanks.reduce((sum, b) => sum + (b.balance ?? 0), 0);
       return cash + bankTotal;
     };
 
     // Total money in circulation
-    const totalMoney = economy.reduce((sum, u) => sum + getTotal(u), 0);
+    let totalMoney = 0;
+    for (const u of economy) totalMoney += await getTotal(u);
 
     // Average net worth
     const avgBalance = Math.round(totalMoney / economy.length);
 
     // Richest user
-    const richest = economy.reduce(
-      (max, u) => (getTotal(u) > getTotal(max) ? u : max),
-      economy[0],
-    );
+    let richest = economy[0];
+    for (const u of economy) {
+      if ((await getTotal(u)) > (await getTotal(richest))) richest = u;
+    }
     const richestMember = interaction.guild.members.cache.get(richest.userId);
 
     // Poorest user
-    const poorest = economy.reduce(
-      (min, u) => (getTotal(u) < getTotal(min) ? u : min),
-      economy[0],
-    );
+    let poorest = economy[0];
+    for (const u of economy) {
+      if ((await getTotal(u)) < (await getTotal(poorest))) poorest = u;
+    }
     const poorestMember = interaction.guild.members.cache.get(poorest.userId);
 
     // Role income stats
@@ -75,20 +94,24 @@ module.exports = {
     }
 
     // Top 5 richest users
-    const topFive = [...economy]
-      .sort((a, b) => getTotal(b) - getTotal(a))
-      .slice(0, 5);
+    const totals = [];
+    for (const u of economy) {
+      totals.push({ user: u, total: await getTotal(u) });
+    }
+
+    const topFive = totals.sort((a, b) => b.total - a.total).slice(0, 5);
 
     let topFiveText = "";
-    for (const u of topFive) {
+    for (const entry of topFive) {
+      const u = entry.user;
       const member = interaction.guild.members.cache.get(u.userId);
       const name = member ? member.user.username : `Unknown (${u.userId})`;
 
       const cash = u.cash ?? 0;
-      const banks = u.banks ?? [];
-      const bankTotal = banks.reduce((sum, b) => sum + (b.balance ?? 0), 0);
+      const allBanks = await loadAllBanksForUser(u, economy);
+      const bankTotal = allBanks.reduce((sum, b) => sum + (b.balance ?? 0), 0);
 
-      topFiveText += `> • **${name}** — $${(cash + bankTotal).toLocaleString()} `;
+      topFiveText += `> • **${name}** — $${entry.total.toLocaleString()} `;
       topFiveText += `(*$${cash.toLocaleString()} Cash | $${bankTotal.toLocaleString()} Bank*)\n`;
     }
 
@@ -103,13 +126,13 @@ module.exports = {
       richestMember
         ? richestMember.user.username
         : `Unknown (${richest.userId})`
-    } — $${getTotal(richest).toLocaleString()}\n`;
+    } — $${(await getTotal(richest)).toLocaleString()}\n`;
 
     desc += `> <:bulletpoint:1534184707900837961> **Poorest User:** ${
       poorestMember
         ? poorestMember.user.username
         : `Unknown (${poorest.userId})`
-    } — $${getTotal(poorest).toLocaleString()}\n\n`;
+    } — $${(await getTotal(poorest)).toLocaleString()}\n\n`;
 
     desc += `> <:bulletpoint:1534184707900837961> **Highest Role Income:** ${highestRoleText}\n`;
     desc += `> <:bulletpoint:1534184707900837961> **Lowest Role Income:** ${lowestRoleText}\n\n`;

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { getUserRecord } = require("../../economy/economyutils");
+const { getAllUserRecords } = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
@@ -9,16 +9,7 @@ const HR_ROLE_ID = "1350582607217430650";
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("hrviewbank")
-    .setDescription("HR ONLY — View someone else's bank information.")
-    .addUserOption((opt) =>
-      opt
-        .setName("user")
-        .setDescription("The user whose bank you want to view")
-        .setRequired(true),
-    )
-    .addStringOption((opt) =>
-      opt.setName("bankid").setDescription("Bank ID to view").setRequired(true),
-    ),
+    .setDescription("HR ONLY — View global bank statistics."),
 
   async execute(interaction) {
     await interaction.deferReply({ flags: 64 });
@@ -33,42 +24,59 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    const targetUser = interaction.options.getUser("user");
-    const bankId = interaction.options.getString("bankid");
+    const allRecords = await getAllUserRecords();
 
-    const targetRecord = await getUserRecord(targetUser.id);
+    // Collect all banks from all users
+    const allBanks = [];
+    for (const rec of allRecords) {
+      for (const bank of rec.banks || []) {
+        allBanks.push({
+          ...bank,
+          owner: rec.userId,
+        });
+      }
+    }
 
-    if (!targetRecord.banks || targetRecord.banks.length === 0) {
+    if (allBanks.length === 0) {
       const { embed } = embedTemplate({
-        title: "❌ No Banks",
-        description: `> ${targetUser.username} has no banks.`,
+        title: "🏦 No Banks Found",
+        description: "> There are currently **no banks** in the system.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    const bank = targetRecord.banks.find((b) => b.id === bankId);
+    // Total banks
+    const totalBanks = allBanks.length;
 
-    if (!bank) {
-      const { embed } = embedTemplate({
-        title: "❌ Bank Not Found",
-        description: "> That bank ID does not exist for this user.",
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed] });
-    }
+    // Richest bank
+    const richestBank = allBanks.reduce((a, b) =>
+      (a.balance ?? 0) > (b.balance ?? 0) ? a : b,
+    );
 
-    // Build HR view embed
+    // Poorest bank
+    const poorestBank = allBanks.reduce((a, b) =>
+      (a.balance ?? 0) < (b.balance ?? 0) ? a : b,
+    );
+
+    // Biggest bank (most members)
+    const biggestBank = allBanks.reduce((a, b) =>
+      (a.members?.length ?? 0) > (b.members?.length ?? 0) ? a : b,
+    );
+
+    // Count by type
+    const foxBanks = allBanks.filter((b) => b.type === "Fox Bank").length;
+    const moatBanks = allBanks.filter((b) => b.type === "Moat Castle").length;
+
     const { embed } = embedTemplate({
-      title: `${SUN} HR Bank Viewer ${SUN}`,
+      title: `${SUN} HR Bank Audit ${SUN}`,
       description:
-        `> ${ARROW} **Bank ID:** ${bank.id}\n` +
-        `> ${ARROW} **Name:** ${bank.name}\n` +
-        `> ${ARROW} **Type:** ${bank.type}\n` +
-        `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
-        `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
-        `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}\n` +
-        `> ${ARROW} **Password:** ${bank.password}`,
+        `> ${ARROW} **Total Banks:** ${totalBanks}\n` +
+        `> ${ARROW} **Fox Banks:** ${foxBanks}\n` +
+        `> ${ARROW} **Moat Castle Banks:** ${moatBanks}\n\n` +
+        `> ${ARROW} **Richest Bank:** ${richestBank.name} — $${richestBank.balance.toLocaleString()} (Owner: <@${richestBank.owner}>)\n` +
+        `> ${ARROW} **Poorest Bank:** ${poorestBank.name} — $${poorestBank.balance.toLocaleString()} (Owner: <@${poorestBank.owner}>)\n` +
+        `> ${ARROW} **Biggest Bank:** ${biggestBank.name} — ${biggestBank.members.length} members (Owner: <@${biggestBank.owner}>)`,
       noLogo: true,
     });
 

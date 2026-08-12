@@ -2,12 +2,21 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
+  getAllUserRecords,
   updateUserRecord,
 } = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 const HR_ROLE_ID = "1350582607217430650";
+
+// Helper: find the true owner of a bank
+async function findBankOwnerRecord(bankId) {
+  const allRecords = await getAllUserRecords();
+  return allRecords.find((rec) =>
+    (rec.banks || []).some((b) => b.id === bankId),
+  );
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -42,29 +51,35 @@ module.exports = {
     const targetUser = interaction.options.getUser("user");
     const bankId = interaction.options.getString("bankid");
 
-    const userRecord = await getUserRecord(targetUser.id);
+    // Load target user record (co-owner or owner)
+    const targetRecord = await getUserRecord(targetUser.id);
 
-    if (!userRecord.banks || userRecord.banks.length === 0) {
+    // Find the TRUE owner of the bank
+    const ownerRecord = await findBankOwnerRecord(bankId);
+
+    if (!ownerRecord) {
       const { embed } = embedTemplate({
-        title: "❌ No Banks",
-        description: `> ${targetUser.username} has no banks.`,
+        title: "❌ Bank Not Found",
+        description: "> No bank with that ID exists in the system.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    const bank = userRecord.banks.find((b) => b.id === bankId);
+    // Load the bank from the owner's record
+    const bank = ownerRecord.banks.find((b) => b.id === bankId);
 
     if (!bank) {
       const { embed } = embedTemplate({
         title: "❌ Bank Not Found",
-        description: "> That bank ID does not exist for this user.",
+        description: "> Bank exists but could not be loaded.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    const amount = bank.balance;
+    // Check balance
+    const amount = Number(bank.balance) || 0;
 
     if (amount <= 0) {
       const { embed } = embedTemplate({
@@ -75,19 +90,20 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Move money into cash
-    userRecord.cash = (userRecord.cash ?? 0) + amount;
+    // Move money into owner's cash
+    ownerRecord.cash = (Number(ownerRecord.cash) || 0) + amount;
     bank.balance = 0;
 
-    await updateUserRecord(userRecord);
+    // Save owner record
+    await updateUserRecord(ownerRecord);
 
     const { embed } = embedTemplate({
       title: `${SUN} HR Withdrawal Complete ${SUN}`,
       description:
-        `> ${ARROW} **User:** <@${targetUser.id}>\n` +
+        `> ${ARROW} **Bank Owner:** <@${ownerRecord.userId}>\n` +
         `> ${ARROW} **Bank:** ${bank.name} (${bank.id})\n` +
         `> ${ARROW} **Amount Moved:** $${amount.toLocaleString()}\n\n` +
-        `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}`,
+        `> ${ARROW} **New Cash Balance:** $${ownerRecord.cash.toLocaleString()}`,
       noLogo: true,
     });
 

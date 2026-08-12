@@ -20,7 +20,7 @@ async function loadAllBanks(userRecord) {
         const bank = (rec.banks || []).find((b) => b.id === bankId);
         if (bank) {
           joined.push(bank);
-          break; // Found the bank on this owner's record
+          break;
         }
       }
     }
@@ -32,17 +32,26 @@ async function loadAllBanks(userRecord) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("balance")
-    .setDescription("View your cash and bank accounts."),
+    .setDescription("View your balance or someone else's.")
+    .addUserOption((opt) =>
+      opt
+        .setName("user")
+        .setDescription("Optional: view another user's balance")
+        .setRequired(false),
+    ),
 
   async execute(interaction) {
-    await interaction.deferReply({ flags: 64 });
+    // ⭐ NOT EPHEMERAL ANYMORE
+    await interaction.deferReply({ ephemeral: false });
 
-    const userRecord = await getUserRecord(interaction.user.id);
+    const targetUser = interaction.options.getUser("user") || interaction.user;
+
+    const userRecord = await getUserRecord(targetUser.id);
 
     if (!userRecord) {
       const { embed } = embedTemplate({
         title: "❌ No Profile Found",
-        description: "> You do not have an economy profile yet.",
+        description: `> <@${targetUser.id}> does not have an economy profile yet.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -53,35 +62,36 @@ module.exports = {
 
     let desc = `${ARROW} **Cash:** $${cash.toLocaleString()}\n\n`;
 
+    // Owned banks
     desc += `${ARROW} **Owned Banks:** ${owned.length}\n`;
     if (owned.length === 0) {
       desc += "> • None\n\n";
     } else {
       for (const b of owned) {
-        const sharedBalance = b.balance ?? 0;
-        desc += `> • **${b.name}** — $${sharedBalance.toLocaleString()}\n`;
+        const bal = b.balance ?? 0;
+        desc += `> • **${b.name}** — $${bal.toLocaleString()}\n`;
       }
       desc += "\n";
     }
 
+    // Co-owned banks
     desc += `${ARROW} **Co‑Owned Banks:** ${joined.length}\n`;
     if (joined.length === 0) {
       desc += "> • None\n";
     } else {
       for (const b of joined) {
-        // Fallback to 0 if b.balance is undefined or null
-        const sharedBalance = b.balance ?? 0;
-        desc += `> • **${b.name}** — $${sharedBalance.toLocaleString()}\n`;
+        const bal = b.balance ?? 0;
+        desc += `> • **${b.name}** — $${bal.toLocaleString()}\n`;
       }
     }
 
     const { embed } = embedTemplate({
-      title: `${SUN} Your Balance ${SUN}`,
+      title: `${SUN} Balance — ${targetUser.username} ${SUN}`,
       description: desc,
       noLogo: true,
     });
 
-    embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
+    embed.setThumbnail(targetUser.displayAvatarURL({ dynamic: true }));
 
     return interaction.editReply({ embeds: [embed] });
   },
