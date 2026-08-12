@@ -1,9 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const {
-  getUserRecord,
-  getAllUserRecords,
-} = require("../../economy/economyutils");
+const { getUserRecord } = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
@@ -14,7 +11,7 @@ async function loadAllBanks(userRecord) {
   const joined = [];
 
   for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[2];
+    const ownerId = bankId.split("_")[2]; // ✅ Corrected index
     const ownerRecord = await getUserRecord(ownerId);
     if (!ownerRecord?.banks) continue;
 
@@ -45,8 +42,6 @@ module.exports = {
     }
 
     const cash = userRecord.cash ?? 0;
-
-    // Load owned + joined banks
     const { owned, joined } = await loadAllBanks(userRecord);
 
     let desc = `${ARROW} **Cash:** $${cash.toLocaleString()}\n\n`;

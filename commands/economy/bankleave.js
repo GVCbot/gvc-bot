@@ -66,7 +66,7 @@ module.exports = {
     console.log("🔍 Searching joined banks:", joinedBanks);
 
     for (const bankId of joinedBanks) {
-      const ownerId = bankId.split("_")[1];
+      const ownerId = bankId.split("_")[2];
       const rec = await getUserRecord(ownerId);
 
       if (!rec || !rec.banks) continue;
