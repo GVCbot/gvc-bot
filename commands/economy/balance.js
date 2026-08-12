@@ -24,7 +24,7 @@ module.exports = {
     } else {
       desc += `${ARROW} **Banks:** ${banks.length} total\n`;
       for (const b of banks) {
-        desc += `> • ${b.type} — $${b.balance.toLocaleString()}\n`;
+        desc += `> • ${b.name} — $${b.balance.toLocaleString()}\n`;
       }
       desc += "\n";
     }

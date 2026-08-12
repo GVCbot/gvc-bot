@@ -1,4 +1,9 @@
-const { SlashCommandBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require("discord.js");
 const protect = require("../../security/protect");
 const embedTemplate = require("../../utils/embedTemplate");
 const {
@@ -10,7 +15,7 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("bankjoin")
-    .setDescription("Join an existing bank.")
+    .setDescription("Request to join an existing bank.")
     .addStringOption((opt) =>
       opt.setName("password").setDescription("Bank password").setRequired(true),
     ),
@@ -23,7 +28,6 @@ module.exports = {
       interaction.options.getString("password"),
     );
 
-    // Load ALL user records from your database
     const allRecords = await getAllUserRecords();
 
     let targetBank = null;
@@ -31,7 +35,6 @@ module.exports = {
 
     for (const rec of allRecords) {
       if (!rec.banks) continue;
-
       const found = rec.banks.find((b) => b.password === passwordInput);
       if (found) {
         targetBank = found;
@@ -49,24 +52,9 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Load joining user's record
     const userRecord = await getUserRecord(userId);
     if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
 
-    // Limit: 2 banks total (owned + joined)
-    const totalBanks =
-      (userRecord.banks?.length || 0) + userRecord.joinedBanks.length;
-
-    if (totalBanks >= 2) {
-      const { embed } = embedTemplate({
-        title: "❌ Bank Limit Reached",
-        description: "> You are already in **2 banks**.",
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Already joined?
     if (targetBank.members.includes(userId)) {
       const { embed } = embedTemplate({
         title: "❌ Already Joined",
@@ -76,20 +64,33 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Add member to owner’s bank
-    targetBank.members.push(userId);
-    await updateUserRecord(ownerRecord);
+    // Send approval request to owner
+    const ownerUser = await interaction.client.users.fetch(targetBank.owner);
 
-    // Add bank ID to member’s joinedBanks
-    userRecord.joinedBanks.push(targetBank.id);
-    await updateUserRecord(userRecord);
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`bankjoin_accept_${targetBank.id}_${userId}`)
+        .setLabel("Accept")
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`bankjoin_deny_${targetBank.id}_${userId}`)
+        .setLabel("Deny")
+        .setStyle(ButtonStyle.Danger),
+    );
 
     const { embed } = embedTemplate({
-      title: "🏦 Bank Joined",
-      description: `> You joined **${targetBank.type}** successfully.`,
+      title: "🏦 Bank Join Request",
+      description:
+        `> ${interaction.user} wants to join your bank **${targetBank.name}**.\n\n` +
+        `> Approve or deny the request.`,
       noLogo: true,
     });
 
-    return interaction.editReply({ embeds: [embed] });
+    await ownerUser.send({ embeds: [embed], components: [row] });
+
+    return interaction.editReply({
+      content: "📨 Your join request has been sent to the bank owner.",
+      flags: 64,
+    });
   },
 };

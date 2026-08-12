@@ -24,6 +24,9 @@ module.exports = {
         ),
     )
     .addStringOption((opt) =>
+      opt.setName("name").setDescription("Bank name").setRequired(true),
+    )
+    .addStringOption((opt) =>
       opt.setName("password").setDescription("Bank password").setRequired(true),
     ),
 
@@ -32,6 +35,7 @@ module.exports = {
 
     const userId = interaction.user.id;
     const type = interaction.options.getString("type");
+    const name = protect.sanitize(interaction.options.getString("name"));
     const password = protect.sanitize(
       interaction.options.getString("password"),
     );
@@ -39,21 +43,27 @@ module.exports = {
     const record = await getUserRecord(userId);
     if (!record.banks) record.banks = [];
 
-    // Limit: 2 banks per user
-    if (record.banks.length >= 2) {
+    // ⭐ NAME ALREADY TAKEN CHECK (per user)
+    const nameTaken = record.banks.some(
+      (b) => b.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (nameTaken) {
       const { embed } = embedTemplate({
-        title: "❌ Bank Limit Reached",
-        description: "> You already have **2 banks**.",
+        title: "❌ Name Already Taken",
+        description: `> You already have a bank named **${name}**.\n> Please choose a different name.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Require 100k cash
-    if ((record.cash ?? 0) < 100000) {
+    // ⭐ Cost logic: first 2 banks free, rest cost 100k
+    const bankCount = record.banks.length;
+    let cost = bankCount >= 2 ? 100000 : 0;
+
+    if ((record.cash ?? 0) < cost) {
       const { embed } = embedTemplate({
         title: "❌ Insufficient Cash",
-        description: "> You need **100,000 cash** to create a bank.",
+        description: `> You need **${cost.toLocaleString()} cash** to create another bank.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -65,23 +75,26 @@ module.exports = {
     const newBank = {
       id: bankId,
       type,
+      name,
       password,
       owner: userId,
       members: [userId],
       balance: 0,
     };
 
-    record.cash -= 100000;
+    // Deduct cost if needed
+    record.cash -= cost;
     record.banks.push(newBank);
     await updateUserRecord(record);
 
     const { embed } = embedTemplate({
       title: `${SUN} Bank Created ${SUN}`,
       description:
+        `> ${ARROW} **Name:** ${name}\n` +
         `> ${ARROW} **Type:** ${type}\n` +
         `> ${ARROW} **Bank ID:** ${bankId}\n` +
         `> ${ARROW} **Password:** ${password}\n` +
-        `> ${ARROW} **Cost:** 100,000 cash`,
+        `> ${ARROW} **Cost:** ${cost === 0 ? "Free" : cost.toLocaleString()}`,
       noLogo: true,
     });
 

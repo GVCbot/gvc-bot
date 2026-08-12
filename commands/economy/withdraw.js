@@ -57,7 +57,7 @@ module.exports = {
     }
 
     const options = banks.map((b) => ({
-      label: `${b.type} (${b.id})`,
+      label: `${b.name} (${b.id})`,
       description: `Balance: $${b.balance.toLocaleString()}`,
       value: `${b.id}|${amountInput}`,
     }));

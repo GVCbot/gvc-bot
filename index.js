@@ -702,9 +702,35 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
       }
 
+      // ⭐ AUTO-WITHDRAW BEFORE DELETION
+      ownerRecord.cash = (ownerRecord.cash ?? 0) + bank.balance;
+      bank.balance = 0;
+
+      // Remove bank from all members
+      for (const memberId of bank.members) {
+        const memberRecord = await getUserRecord(memberId);
+
+        if (memberRecord.joinedBanks) {
+          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
+            (id) => id !== bankId,
+          );
+          await updateUserRecord(memberRecord);
+        }
+      }
+
       // Remove bank from owner
       ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
       await updateUserRecord(ownerRecord);
+
+      const { embed } = embedTemplate({
+        title: "🗑️ Bank Deleted",
+        description:
+          `> ${ARROW} Your bank **${bank.name}** has been deleted.\n` +
+          `> ${ARROW} **$${bank.balance.toLocaleString()}** was withdrawn into your cash.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
 
       const { embed } = embedTemplate({
         title: "🏦 Bank Deleted",
@@ -769,6 +795,112 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    // Bank Join Accept
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("bankjoin_accept_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const [, , bankId, userId] = interaction.customId.split("_");
+
+      const ownerRecord = await getUserRecord(interaction.user.id);
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      const userRecord = await getUserRecord(userId);
+
+      bank.members.push(userId);
+      userRecord.joinedBanks.push(bankId);
+
+      // Make them co-owner
+      bank.owner = interaction.user.id; // or push into a coOwners array if you prefer
+
+      await updateUserRecord(ownerRecord);
+      await updateUserRecord(userRecord);
+
+      const user = await interaction.client.users.fetch(userId);
+      await user.send(`✅ Your request to join **${bank.name}** was accepted!`);
+
+      return interaction.editReply({
+        content: "User added as co-owner.",
+        flags: 64,
+      });
+    }
+
+    // Bank Join Deny
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("bankjoin_deny_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const [, , bankId, userId] = interaction.customId.split("_");
+
+      const user = await interaction.client.users.fetch(userId);
+      await user.send(`❌ Your request to join the bank was denied.`);
+
+      return interaction.editReply({ content: "Request denied.", flags: 64 });
+    }
+
+    // Remove Bank Member Handler
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("removebankmember_select_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const bankId = interaction.customId.split("_")[2];
+      const removedId = interaction.values[0];
+      const ownerId = interaction.user.id;
+
+      const ownerRecord = await getUserRecord(ownerId);
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      // Remove from bank.members
+      bank.members = bank.members.filter((id) => id !== removedId);
+      await updateUserRecord(ownerRecord);
+
+      // Remove from user's joinedBanks
+      const removedRecord = await getUserRecord(removedId);
+      removedRecord.joinedBanks = (removedRecord.joinedBanks || []).filter(
+        (id) => id !== bankId,
+      );
+      await updateUserRecord(removedRecord);
+
+      // DM removed user
+      try {
+        const removedUser = await interaction.client.users.fetch(removedId);
+        await removedUser.send(
+          `❌ You have been removed as a co-owner of **${bank.name}**.`,
+        );
+      } catch {}
+
+      const { embed } = embedTemplate({
+        title: "🏦 Member Removed",
+        description:
+          `> ${ARROW} **Bank:** ${bank.name}\n` +
+          `> ${ARROW} **Removed:** <@${removedId}>\n\n` +
+          `> They are no longer a co-owner.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
     // Managebank Handler
     if (
       interaction.isStringSelectMenu() &&
@@ -803,6 +935,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         title: `${SUN} ${bank.type} ${SUN}`,
         description:
           `> ${ARROW} **Bank ID:** ${bank.id}\n` +
+          `> ${ARROW} **Name:** ${bank.name}\n` +
           `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
           `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
           `> ${ARROW} **Password:** ${bank.password ? bank.password : "None Set"}\n` +

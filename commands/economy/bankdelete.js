@@ -45,6 +45,10 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    // ⭐ AUTO-WITHDRAW BEFORE DELETION
+    ownerRecord.cash = (ownerRecord.cash ?? 0) + bank.balance;
+    bank.balance = 0;
+
     // Remove bank ID from all members
     for (const memberId of bank.members) {
       const memberRecord = await getUserRecord(memberId);
@@ -56,6 +60,10 @@ module.exports = {
         await updateUserRecord(memberRecord);
       }
     }
+
+    // Remove bank from owner
+    ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bank.id);
+    await updateUserRecord(ownerRecord);
 
     // Remove bank from owner
     ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bank.id);

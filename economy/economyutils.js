@@ -115,7 +115,8 @@ async function updateUserRecord(user) {
 }
 
 async function getAllUserRecords() {
-  return await db.collection("economy").find({}).toArray();
+  const db = await getDB();
+  return await db.collection("users").find({}).toArray();
 }
 
 module.exports = {
