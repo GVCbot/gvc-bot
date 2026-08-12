@@ -437,7 +437,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const [, viewerId, targetId] = interaction.customId.split("_");
       const targetRecord = await getUserRecord(targetId);
 
-      const banks = targetRecord.banks ?? [];
+      const banks = await loadAllBanks(targetRecord);
 
       if (banks.length === 0) {
         const { embed, files } = embedTemplate({
