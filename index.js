@@ -670,11 +670,140 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Bank join request accepted
+    // ------------------------------
+    // BUTTON CLICK LOGGING (SAFE FOR DM + GUILD)
+    // ------------------------------
+    if (interaction.isButton()) {
+      const unix = Math.floor(Date.now() / 1000);
+      const timestamp = `<t:${unix}:F>`;
+      const user = interaction.user;
+
+      let buttonName = "Unknown Button";
+      try {
+        buttonName = interaction.component?.label || "Unknown Button";
+      } catch {}
+
+      // DM-safe description
+      const channelInfo = interaction.guild
+        ? `${interaction.channel} (${interaction.channel.id})`
+        : "Direct Message";
+
+      const logDescription =
+        `> ${ARROW} **User:** ${user}\n` +
+        `> ${ARROW} **User ID:** ${user.id}\n` +
+        `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
+        `> ${ARROW} **Button Name:** ${buttonName}\n` +
+        `> ${ARROW} **Channel:** ${channelInfo}\n` +
+        (interaction.message
+          ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
+          : "") +
+        `> ${ARROW} **Clicked At:** ${timestamp}`;
+
+      const { embed } = embedTemplate({
+        title: `${SUN} Button Click Logged ${SUN}`,
+        description: logDescription,
+        noLogo: true,
+      });
+
+      // Guild logging only
+      if (interaction.guild) {
+        const SESSION_BUTTON_LOG = "1515684241101295646";
+        const OTHER_BUTTON_LOG = "1536797059355508826";
+
+        let targetLogChannel;
+
+        if (
+          interaction.customId.startsWith("rl_") ||
+          interaction.customId.startsWith("ri_") ||
+          interaction.customId.startsWith("ea_")
+        ) {
+          targetLogChannel =
+            interaction.guild.channels.cache.get(SESSION_BUTTON_LOG);
+        } else {
+          targetLogChannel =
+            interaction.guild.channels.cache.get(OTHER_BUTTON_LOG);
+        }
+
+        if (targetLogChannel) {
+          targetLogChannel.send({ embeds: [embed] }).catch(() => {});
+        }
+      }
+    }
+
+    // ------------------------------
+    // BUTTON CLICKED DEBUG LOG
+    // ------------------------------
+    console.log("BUTTON CLICKED:", interaction.customId);
+
+    // ------------------------------
+    // BUTTON CLICK LOGGING (SAFE FOR DM + GUILD)
+    // ------------------------------
+    if (interaction.isButton()) {
+      const unix = Math.floor(Date.now() / 1000);
+      const timestamp = `<t:${unix}:F>`;
+      const user = interaction.user;
+
+      let buttonName = "Unknown Button";
+      try {
+        buttonName = interaction.component?.label || "Unknown Button";
+      } catch {}
+
+      // DM-safe description
+      const channelInfo = interaction.guild
+        ? `${interaction.channel} (${interaction.channel.id})`
+        : "Direct Message";
+
+      const logDescription =
+        `> ${ARROW} **User:** ${user}\n` +
+        `> ${ARROW} **User ID:** ${user.id}\n` +
+        `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
+        `> ${ARROW} **Button Name:** ${buttonName}\n` +
+        `> ${ARROW} **Channel:** ${channelInfo}\n` +
+        (interaction.message
+          ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
+          : "") +
+        `> ${ARROW} **Clicked At:** ${timestamp}`;
+
+      const { embed } = embedTemplate({
+        title: `${SUN} Button Click Logged ${SUN}`,
+        description: logDescription,
+        noLogo: true,
+      });
+
+      // Guild logging only
+      if (interaction.guild) {
+        const SESSION_BUTTON_LOG = "1515684241101295646";
+        const OTHER_BUTTON_LOG = "1536797059355508826";
+
+        let targetLogChannel;
+
+        if (
+          interaction.customId.startsWith("rl_") ||
+          interaction.customId.startsWith("ri_") ||
+          interaction.customId.startsWith("ea_")
+        ) {
+          targetLogChannel =
+            interaction.guild.channels.cache.get(SESSION_BUTTON_LOG);
+        } else {
+          targetLogChannel =
+            interaction.guild.channels.cache.get(OTHER_BUTTON_LOG);
+        }
+
+        if (targetLogChannel) {
+          targetLogChannel.send({ embeds: [embed] }).catch(() => {});
+        }
+      }
+    }
+
+    // ------------------------------
+    // BANK JOIN ACCEPT
+    // ------------------------------
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("bankjoin_accept_")
     ) {
+      console.log("ACCEPT HANDLER REACHED");
+
       await interaction.deferReply({ flags: 64 });
 
       const [, , bankId, userId] = interaction.customId.split("_");
@@ -712,11 +841,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    // Bank Join Deny
+    // ------------------------------
+    // BANK JOIN DENY
+    // ------------------------------
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("bankjoin_deny_")
     ) {
+      console.log("DENY HANDLER REACHED");
+
       await interaction.deferReply({ flags: 64 });
 
       const [, , bankId, userId] = interaction.customId.split("_");
@@ -732,60 +865,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ------------------------------
-    // BUTTON CLICK LOGGING (LONG ID SYSTEM)
+    // REMOVE BANK MEMBER
     // ------------------------------
-    if (interaction.isButton()) {
-      // Ignore DM buttons (accept/deny happen in DMs)
-      if (!interaction.guild) return;
-
-      const SESSION_BUTTON_LOG = "1515684241101295646";
-      const OTHER_BUTTON_LOG = "1536797059355508826";
-
-      const guild = interaction.guild;
-      const unix = Math.floor(Date.now() / 1000);
-      const timestamp = `<t:${unix}:F>`;
-      const user = interaction.user;
-
-      let buttonName = "Unknown Button";
-      try {
-        buttonName = interaction.component?.label || "Unknown Button";
-      } catch {}
-
-      const logDescription =
-        `> ${ARROW} **User:** ${user}\n` +
-        `> ${ARROW} **User ID:** ${user.id}\n` +
-        `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
-        `> ${ARROW} **Button Name:** ${buttonName}\n` +
-        `> ${ARROW} **Channel:** ${interaction.channel} (${interaction.channel.id})\n` +
-        (interaction.message
-          ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
-          : "") +
-        `> ${ARROW} **Clicked At:** ${timestamp}`;
-
-      const { embed } = embedTemplate({
-        title: `${SUN} Button Click Logged ${SUN}`,
-        description: logDescription,
-        noLogo: true,
-      });
-
-      let targetLogChannel;
-
-      if (
-        interaction.customId.startsWith("rl_") ||
-        interaction.customId.startsWith("ri_") ||
-        interaction.customId.startsWith("ea_")
-      ) {
-        targetLogChannel = guild.channels.cache.get(SESSION_BUTTON_LOG);
-      } else {
-        targetLogChannel = guild.channels.cache.get(OTHER_BUTTON_LOG);
-      }
-
-      if (targetLogChannel) {
-        targetLogChannel.send({ embeds: [embed] }).catch(() => {});
-      }
-    }
-
-    // Remove Bank Member Handler
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("removebankmember_select_")
