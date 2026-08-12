@@ -490,7 +490,69 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    //Bank Withdraw Handler
+    // Bank Deposit Handler
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("deposit_select_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const [bankId, amountInput] = interaction.values[0].split("|");
+      const userRecord = await getUserRecord(interaction.user.id);
+
+      // 1. Locate the true owner's record for this bank
+      const ownerRecord = await findBankOwnerRecord(bankId, userRecord);
+      if (!ownerRecord) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+
+      // 2. Determine deposit amount
+      let amount =
+        amountInput === "all" ? userRecord.cash : parseInt(amountInput, 10);
+
+      if (isNaN(amount) || amount <= 0) {
+        return interaction.editReply({
+          content: "❌ Invalid amount.",
+          flags: 64,
+        });
+      }
+
+      if (userRecord.cash < amount) {
+        return interaction.editReply({
+          content: "❌ You don't have enough cash.",
+          flags: 64,
+        });
+      }
+
+      // 3. Update balances
+      userRecord.cash -= amount;
+      bank.balance = (bank.balance ?? 0) + amount;
+
+      // 4. Save both records (or just userRecord if the user owns the bank)
+      await updateUserRecord(userRecord);
+      if (ownerRecord.userId !== userRecord.userId) {
+        await updateUserRecord(ownerRecord);
+      }
+
+      // 5. Send confirmation using bank.name
+      const { embed } = embedTemplate({
+        title: "🏦 Deposit Successful",
+        description:
+          `> Deposited **$${amount.toLocaleString()}** into **${bank.name}**.\n\n` +
+          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
+          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    // Bank Withdraw Handler
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("withdraw_select_")
@@ -530,66 +592,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       userRecord.cash += amount;
 
       await updateUserRecord(userRecord);
-      if (ownerRecord !== userRecord) await updateUserRecord(ownerRecord);
+      if (ownerRecord.userId !== userRecord.userId) {
+        await updateUserRecord(ownerRecord);
+      }
 
       const { embed } = embedTemplate({
         title: "🏦 Withdrawal Successful",
         description:
           `> Withdrew **$${amount.toLocaleString()}** from **${bank.name}**.\n\n` +
-          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
-          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    //Bank Deposit Handler
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("deposit_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const [bankId, amountInput] = interaction.values[0].split("|");
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      const banks = await loadAllBanks(userRecord);
-      const bank = banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      let amount =
-        amountInput === "all" ? userRecord.cash : parseInt(amountInput, 10);
-
-      if (isNaN(amount) || amount <= 0) {
-        return interaction.editReply({
-          content: "❌ Invalid amount.",
-          flags: 64,
-        });
-      }
-
-      if (userRecord.cash < amount) {
-        return interaction.editReply({
-          content: "❌ You don't have enough cash.",
-          flags: 64,
-        });
-      }
-
-      userRecord.cash -= amount;
-      bank.balance += amount;
-
-      await updateUserRecord(userRecord);
-
-      const { embed } = embedTemplate({
-        title: "🏦 Deposit Successful",
-        description:
-          `> Deposited **$${amount.toLocaleString()}** into **${bank.type}**.\n\n` +
           `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
           `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
         noLogo: true,
