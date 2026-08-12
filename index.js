@@ -864,6 +864,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           joinedBanks: [],
           records: { citations: [], warrants: [], blackpoints: 0 },
         };
+        await updateUserRecord(userRecord); // ✅ Save new record immediately
       }
 
       console.log("👤 User record loaded or created:", userRecord.id);
