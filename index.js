@@ -620,7 +620,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const ownerRecord = await getUserRecord(userId);
 
-      const bank = ownerRecord.banks?.find((b) => b.id === bankId);
+      const bank = ownerRecord?.banks?.find((b) => b.id === bankId);
       if (!bank) {
         return interaction.editReply({
           content: "❌ Bank not found.",
@@ -636,19 +636,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       // 1. Get remaining balance (default to 0 if undefined)
-      const returnedCash = bank.balance ?? 0;
+      const returnedCash = Number(bank.balance) || 0;
 
       // 2. Add bank balance back to owner's cash
-      ownerRecord.cash = (ownerRecord.cash ?? 0) + returnedCash;
+      ownerRecord.cash = (Number(ownerRecord.cash) || 0) + returnedCash;
 
-      // 3. Clean up joinedBanks for all co-owners/members
-      if (bank.members && bank.members.length > 0) {
+      // 3. Remove bank from owner's banks list
+      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
+
+      // 4. Save updated owner record IMMEDIATELY so the cash refund is persisted
+      await updateUserRecord(ownerRecord);
+
+      // 5. Clean up joinedBanks for co-owners AFTER saving ownerRecord
+      if (Array.isArray(bank.members) && bank.members.length > 0) {
         for (const memberId of bank.members) {
-          // Skip owner since owner isn't stored in joinedBanks
+          // Ensure owner is completely skipped
           if (memberId === userId) continue;
 
           const memberRecord = await getUserRecord(memberId);
-
           if (memberRecord?.joinedBanks) {
             memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
               (id) => id !== bankId,
@@ -657,25 +662,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
           }
         }
       }
-
-      // 4. Remove bank from owner's banks list
-      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
-
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
-      // 5. Save updated owner record (cash + banks updated)
-      await updateUserRecord(ownerRecord);
 
       // 6. Respond with confirmation & refunded amount
       const { embed } = embedTemplate({
