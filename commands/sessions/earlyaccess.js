@@ -63,14 +63,8 @@ module.exports = {
         .setStyle(ButtonStyle.Success),
     );
 
-    const pingRoles = [
-      "1350870925582798848", // Early Access role ONLY
-    ];
-
-    const pingString = pingRoles.map((id) => `<@&${id}>`).join(" ");
-
     const sent = await interaction.channel.send({
-      content: pingString,
+      content: "<@&1350870925582798848>",
       embeds: [embed],
       files,
       components: [row],

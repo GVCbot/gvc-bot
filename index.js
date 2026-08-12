@@ -117,6 +117,7 @@ function logEvent(
   }
 }
 
+//Button Click Logging Helper
 function logButtonClick(interaction) {
   const unix = Math.floor(Date.now() / 1000);
   const timestamp = `<t:${unix}:F>`;
@@ -398,7 +399,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       logButtonClick(interaction);
 
       // Early Access button permission check
-      if (interaction.isButton() && interaction.customId.startsWith("ea_")) {
+      if (interaction.customId.startsWith("ea_")) {
         const allowedRoles = [
           "1350870925582798848", // Early Access role
           "1350897509752373341", // Staff role
@@ -1254,7 +1255,7 @@ client.on(Events.MessageDeleteBulk, async (messages) => {
 // Track which startup messages have already triggered
 const startupReadyMap = new Map();
 
-// Reaction Goal Handler
+//Reaction Goal Handler
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
     if (user.bot) return;
