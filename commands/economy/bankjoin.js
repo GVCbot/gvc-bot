@@ -68,7 +68,25 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // ✅ Store join request in owner's record instead of sending DM
+    // 🚫 Prevent duplicate invitations
+    if (
+      ownerRecord.joinRequests &&
+      ownerRecord.joinRequests.some(
+        (r) => r.bankId === targetBank.id && r.userId === userId,
+      )
+    ) {
+      console.warn("⚠️ Duplicate invitation attempt:", userId);
+      const { embed } = embedTemplate({
+        title: "❌ Invitation Already Sent",
+        description:
+          `> You already have a pending invitation for **${targetBank.name}**.\n` +
+          `> Wait for the owner to accept or deny it.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], flags: 64 });
+    }
+
+    // 📩 Store join request in owner's record
     if (!ownerRecord.joinRequests) ownerRecord.joinRequests = [];
 
     const newRequest = {
@@ -83,14 +101,15 @@ module.exports = {
     ownerRecord.joinRequests.push(newRequest);
     await updateUserRecord(ownerRecord);
 
+    console.log("💾 Updated owner record for:", targetBank.owner);
     console.log("✅ Owner record after update:", ownerRecord.joinRequests);
 
     const { embed } = embedTemplate({
-      title: "✅ Invitation Added",
+      title: "📨 Invitation Added",
       description:
         `> Your invitation has been added to the bank owner's invites list.\n` +
-        `> Bank: **${targetBank.name}**\n` +
-        `> Owner: <@${targetBank.owner}>`,
+        `> **Bank:** ${targetBank.name}\n` +
+        `> **Owner:** <@${targetBank.owner}>`,
       noLogo: true,
     });
 

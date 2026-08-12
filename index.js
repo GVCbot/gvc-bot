@@ -19,7 +19,11 @@ const {
 const fs = require("node:fs");
 const path = require("node:path");
 const embedTemplate = require("./utils/embedTemplate");
-const { getUserRecord, updateUserRecord } = require("./economy/economyutils");
+const {
+  getUserRecord,
+  updateUserRecord,
+  getAllUserRecords,
+} = require("./economy/economyutils");
 const handleInbox = require("./utils/inbox");
 
 //Configuration
@@ -804,7 +808,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     ) {
       await interaction.deferReply({ flags: 64 });
 
-      const [, , bankId, userId] = interaction.customId.split("_");
+      const parts = interaction.customId.split("_");
+
+      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
+      const userId = parts[5];
+
+      console.log("🔍 Parsed IDs:", { bankId, userId });
+
       console.log("🔍 Accept button clicked:", { bankId, userId });
 
       const ownerRecord = await getUserRecord(interaction.user.id);
@@ -880,8 +890,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     ) {
       await interaction.deferReply({ flags: 64 });
 
-      const [, , bankId, userId] = interaction.customId.split("_");
-      console.log("🔍 Deny button clicked:", { bankId, userId });
+      const parts = interaction.customId.split("_");
+
+      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
+      const userId = parts[5];
+
+      console.log("🔍 Parsed IDs:", { bankId, userId });
 
       const ownerRecord = await getUserRecord(interaction.user.id);
 
