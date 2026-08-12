@@ -19,7 +19,10 @@ module.exports = {
     interaction.noLog = true;
 
     if (!protect.applyRateLimit(interaction.user.id)) {
-      return interaction.reply({ content: "Slow down.", flags: 64 });
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.reply({ content: "Slow down.", flags: 64 });
+      }
+      return;
     }
 
     const staffRoleId = "1350897509752373341";

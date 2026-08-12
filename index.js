@@ -207,38 +207,6 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
   });
 }
 
-// Early Access button permission check
-if (interaction.isButton() && interaction.customId.startsWith("ea_")) {
-  const allowedRoles = [
-    "1350870925582798848", // Early Access role
-    "1350897509752373341", // Staff role
-    "1058635001329107005",
-    "1058635044308123719",
-    "1058636415166070784",
-    "1350838197684535327",
-  ];
-
-  const member = interaction.member;
-
-  const canClick = allowedRoles.some((roleId) =>
-    member.roles.cache.has(roleId),
-  );
-
-  if (!canClick) {
-    return interaction.reply({
-      content: "❌ You are not authorized to access Early Access.",
-      ephemeral: true,
-    });
-  }
-
-  // Authorized → send the link
-  const link = interaction.message.sessionLink;
-  return interaction.reply({
-    content: `🔗 **Early Access Link:** ${link}`,
-    ephemeral: true,
-  });
-}
-
 // Normalize bank types so old banks still work
 function normalizeType(type) {
   if (!type) return type;
@@ -428,6 +396,37 @@ client.on(Events.InteractionCreate, async (interaction) => {
         logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
     } else if (interaction.isButton()) {
       logButtonClick(interaction);
+
+      // Early Access button permission check
+      if (interaction.isButton() && interaction.customId.startsWith("ea_")) {
+        const allowedRoles = [
+          "1350870925582798848", // Early Access role
+          "1350897509752373341", // Staff role
+          "1058635001329107005",
+          "1058635044308123719",
+          "1058636415166070784",
+          "1350838197684535327",
+        ];
+
+        const member = interaction.member;
+
+        const canClick = allowedRoles.some((roleId) =>
+          member.roles.cache.has(roleId),
+        );
+
+        if (!canClick) {
+          return interaction.reply({
+            content: "❌ You are not authorized to access Early Access.",
+            flags: 64,
+          });
+        }
+
+        const link = interaction.message.sessionLink;
+        return interaction.reply({
+          content: `🔗 **Early Access Link:** ${link}`,
+          flags: 64,
+        });
+      }
     } else if (interaction.isAnySelectMenu()) {
       logTitle = `${SUN} Menu Selected ${SUN}`;
       extraDetails =
@@ -1252,31 +1251,50 @@ client.on(Events.MessageDeleteBulk, async (messages) => {
   }
 });
 
-//Reaction Goal Handler
+// Track which startup messages have already triggered
+const startupReadyMap = new Map();
+
+// Reaction Goal Handler
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
     if (user.bot) return;
 
+    // Ensure full reaction object
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (err) {
+        console.error("Failed to fetch reaction:", err);
+        return;
+      }
+    }
+
     const message = reaction.message;
     if (!message.embeds.length) return;
-    const embed = message.embeds[0];
 
+    const embed = message.embeds[0];
     if (!embed.title || !embed.title.includes("Session Startup")) return;
 
+    // Extract required reactions
     const match = embed.description.match(/Required reactions:\s\*\*(\d+)\*\*/);
     if (!match) return;
 
     const required = parseInt(match[1], 10);
-    const reactionCount = reaction.count;
 
-    if (reactionCount >= required) {
-      if (reaction.message.hasSentReady) return;
-      reaction.message.hasSentReady = true;
+    // Get REAL reaction count
+    const emojiKey = reaction.emoji.identifier;
+    const realCount = message.reactions.cache.get(emojiKey)?.count || 0;
+
+    // Prevent double triggers
+    if (startupReadyMap.get(message.id)) return;
+
+    if (realCount >= required) {
+      startupReadyMap.set(message.id, true);
 
       const host = embed.description.match(/<@!?(\d+)>/);
       const hostId = host ? host[1] : null;
 
-      const notifyChannel = reaction.message.guild.channels.cache.get(
+      const notifyChannel = message.guild.channels.cache.get(
         "1495828191300948111",
       );
       if (!notifyChannel) return;
