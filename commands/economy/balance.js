@@ -14,7 +14,7 @@ async function loadAllBanks(userRecord) {
   const joined = [];
 
   for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[1];
+    const ownerId = bankId.split("_")[2];
     const ownerRecord = await getUserRecord(ownerId);
     if (!ownerRecord?.banks) continue;
 
@@ -31,7 +31,7 @@ module.exports = {
     .setDescription("View your cash and bank accounts."),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
 
     const userRecord = await getUserRecord(interaction.user.id);
 

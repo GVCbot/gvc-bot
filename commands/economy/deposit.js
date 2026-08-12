@@ -12,7 +12,7 @@ async function loadAllBanks(userRecord) {
   const joined = [];
 
   for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[1];
+    const ownerId = bankId.split("_")[2];
     const ownerRecord = await getUserRecord(ownerId);
     if (!ownerRecord.banks) continue;
     const bank = ownerRecord.banks.find((b) => b.id === bankId);

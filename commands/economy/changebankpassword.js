@@ -8,24 +8,6 @@ const {
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
-async function loadAllBanks(userRecord) {
-  const owned = userRecord.banks || [];
-  const joinedIds = userRecord.joinedBanks || [];
-
-  const joined = [];
-
-  for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[1];
-    const ownerRecord = await getUserRecord(ownerId);
-    if (!ownerRecord.banks) continue;
-
-    const bank = ownerRecord.banks.find((b) => b.id === bankId);
-    if (bank) joined.push(bank);
-  }
-
-  return [...owned, ...joined];
-}
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("changebankpassword")
@@ -46,12 +28,10 @@ module.exports = {
 
   async autocomplete(interaction) {
     const userRecord = await getUserRecord(interaction.user.id);
-    const banks = await loadAllBanks(userRecord);
-
-    const ownedBanks = banks.filter((b) => b.owner === interaction.user.id);
+    const ownedBanks = userRecord.banks || [];
 
     const choices = ownedBanks.map((b) => ({
-      name: `${b.type} (${b.id})`,
+      name: `${b.name} (${b.id})`,
       value: b.id,
     }));
 
@@ -63,29 +43,30 @@ module.exports = {
 
     const bankId = interaction.options.getString("bank");
     const newPassword = interaction.options.getString("newpassword").trim();
-
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // Find bank in user's owned banks
-    const bank = userRecord.banks.find((b) => b.id === bankId);
+    // ✅ Only check owned banks
+    const bank = (userRecord.banks || []).find((b) => b.id === bankId);
 
     if (!bank) {
       const { embed } = embedTemplate({
-        title: "❌ Bank Not Found",
-        description: "> You can only change passwords for banks you **own**.",
+        title: "❌ Access Denied",
+        description:
+          "> You can only change passwords for banks you **own**.\n" +
+          "> Co‑owners cannot modify bank settings.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Update password
+    // ✅ Update password
     bank.password = newPassword;
     await updateUserRecord(userRecord);
 
     const { embed } = embedTemplate({
       title: `${SUN} Password Updated ${SUN}`,
       description:
-        `> ${ARROW} **Bank:** ${bank.type}\n` +
+        `> ${ARROW} **Bank:** ${bank.name}\n` +
         `> ${ARROW} **Bank ID:** ${bank.id}\n` +
         `> ${ARROW} **New Password:** ${newPassword}`,
       noLogo: true,
