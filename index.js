@@ -174,13 +174,12 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
 async function loadAllBanks(userRecord) {
   const owned = userRecord.banks || [];
   const joinedIds = userRecord.joinedBanks || [];
-
   const joined = [];
 
   for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[1];
+    const ownerId = bankId.split("_")[2]; // ✅ Corrected index
     const ownerRecord = await getUserRecord(ownerId);
-    if (!ownerRecord.banks) continue;
+    if (!ownerRecord?.banks) continue;
 
     const bank = ownerRecord.banks.find((b) => b.id === bankId);
     if (bank) joined.push(bank);
