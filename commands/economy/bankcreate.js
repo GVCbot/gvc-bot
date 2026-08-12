@@ -4,6 +4,7 @@ const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
   updateUserRecord,
+  getAllUserRecords,
 } = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
@@ -43,14 +44,18 @@ module.exports = {
     const record = await getUserRecord(userId);
     if (!record.banks) record.banks = [];
 
-    // ⭐ NAME ALREADY TAKEN CHECK (per user)
-    const nameTaken = record.banks.some(
-      (b) => b.name.toLowerCase() === name.toLowerCase(),
+    const allRecords = await getAllUserRecords();
+
+    const globalNameTaken = allRecords.some((rec) =>
+      (rec.banks || []).some(
+        (b) => b.name.toLowerCase() === name.toLowerCase(),
+      ),
     );
-    if (nameTaken) {
+
+    if (globalNameTaken) {
       const { embed } = embedTemplate({
         title: "❌ Name Already Taken",
-        description: `> You already have a bank named **${name}**.\n> Please choose a different name.`,
+        description: `> A bank named **${name}** already exists.\n> Bank names must be unique.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });

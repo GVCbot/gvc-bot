@@ -17,15 +17,15 @@ module.exports = {
     .setName("bankjoin")
     .setDescription("Request to join an existing bank.")
     .addStringOption((opt) =>
-      opt.setName("password").setDescription("Bank password").setRequired(true),
+      opt.setName("bankid").setDescription("Bank ID").setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply({ flags: 64 });
 
     const userId = interaction.user.id;
-    const passwordInput = protect.sanitize(
-      interaction.options.getString("password"),
+    const bankIdInput = protect.sanitize(
+      interaction.options.getString("bankid"),
     );
 
     const allRecords = await getAllUserRecords();
@@ -35,7 +35,7 @@ module.exports = {
 
     for (const rec of allRecords) {
       if (!rec.banks) continue;
-      const found = rec.banks.find((b) => b.password === passwordInput);
+      const found = rec.banks.find((b) => b.id === bankIdInput);
       if (found) {
         targetBank = found;
         ownerRecord = rec;
@@ -45,8 +45,8 @@ module.exports = {
 
     if (!targetBank) {
       const { embed } = embedTemplate({
-        title: "❌ Invalid Password",
-        description: "> No bank matches that password.",
+        title: "❌ Invalid Bank ID",
+        description: "> No bank matches that ID.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -64,7 +64,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Send approval request to owner
     const ownerUser = await interaction.client.users.fetch(targetBank.owner);
 
     const row = new ActionRowBuilder().addComponents(

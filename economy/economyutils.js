@@ -125,4 +125,5 @@ module.exports = {
   loadWorkMessages,
   getUserRecord,
   updateUserRecord,
+  getAllUserRecords,
 };
