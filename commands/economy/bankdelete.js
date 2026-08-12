@@ -11,6 +11,9 @@ module.exports = {
     .setName("bankdelete")
     .setDescription("Delete one of your banks.")
     .addStringOption((opt) =>
+      opt.setName("bankid").setDescription("Bank ID").setRequired(true),
+    )
+    .addStringOption((opt) =>
       opt.setName("password").setDescription("Bank password").setRequired(true),
     ),
 
@@ -18,19 +21,31 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const userId = interaction.user.id;
-    const password = protect.sanitize(
+    const bankIdInput = protect.sanitize(
+      interaction.options.getString("bankid"),
+    );
+    const passwordInput = protect.sanitize(
       interaction.options.getString("password"),
     );
 
     const ownerRecord = await getUserRecord(userId);
     if (!ownerRecord.banks) ownerRecord.banks = [];
 
-    const bank = ownerRecord.banks.find((b) => b.password === password);
+    const bank = ownerRecord.banks.find((b) => b.id === bankIdInput);
 
     if (!bank) {
       const { embed } = embedTemplate({
         title: "❌ Bank Not Found",
-        description: "> No bank matches that password.",
+        description: "> No bank matches that ID.",
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    if (bank.password !== passwordInput) {
+      const { embed } = embedTemplate({
+        title: "❌ Incorrect Password",
+        description: "> The password does not match this bank.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -39,20 +54,17 @@ module.exports = {
     if (bank.owner !== userId) {
       const { embed } = embedTemplate({
         title: "❌ Permission Denied",
-        description: "> Only the **bank owner** can delete this bank.",
+        description: "> Only the bank owner can delete this bank.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // ⭐ AUTO-WITHDRAW BEFORE DELETION
     ownerRecord.cash = (ownerRecord.cash ?? 0) + bank.balance;
     bank.balance = 0;
 
-    // Remove bank ID from all members
     for (const memberId of bank.members) {
       const memberRecord = await getUserRecord(memberId);
-
       if (memberRecord.joinedBanks) {
         memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
           (id) => id !== bank.id,
@@ -61,11 +73,6 @@ module.exports = {
       }
     }
 
-    // Remove bank from owner
-    ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bank.id);
-    await updateUserRecord(ownerRecord);
-
-    // Remove bank from owner
     ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bank.id);
     await updateUserRecord(ownerRecord);
 

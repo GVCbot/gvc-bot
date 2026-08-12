@@ -924,10 +924,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       const { embed } = embedTemplate({
-        title: `${SUN} ${bank.type} ${SUN}`,
+        title: `${SUN} ${bank.name} ${SUN}`,
         description:
           `> ${ARROW} **Bank ID:** ${bank.id}\n` +
-          `> ${ARROW} **Name:** ${bank.name}\n` +
+          `> ${ARROW} **Type:** ${bank.type}\n` +
           `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
           `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
           `> ${ARROW} **Password:** ${bank.password ? bank.password : "None Set"}\n` +
