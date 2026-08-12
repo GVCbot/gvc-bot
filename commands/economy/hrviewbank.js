@@ -60,13 +60,35 @@ module.exports = {
     );
 
     // Biggest bank (most members)
-    const biggestBank = allBanks.reduce((a, b) =>
-      (a.members?.length ?? 0) > (b.members?.length ?? 0) ? a : b,
-    );
+    const maxMembers = Math.max(...allBanks.map((b) => b.members?.length ?? 0));
 
-    // Count by type
-    const foxBanks = allBanks.filter((b) => b.type === "Fox Bank").length;
-    const moatBanks = allBanks.filter((b) => b.type === "Moat Castle").length;
+    let biggestBankText = "";
+
+    if (maxMembers === 0) {
+      biggestBankText = "N/A — No bank has members.";
+    } else {
+      const biggestBanks = allBanks.filter(
+        (b) => (b.members?.length ?? 0) === maxMembers,
+      );
+
+      if (biggestBanks.length === 1) {
+        const b = biggestBanks[0];
+        biggestBankText = `${b.name} — ${maxMembers} members (Owner: <@${b.owner}>)`;
+      } else {
+        biggestBankText =
+          `Tied (${maxMembers} members): ` +
+          biggestBanks.map((b) => `${b.name} (<@${b.owner}>)`).join(", ");
+      }
+    }
+
+    // Count by type (case-insensitive)
+    const foxBanks = allBanks.filter((b) =>
+      b.type?.toLowerCase().includes("fox"),
+    ).length;
+
+    const moatBanks = allBanks.filter((b) =>
+      b.type?.toLowerCase().includes("moat"),
+    ).length;
 
     const { embed } = embedTemplate({
       title: `${SUN} HR Bank Audit ${SUN}`,
@@ -76,7 +98,7 @@ module.exports = {
         `> ${ARROW} **Moat Castle Banks:** ${moatBanks}\n\n` +
         `> ${ARROW} **Richest Bank:** ${richestBank.name} — $${richestBank.balance.toLocaleString()} (Owner: <@${richestBank.owner}>)\n` +
         `> ${ARROW} **Poorest Bank:** ${poorestBank.name} — $${poorestBank.balance.toLocaleString()} (Owner: <@${poorestBank.owner}>)\n` +
-        `> ${ARROW} **Biggest Bank:** ${biggestBank.name} — ${biggestBank.members.length} members (Owner: <@${biggestBank.owner}>)`,
+        `> ${ARROW} **Biggest Bank:** ${biggestBankText}`,
       noLogo: true,
     });
 
