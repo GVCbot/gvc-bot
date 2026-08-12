@@ -1,9 +1,4 @@
-const {
-  SlashCommandBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const protect = require("../../security/protect");
 const embedTemplate = require("../../utils/embedTemplate");
 const {
@@ -28,7 +23,11 @@ module.exports = {
       interaction.options.getString("bankid"),
     );
 
+    console.log("🔍 /bankjoin triggered by:", userId);
+    console.log("🪪 Bank ID input:", bankIdInput);
+
     const allRecords = await getAllUserRecords();
+    console.log("📂 Loaded all user records:", allRecords.length);
 
     let targetBank = null;
     let ownerRecord = null;
@@ -44,6 +43,7 @@ module.exports = {
     }
 
     if (!targetBank) {
+      console.warn("❌ Invalid bank ID:", bankIdInput);
       const { embed } = embedTemplate({
         title: "❌ Invalid Bank ID",
         description: "> No bank matches that ID.",
@@ -52,10 +52,14 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    console.log("🏦 Target bank found:", targetBank.name);
+    console.log("👑 Bank owner:", targetBank.owner);
+
     const userRecord = await getUserRecord(userId);
     if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
 
     if (targetBank.members.includes(userId)) {
+      console.warn("⚠️ User already a member:", userId);
       const { embed } = embedTemplate({
         title: "❌ Already Joined",
         description: "> You are already a member of this bank.",
@@ -64,11 +68,37 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    const ownerUser = await interaction.client.users.fetch(targetBank.owner);
+    // ✅ Store join request in owner's record instead of sending DM
+    if (!ownerRecord.joinRequests) ownerRecord.joinRequests = [];
 
-    return interaction.editReply({
-      content: "📨 Your join request has been sent to the bank owner.",
-      flags: 64,
+    const newRequest = {
+      bankId: targetBank.id,
+      userId: userId,
+      timestamp: Date.now(),
+    };
+
+    console.log("📩 New join request created:", newRequest);
+    console.log("📂 Owner record before update:", ownerRecord.joinRequests);
+
+    ownerRecord.joinRequests.push(newRequest);
+    await updateUserRecord(ownerRecord);
+
+    console.log("✅ Owner record after update:", ownerRecord.joinRequests);
+
+    const { embed } = embedTemplate({
+      title: "✅ Invitation Added",
+      description:
+        `> Your invitation has been added to the bank owner's invites list.\n` +
+        `> Bank: **${targetBank.name}**\n` +
+        `> Owner: <@${targetBank.owner}>`,
+      noLogo: true,
     });
+
+    console.log(
+      "📨 Join request successfully saved for owner:",
+      targetBank.owner,
+    );
+
+    return interaction.editReply({ embeds: [embed], flags: 64 });
   },
 };
