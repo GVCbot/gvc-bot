@@ -112,11 +112,23 @@ module.exports = {
     // ===============================
     // SEND DM TO USER
     // ===============================
-    const dmText = buildDmMessage(type, reason, evidence, suspensionEnd);
+    const dmEmbedData = buildDmEmbed(
+      type,
+      reason,
+      evidence,
+      suspensionEnd,
+      entry.caseId,
+    );
 
     try {
       await target.send({
-        content: dmText,
+        embeds: [
+          {
+            title: dmEmbedData.title,
+            description: dmEmbedData.description,
+            color: 0xffad65, // your brand color
+          },
+        ],
       });
     } catch (err) {
       console.log("DM failed:", err);

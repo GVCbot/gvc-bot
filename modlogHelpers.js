@@ -34,11 +34,14 @@ function canUsePunishmentType(member, type) {
 }
 
 // ===============================
-// DM MESSAGE BUILDER
+// DM EMBED BUILDER
 // ===============================
-function buildDmMessage(type, reason, evidence, suspensionEnd) {
+function buildDmEmbed(type, reason, evidence, suspensionEnd, caseId) {
   const template = punishmentTemplates[type];
-  if (!template) return "Unknown punishment type.";
+  if (!template) return null;
+
+  const SUN = "<a:gvcsunspin:1527220557890850846>";
+  const ARROW = "<:arrowright:1534182706836144158>";
 
   const lines = [...template.dm];
 
@@ -56,7 +59,15 @@ function buildDmMessage(type, reason, evidence, suspensionEnd) {
   lines.push(`> **Reason:** ${reason}`);
   lines.push(`> **Evidence:** ${evidence}`);
 
-  return lines.join("\n");
+  const description =
+    `${ARROW} You have received: **${template.label}**\n` +
+    `${ARROW} Case ID: **${caseId}**\n\n` +
+    lines.join("\n");
+
+  return {
+    title: `${SUN} Greenville Community Moderation Notice ${SUN}`,
+    description,
+  };
 }
 
 // ===============================
@@ -166,7 +177,7 @@ module.exports = {
   generateCaseId,
   calculateSuspensionEnd,
   canUsePunishmentType,
-  buildDmMessage,
+  buildDmEmbed,
   buildStaffLogMessage,
   saveModlog,
   getModlog,
