@@ -623,7 +623,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
 
-      if (!ownerRecord || !ownerRecord.id) {
+      if (!ownerRecord || !ownerRecord.userId) {
         console.error(
           "❌ Owner record missing, aborting update to prevent overwrite.",
         );
@@ -672,7 +672,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       // ✅ Prevent accidental overwrite of owner record
-      if (!ownerRecord || !ownerRecord.id) {
+      if (!ownerRecord || !ownerRecord.userId) {
         console.error(
           "❌ Owner record missing, aborting update to prevent overwrite.",
         );
@@ -761,7 +761,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         (r) => !(r.bankId === bankId && r.userId === userId),
       );
 
-      if (!ownerRecord || !ownerRecord.id) {
+      if (!ownerRecord || !ownerRecord.userId) {
         console.error(
           "❌ Owner record missing, aborting update to prevent overwrite.",
         );
@@ -811,7 +811,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       bank.members = bank.members.filter((id) => id !== removedId);
 
-      if (!ownerRecord || !ownerRecord.id) {
+      if (!ownerRecord || !ownerRecord.userId) {
         console.error(
           "❌ Owner record missing, aborting update to prevent overwrite.",
         );
