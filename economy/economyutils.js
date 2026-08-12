@@ -90,11 +90,34 @@ async function getUserRecord(userId) {
   const collection = db.collection("users");
 
   let user = await collection.findOne({ userId });
+
   if (!user) {
     console.log(`🆕 Creating new user record for ${userId}`);
-    user = { userId, cash: 0, lastCollect: 0, lastWork: 0 };
+    user = {
+      userId,
+      cash: 0,
+      lastCollect: 0,
+      lastWork: 0,
+      banks: [],
+      joinedBanks: [],
+      records: { citations: [], warrants: [], blackpoints: 0 },
+      vehicles: [],
+      joinRequests: [],
+    };
     await collection.insertOne(user);
+    return user;
   }
+
+  // ⭐ Ensure missing fields are added automatically
+  user.banks = user.banks || [];
+  user.joinedBanks = user.joinedBanks || [];
+  user.records = user.records || {
+    citations: [],
+    warrants: [],
+    blackpoints: 0,
+  };
+  user.vehicles = user.vehicles || [];
+  user.joinRequests = user.joinRequests || [];
 
   return user;
 }
