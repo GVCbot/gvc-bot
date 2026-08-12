@@ -230,6 +230,17 @@ async function loadAllBanks(userRecord) {
   return [...owned, ...joined];
 }
 
+//Bank Owner Record Finder
+async function findBankOwnerRecord(bankId, userRecord) {
+  if ((userRecord.banks || []).some((b) => b.id === bankId)) return userRecord;
+
+  const allRecords = await getAllUserRecords();
+  return (
+    allRecords.find((rec) => (rec.banks || []).some((b) => b.id === bankId)) ||
+    null
+  );
+}
+
 //Client Setup
 const client = new Client({
   intents: [
@@ -489,15 +500,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const [bankId, amountInput] = interaction.values[0].split("|");
       const userRecord = await getUserRecord(interaction.user.id);
 
-      const banks = await loadAllBanks(userRecord);
-      const bank = banks.find((b) => b.id === bankId);
-
-      if (!bank) {
+      const ownerRecord = await findBankOwnerRecord(bankId, userRecord);
+      if (!ownerRecord) {
         return interaction.editReply({
           content: "❌ Bank not found.",
           flags: 64,
         });
       }
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
 
       let amount =
         amountInput === "all" ? bank.balance : parseInt(amountInput, 10);
@@ -520,11 +530,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       userRecord.cash += amount;
 
       await updateUserRecord(userRecord);
+      if (ownerRecord !== userRecord) await updateUserRecord(ownerRecord);
 
       const { embed } = embedTemplate({
         title: "🏦 Withdrawal Successful",
         description:
-          `> Withdrew **$${amount.toLocaleString()}** from **${bank.type}**.\n\n` +
+          `> Withdrew **$${amount.toLocaleString()}** from **${bank.name}**.\n\n` +
           `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
           `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
         noLogo: true,
