@@ -989,7 +989,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Managebank Handler
+    // ------------------------------
+    // MANAGEBANK SELECT HANDLER
+    // ------------------------------
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("managebank_select_")
@@ -1003,15 +1005,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const banks = await loadAllBanks(userRecord);
       const bank = banks.find((b) => b.id === bankId);
 
-      if (bank.owner !== interaction.user.id) {
-        const { embed } = embedTemplate({
-          title: "❌ Access Denied",
-          description: "> Only the **bank owner** can manage this bank.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed] });
-      }
-
       if (!bank) {
         return interaction.editReply({
           content: "❌ Bank not found.",
@@ -1019,6 +1012,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
+      // Co-owner trying to manage
+      if (bank.owner !== interaction.user.id) {
+        const { embed } = embedTemplate({
+          title: "❌ Access Denied",
+          description:
+            `> Only the **bank owner** can manage this bank.\n` +
+            `> As a co‑owner, you can still:\n` +
+            `> ${ARROW} **Deposit** using /deposit\n` +
+            `> ${ARROW} **Withdraw** using /withdraw\n\n` +
+            `> You cannot delete or modify bank settings.`,
+          noLogo: true,
+        });
+
+        embed.setThumbnail(
+          interaction.user.displayAvatarURL({ dynamic: true }),
+        );
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // Owner view
       const { embed } = embedTemplate({
         title: `${SUN} ${bank.name} ${SUN}`,
         description:
@@ -1030,6 +1044,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
           `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}`,
         noLogo: true,
       });
+
+      embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
 
       const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()

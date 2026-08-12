@@ -3,24 +3,18 @@ const {
   ActionRowBuilder,
   StringSelectMenuBuilder,
 } = require("discord.js");
-
 const embedTemplate = require("../../utils/embedTemplate");
-const {
-  getUserRecord,
-  updateUserRecord,
-} = require("../../economy/economyutils");
+const { getUserRecord } = require("../../economy/economyutils");
 
 async function loadAllBanks(userRecord) {
   const owned = userRecord.banks || [];
   const joinedIds = userRecord.joinedBanks || [];
-
   const joined = [];
 
   for (const bankId of joinedIds) {
     const ownerId = bankId.split("_")[1];
     const ownerRecord = await getUserRecord(ownerId);
     if (!ownerRecord.banks) continue;
-
     const bank = ownerRecord.banks.find((b) => b.id === bankId);
     if (bank) joined.push(bank);
   }
@@ -44,7 +38,6 @@ module.exports = {
       .trim()
       .toLowerCase();
     const userRecord = await getUserRecord(interaction.user.id);
-
     const banks = await loadAllBanks(userRecord);
 
     if (banks.length === 0) {
@@ -57,7 +50,7 @@ module.exports = {
     }
 
     const options = banks.map((b) => ({
-      label: `${b.name} (${b.id})`,
+      label: `${b.name}`,
       description: `Balance: $${b.balance.toLocaleString()}`,
       value: `${b.id}|${amountInput}`,
     }));
@@ -71,7 +64,8 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title: "🏦 Select a Bank",
-      description: "> Choose which bank you want to withdraw from.",
+      description:
+        "> Choose which bank you want to withdraw from.\n> Co‑owners can withdraw from shared banks.",
       noLogo: true,
     });
 

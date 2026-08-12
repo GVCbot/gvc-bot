@@ -2,10 +2,7 @@ const {
   SlashCommandBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  ButtonBuilder,
-  ButtonStyle,
 } = require("discord.js");
-
 const embedTemplate = require("../../utils/embedTemplate");
 const { getUserRecord } = require("../../economy/economyutils");
 
@@ -15,14 +12,12 @@ const ARROW = "<:arrowright:1534182706836144158>";
 async function loadAllBanks(userRecord) {
   const owned = userRecord.banks || [];
   const joinedIds = userRecord.joinedBanks || [];
-
   const joined = [];
 
   for (const bankId of joinedIds) {
     const ownerId = bankId.split("_")[1];
     const ownerRecord = await getUserRecord(ownerId);
     if (!ownerRecord.banks) continue;
-
     const bank = ownerRecord.banks.find((b) => b.id === bankId);
     if (bank) joined.push(bank);
   }
@@ -65,7 +60,9 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title: `${SUN} Manage Your Banks ${SUN}`,
-      description: `> ${ARROW} Select a bank to view details.`,
+      description:
+        `> ${ARROW} Select a bank to view details.\n` +
+        `> Co‑owners can **deposit** and **withdraw**, but only owners can manage.`,
       noLogo: true,
     });
 
