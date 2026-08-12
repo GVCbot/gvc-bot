@@ -9,12 +9,11 @@ const ARROW = "<:arrowright:1534182706836144158>";
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("storeaudit")
-    .setDescription("HR ONLY — View all users with active insurance plans."),
+    .setDescription("HR ONLY — View all store insurance purchases."),
 
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: false });
 
-    // HR check
     if (!interaction.member.roles.cache.has(HR_ROLE_ID)) {
       return interaction.editReply("❌ Only HR can use this command.");
     }
@@ -22,8 +21,7 @@ module.exports = {
     const allRecords = await getAllUserRecords();
     const guild = interaction.guild;
 
-    let basicList = [];
-    let allList = [];
+    let transactions = [];
 
     for (const userRecord of allRecords) {
       if (!userRecord.store) continue;
@@ -33,67 +31,40 @@ module.exports = {
         ? member.user.username
         : `Unknown (${userRecord.userId})`;
 
-      // BASIC INSURANCE
       if (userRecord.store.basicInsured?.active) {
-        const nextPay = userRecord.store.basicInsured.nextPayment;
-        const cash = userRecord.cash ?? 0;
-
-        basicList.push({
+        transactions.push({
           username,
           userId: userRecord.userId,
-          nextPayment: nextPay,
-          cash,
-          risk: cash < 600,
+          type: "Fox Basic Insured",
+          nextPayment: userRecord.store.basicInsured.nextPayment,
         });
       }
 
-      // ALL INSURANCE
       if (userRecord.store.allInsured?.active) {
-        const nextPay = userRecord.store.allInsured.nextPayment;
-        const cash = userRecord.cash ?? 0;
-
-        allList.push({
+        transactions.push({
           username,
           userId: userRecord.userId,
-          nextPayment: nextPay,
-          cash,
-          risk: cash < 1000,
+          type: "Fox All Insured",
+          nextPayment: userRecord.store.allInsured.nextPayment,
         });
       }
     }
 
     let desc = "";
 
-    // BASIC INSURANCE SECTION
-    desc += `### 🔵 Fox Basic Insured\n`;
-    if (basicList.length === 0) {
-      desc += "> No users currently have Basic Insurance.\n\n";
+    if (transactions.length === 0) {
+      desc = "> No active store transactions found.";
     } else {
-      for (const u of basicList) {
+      for (const t of transactions) {
         desc +=
-          `> ${ARROW} **${u.username}** (<@${u.userId}>)\n` +
-          `> • Next Payment: <t:${Math.floor(u.nextPayment / 1000)}:F>\n` +
-          `> • Cash: $${u.cash.toLocaleString()}\n` +
-          `> • Status: ${u.risk ? "⚠️ At Risk" : "✅ Stable"}\n\n`;
-      }
-    }
-
-    // ALL INSURANCE SECTION
-    desc += `### 🟣 Fox All Insured\n`;
-    if (allList.length === 0) {
-      desc += "> No users currently have All Insurance.\n\n";
-    } else {
-      for (const u of allList) {
-        desc +=
-          `> ${ARROW} **${u.username}** (<@${u.userId}>)\n` +
-          `> • Next Payment: <t:${Math.floor(u.nextPayment / 1000)}:F>\n` +
-          `> • Cash: $${u.cash.toLocaleString()}\n` +
-          `> • Status: ${u.risk ? "⚠️ At Risk" : "✅ Stable"}\n\n`;
+          `> ${ARROW} **${t.username}** (<@${t.userId}>)\n` +
+          `> • Purchased: **${t.type}**\n` +
+          `> • Next Payment: <t:${Math.floor(t.nextPayment / 1000)}:F>\n\n`;
       }
     }
 
     const { embed } = embedTemplate({
-      title: `${SUN} Store Audit — Active Insurance Plans ${SUN}`,
+      title: `${SUN} Store Audit — All Insurance Purchases ${SUN}`,
       description: desc,
       noLogo: true,
     });
