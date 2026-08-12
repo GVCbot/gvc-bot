@@ -38,7 +38,7 @@ module.exports = {
       const found = rec.banks.find((b) => b.id === bankIdInput);
       if (found) {
         targetBank = found;
-        ownerId = rec.id;
+        ownerId = rec.userId; // ✅ FIXED HERE
         break;
       }
     }
