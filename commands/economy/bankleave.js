@@ -22,6 +22,7 @@ module.exports = {
 
     const bankNameInput = interaction.options
       .getString("bankname")
+      .trim()
       .toLowerCase();
     const userId = interaction.user.id;
 
@@ -47,14 +48,14 @@ module.exports = {
       const { embed } = embedTemplate({
         title: "❌ Cannot Leave Your Own Bank",
         description:
-          "> You are the **owner** of this bank.\n> Use `/bankdelete` instead.",
+          "> You are the **owner** of this bank.\n> Use bank management settings to delete it.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    let targetBank = null;
-    let ownerRecord = null;
+    let foundBankId = null;
+    let targetOwnerId = null;
 
     if (joinedBanks.length > 0) {
       const allRecords = await getAllUserRecords();
@@ -63,16 +64,16 @@ module.exports = {
         for (const rec of allRecords) {
           const bank = (rec.banks || []).find((b) => b.id === bankId);
           if (bank && bank.name.toLowerCase() === bankNameInput) {
-            targetBank = bank;
-            ownerRecord = rec;
+            foundBankId = bank.id;
+            targetOwnerId = rec.userId;
             break;
           }
         }
-        if (targetBank) break;
+        if (foundBankId) break;
       }
     }
 
-    if (!targetBank) {
+    if (!foundBankId || !targetOwnerId) {
       const { embed } = embedTemplate({
         title: "❌ Bank Not Found",
         description: "> You are not a co-owner of any bank with that name.",
@@ -81,17 +82,28 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    targetBank.members = targetBank.members.filter((id) => id !== userId);
-    await updateUserRecord(ownerRecord);
+    // 1. Fetch live owner record to prevent overwriting stale data
+    const liveOwnerRecord = await getUserRecord(targetOwnerId);
+    if (liveOwnerRecord && liveOwnerRecord.banks) {
+      const liveBank = liveOwnerRecord.banks.find((b) => b.id === foundBankId);
+      if (liveBank && liveBank.members) {
+        liveBank.members = liveBank.members.filter((id) => id !== userId);
+        await updateUserRecord(liveOwnerRecord);
+      }
+    }
 
-    userRecord.joinedBanks = userRecord.joinedBanks.filter(
-      (id) => id !== targetBank.id,
-    );
-    await updateUserRecord(userRecord);
+    // 2. Fetch fresh user record & remove from joinedBanks
+    userRecord = await getUserRecord(userId);
+    if (userRecord && userRecord.joinedBanks) {
+      userRecord.joinedBanks = userRecord.joinedBanks.filter(
+        (id) => id !== foundBankId,
+      );
+      await updateUserRecord(userRecord);
+    }
 
     const { embed } = embedTemplate({
       title: "🏦 Left Bank",
-      description: `> You are no longer a co-owner of **${targetBank.name}**.`,
+      description: `> You are no longer a co-owner of that bank.`,
       noLogo: true,
     });
 
