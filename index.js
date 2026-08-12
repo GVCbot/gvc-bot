@@ -30,16 +30,13 @@ const handleInbox = require("./utils/inbox");
 const GENERAL_LOG_CHANNEL = "1534886183040188547";
 const SESSION_LOG_CHANNEL = "1534889791416438784";
 const HR_ROLE_ID = "1350582607217430650";
+const SESSION_BUTTON_LOG = "1515684241101295646";
+const OTHER_BUTTON_LOG = "1536797059355508826";
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
-const SESSION_LINK_IDS = [
-  "release_link",
-  "reinvites_link",
-  "earlyaccess_link",
-  "regen_link",
-];
+const SESSION_LINK_IDS = ["rl_", "ri_", "ea_", "regen_"];
 
 const SESSION_COMMANDS = [
   "session",
@@ -120,6 +117,47 @@ function logEvent(
   }
 }
 
+//Button Click Logging Helper
+function logButtonClick(interaction) {
+  const unix = Math.floor(Date.now() / 1000);
+  const timestamp = `<t:${unix}:F>`;
+  const user = interaction.user;
+  const buttonName = interaction.component?.label || "Unknown Button";
+
+  const channelInfo = interaction.guild
+    ? `${interaction.channel} (${interaction.channel.id})`
+    : "Direct Message";
+
+  const logDescription =
+    `> ${ARROW} **User:** ${user}\n` +
+    `> ${ARROW} **User ID:** ${user.id}\n` +
+    `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
+    `> ${ARROW} **Button Name:** ${buttonName}\n` +
+    `> ${ARROW} **Channel:** ${channelInfo}\n` +
+    (interaction.message
+      ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
+      : "") +
+    `> ${ARROW} **Clicked At:** ${timestamp}`;
+
+  const { embed } = embedTemplate({
+    title: `${SUN} Button Click Logged ${SUN}`,
+    description: logDescription,
+    noLogo: true,
+  });
+
+  if (!interaction.guild) return;
+
+  const isSessionButton = SESSION_LINK_IDS.some((id) =>
+    interaction.customId.startsWith(id),
+  );
+  const targetLogChannel = interaction.guild.channels.cache.get(
+    isSessionButton ? SESSION_BUTTON_LOG : OTHER_BUTTON_LOG,
+  );
+
+  if (targetLogChannel)
+    targetLogChannel.send({ embeds: [embed] }).catch(() => {});
+}
+
 //Vehicle Page Helper
 async function sendVehiclePage(interaction, vehicles, page, targetId) {
   const perPage = 5;
@@ -134,7 +172,7 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
             `> • **${v.year} ${v.make} ${v.model}** (${v.color}) — Plate: ${v.plate}`,
         )
         .join("\n")
-    : `> <:arrowright:1534182706836144158> No vehicles on this page.`;
+    : `> ${ARROW} No vehicles on this page.`;
 
   const { embed } = embedTemplate({
     title: `🚗 Registered Vehicles (Page ${page + 1}/${totalPages})`,
@@ -170,14 +208,14 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
   });
 }
 
-// Unified Bank Loader (owned + joined)
+//Unified Bank Loader (owned + joined)
 async function loadAllBanks(userRecord) {
   const owned = userRecord.banks || [];
   const joinedIds = userRecord.joinedBanks || [];
   const joined = [];
 
   for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[2]; // ✅ Corrected index
+    const ownerId = bankId.split("_")[2];
     const ownerRecord = await getUserRecord(ownerId);
     if (!ownerRecord?.banks) continue;
 
@@ -240,40 +278,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
         `> ${ARROW} **Command:** /${interaction.commandName}\n` +
         (optionsFormatted ? `${optionsFormatted}\n` : "");
 
-      const SESSION_COMMANDS = [
-        "session",
-        "release",
-        "reinvite",
-        "earlyaccess",
-        "regen",
-        "aorpchange",
-        "peacetime",
-        "drift",
-      ];
-
-      if (
-        SESSION_COMMANDS.some((s) =>
-          interaction.commandName.toLowerCase().includes(s),
-        )
-      )
+      if (isSessionRelated(interaction.commandName))
         logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
     } else if (interaction.isButton()) {
-      if (!interaction.guild) return;
-
-      logTitle = `${SUN} Button Clicked ${SUN}`;
-
-      let linkInfo = "";
-      if (interaction.customId.startsWith("release_link_")) {
-        const link = decodeURIComponent(
-          interaction.customId.replace("release_link_", ""),
-        );
-        linkInfo = `\n> ${ARROW} **Link:** ${link}`;
-      }
-
-      extraDetails = `> ${ARROW} **Button ID:** ${interaction.customId}${linkInfo}`;
-
-      if (interaction.customId.startsWith("release_link"))
-        logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
+      logButtonClick(interaction);
     } else if (interaction.isAnySelectMenu()) {
       logTitle = `${SUN} Menu Selected ${SUN}`;
       extraDetails =
@@ -421,7 +429,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    //Balance Handler
+    //Bank Balance Handler
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("viewBalance_")
@@ -467,7 +475,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    // Withdraw Handler (Chunk 3A)
+    //Bank Withdraw Handler
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("withdraw_select_")
@@ -521,7 +529,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Deposit Handler (Chunk 3B)
+    //Bank Deposit Handler
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("deposit_select_")
@@ -575,6 +583,325 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    //Bank Delete Handler
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("bank_delete_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const bankId = interaction.customId.replace("bank_delete_", "");
+      const userId = interaction.user.id;
+
+      const ownerRecord = await getUserRecord(userId);
+
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      if (bank.owner !== userId) {
+        return interaction.editReply({
+          content: "❌ Only the bank owner can delete this bank.",
+          flags: 64,
+        });
+      }
+
+      for (const memberId of bank.members) {
+        const memberRecord = await getUserRecord(memberId);
+
+        if (memberRecord.joinedBanks) {
+          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
+            (id) => id !== bankId,
+          );
+          await updateUserRecord(memberRecord);
+        }
+      }
+
+      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
+
+      if (!ownerRecord || !ownerRecord.id) {
+        console.error(
+          "❌ Owner record missing, aborting update to prevent overwrite.",
+        );
+        const { embed } = embedTemplate({
+          title: "⚠️ Internal Error",
+          description:
+            "> Could not verify the bank owner record. Please try again later.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], flags: 64 });
+      }
+
+      await updateUserRecord(ownerRecord);
+
+      const { embed } = embedTemplate({
+        title: "🗑️ Bank Deleted",
+        description: `> ${ARROW} Your bank **${bank.type}** has been deleted.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    //Bank Join Accept Handler
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("inv_accept_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const parts = interaction.customId.split("_");
+      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
+      const userId = parts[5];
+
+      const ownerRecord = await getUserRecord(interaction.user.id);
+
+      let bank = ownerRecord.banks.find((b) => b.id === bankId);
+
+      if (!bank) {
+        const allRecords = await getAllUserRecords();
+        for (const rec of allRecords) {
+          if (!rec.banks) continue;
+          const found = rec.banks.find((b) => b.id === bankId);
+          if (found) {
+            bank = found;
+            break;
+          }
+        }
+      }
+
+      if (!bank) {
+        const { embed } = embedTemplate({
+          title: "❌ Bank Not Found",
+          description: "> The specified bank could not be located.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], flags: 64 });
+      }
+
+      let userRecord = await getUserRecord(userId);
+      if (!userRecord) {
+        userRecord = {
+          id: userId,
+          cash: 0,
+          banks: [],
+          joinedBanks: [],
+          records: { citations: [], warrants: [], blackpoints: 0 },
+        };
+        await updateUserRecord(userRecord);
+      }
+
+      if (!bank.members.includes(userId)) bank.members.push(userId);
+      if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
+      if (!userRecord.joinedBanks.includes(bankId))
+        userRecord.joinedBanks.push(bankId);
+
+      ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
+        (r) => !(r.bankId === bankId && r.userId === userId),
+      );
+
+      if (!ownerRecord || !ownerRecord.id) {
+        console.error(
+          "❌ Owner record missing, aborting update to prevent overwrite.",
+        );
+        const { embed } = embedTemplate({
+          title: "⚠️ Internal Error",
+          description:
+            "> Could not verify the bank owner record. Please try again later.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], flags: 64 });
+      }
+
+      await updateUserRecord(ownerRecord);
+      await updateUserRecord(userRecord);
+
+      const { embed } = embedTemplate({
+        title: "✅ Join Request Accepted",
+        description:
+          `> ${ARROW} **Bank:** ${bank.name}\n` +
+          `> ${ARROW} **New Member:** <@${userId}>\n\n` +
+          `> The user has been successfully added as a co‑owner.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed], flags: 64 });
+    }
+
+    //Bank Join Deny Handler
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("inv_deny_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const parts = interaction.customId.split("_");
+      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
+      const userId = parts[5];
+
+      const ownerRecord = await getUserRecord(interaction.user.id);
+
+      ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
+        (r) => !(r.bankId === bankId && r.userId === userId),
+      );
+
+      if (!ownerRecord || !ownerRecord.id) {
+        console.error(
+          "❌ Owner record missing, aborting update to prevent overwrite.",
+        );
+        const { embed } = embedTemplate({
+          title: "⚠️ Internal Error",
+          description:
+            "> Could not verify the bank owner record. Please try again later.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], flags: 64 });
+      }
+
+      await updateUserRecord(ownerRecord);
+
+      const { embed } = embedTemplate({
+        title: "❌ Join Request Denied",
+        description:
+          `> ${ARROW} **Bank ID:** ${bankId}\n` +
+          `> ${ARROW} **User:** <@${userId}>\n\n` +
+          `> The join request has been denied and removed from your list.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed], flags: 64 });
+    }
+
+    //Remove Bank Member Handler
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("removebankmember_select_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const bankId = interaction.customId.split("_")[2];
+      const removedId = interaction.values[0];
+      const ownerId = interaction.user.id;
+
+      const ownerRecord = await getUserRecord(ownerId);
+      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      bank.members = bank.members.filter((id) => id !== removedId);
+
+      if (!ownerRecord || !ownerRecord.id) {
+        console.error(
+          "❌ Owner record missing, aborting update to prevent overwrite.",
+        );
+        const { embed } = embedTemplate({
+          title: "⚠️ Internal Error",
+          description:
+            "> Could not verify the bank owner record. Please try again later.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], flags: 64 });
+      }
+
+      await updateUserRecord(ownerRecord);
+
+      const removedRecord = await getUserRecord(removedId);
+      removedRecord.joinedBanks = (removedRecord.joinedBanks || []).filter(
+        (id) => id !== bankId,
+      );
+      await updateUserRecord(removedRecord);
+
+      try {
+        const removedUser = await interaction.client.users.fetch(removedId);
+        await removedUser.send(
+          `❌ You have been removed as a co-owner of **${bank.name}**.`,
+        );
+      } catch {}
+
+      const { embed } = embedTemplate({
+        title: "🏦 Member Removed",
+        description:
+          `> ${ARROW} **Bank:** ${bank.name}\n` +
+          `> ${ARROW} **Removed:** <@${removedId}>\n\n` +
+          `> They are no longer a co-owner.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    //Manage Bank Select Handler
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith("managebank_select_")
+    ) {
+      await interaction.deferReply({ flags: 64 });
+
+      const bankId = interaction.values[0];
+      const userRecord = await getUserRecord(interaction.user.id);
+
+      const banks = await loadAllBanks(userRecord);
+      const bank = banks.find((b) => b.id === bankId);
+
+      if (!bank) {
+        return interaction.editReply({
+          content: "❌ Bank not found.",
+          flags: 64,
+        });
+      }
+
+      if (bank.owner !== interaction.user.id) {
+        const { embed } = embedTemplate({
+          title: "❌ Access Denied",
+          description:
+            `> Only the **bank owner** can manage this bank.\n` +
+            `> As a co‑owner, you can still:\n` +
+            `> ${ARROW} **Deposit** using /deposit\n` +
+            `> ${ARROW} **Withdraw** using /withdraw\n\n` +
+            `> You cannot delete or modify bank settings.`,
+          noLogo: true,
+        });
+
+        embed.setThumbnail(
+          interaction.user.displayAvatarURL({ dynamic: true }),
+        );
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      const { embed } = embedTemplate({
+        title: `${SUN} ${bank.name} ${SUN}`,
+        description:
+          `> ${ARROW} **Bank ID:** ${bank.id}\n` +
+          `> ${ARROW} **Type:** ${bank.type}\n` +
+          `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
+          `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
+          `> ${ARROW} **Password:** ${bank.password ? bank.password : "None Set"}\n` +
+          `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}`,
+        noLogo: true,
+      });
+
+      embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
+
+      const buttons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`bank_delete_${bank.id}`)
+          .setLabel("Delete Bank")
+          .setStyle(ButtonStyle.Danger),
+      );
+
+      return interaction.editReply({ embeds: [embed], components: [buttons] });
+    }
+
     //Vehicle Handler
     if (
       interaction.isButton() &&
@@ -587,7 +914,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (vehicles.length === 0) {
         const { embed } = embedTemplate({
           title: "🚗 Registered Vehicles",
-          description: `> <:arrowright:1534182706836144158> ${
+          description: `> ${ARROW} ${
             viewerId === targetId ? "You have" : "They have"
           } no registered vehicles.`,
           noLogo: true,
@@ -619,457 +946,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
     }
 
-    // Delete Bank Button Handler (Chunk 4)
+    //Session Link Handler
     if (
       interaction.isButton() &&
-      interaction.customId.startsWith("bank_delete_")
+      SESSION_LINK_IDS.some((id) => interaction.customId.startsWith(id))
     ) {
       await interaction.deferReply({ flags: 64 });
 
-      const bankId = interaction.customId.replace("bank_delete_", "");
-      const userId = interaction.user.id;
-
-      const ownerRecord = await getUserRecord(userId);
-
-      // Find the bank
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      // Only owner can delete
-      if (bank.owner !== userId) {
-        return interaction.editReply({
-          content: "❌ Only the bank owner can delete this bank.",
-          flags: 64,
-        });
-      }
-
-      // Remove bank from all members
-      for (const memberId of bank.members) {
-        const memberRecord = await getUserRecord(memberId);
-
-        if (memberRecord.joinedBanks) {
-          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
-            (id) => id !== bankId,
-          );
-          await updateUserRecord(memberRecord);
-        }
-      }
-
-      // Remove bank from owner
-      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
-      await updateUserRecord(ownerRecord);
-
-      const { embed } = embedTemplate({
-        title: "🗑️ Bank Deleted",
-        description: `> ${ARROW} Your bank **${bank.type}** has been deleted.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // ------------------------------
-    // BUTTON CLICK LOGGING (SAFE FOR DM + GUILD)
-    // ------------------------------
-    if (interaction.isButton()) {
-      const unix = Math.floor(Date.now() / 1000);
-      const timestamp = `<t:${unix}:F>`;
-      const user = interaction.user;
-
-      let buttonName = "Unknown Button";
-      try {
-        buttonName = interaction.component?.label || "Unknown Button";
-      } catch {}
-
-      // DM-safe description
-      const channelInfo = interaction.guild
-        ? `${interaction.channel} (${interaction.channel.id})`
-        : "Direct Message";
-
-      const logDescription =
-        `> ${ARROW} **User:** ${user}\n` +
-        `> ${ARROW} **User ID:** ${user.id}\n` +
-        `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
-        `> ${ARROW} **Button Name:** ${buttonName}\n` +
-        `> ${ARROW} **Channel:** ${channelInfo}\n` +
-        (interaction.message
-          ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
-          : "") +
-        `> ${ARROW} **Clicked At:** ${timestamp}`;
-
-      const { embed } = embedTemplate({
-        title: `${SUN} Button Click Logged ${SUN}`,
-        description: logDescription,
-        noLogo: true,
-      });
-
-      // Guild logging only
-      if (interaction.guild) {
-        const SESSION_BUTTON_LOG = "1515684241101295646";
-        const OTHER_BUTTON_LOG = "1536797059355508826";
-
-        let targetLogChannel;
-
-        if (
-          interaction.customId.startsWith("rl_") ||
-          interaction.customId.startsWith("ri_") ||
-          interaction.customId.startsWith("ea_")
-        ) {
-          targetLogChannel =
-            interaction.guild.channels.cache.get(SESSION_BUTTON_LOG);
-        } else {
-          targetLogChannel =
-            interaction.guild.channels.cache.get(OTHER_BUTTON_LOG);
-        }
-
-        if (targetLogChannel) {
-          targetLogChannel.send({ embeds: [embed] }).catch(() => {});
-        }
-      }
-    }
-
-    // ------------------------------
-    // BUTTON CLICKED DEBUG LOG
-    // ------------------------------
-    console.log("BUTTON CLICKED:", interaction.customId);
-
-    // ------------------------------
-    // BUTTON CLICK LOGGING (SAFE FOR DM + GUILD)
-    // ------------------------------
-    if (interaction.isButton()) {
-      const unix = Math.floor(Date.now() / 1000);
-      const timestamp = `<t:${unix}:F>`;
-      const user = interaction.user;
-
-      let buttonName = "Unknown Button";
-      try {
-        buttonName = interaction.component?.label || "Unknown Button";
-      } catch {}
-
-      // DM-safe description
-      const channelInfo = interaction.guild
-        ? `${interaction.channel} (${interaction.channel.id})`
-        : "Direct Message";
-
-      const logDescription =
-        `> ${ARROW} **User:** ${user}\n` +
-        `> ${ARROW} **User ID:** ${user.id}\n` +
-        `> ${ARROW} **Button ID:** ${interaction.customId}\n` +
-        `> ${ARROW} **Button Name:** ${buttonName}\n` +
-        `> ${ARROW} **Channel:** ${channelInfo}\n` +
-        (interaction.message
-          ? `> ${ARROW} **Message ID:** ${interaction.message.id}\n`
-          : "") +
-        `> ${ARROW} **Clicked At:** ${timestamp}`;
-
-      const { embed } = embedTemplate({
-        title: `${SUN} Button Click Logged ${SUN}`,
-        description: logDescription,
-        noLogo: true,
-      });
-
-      // Guild logging only
-      if (interaction.guild) {
-        const SESSION_BUTTON_LOG = "1515684241101295646";
-        const OTHER_BUTTON_LOG = "1536797059355508826";
-
-        let targetLogChannel;
-
-        if (
-          interaction.customId.startsWith("rl_") ||
-          interaction.customId.startsWith("ri_") ||
-          interaction.customId.startsWith("ea_")
-        ) {
-          targetLogChannel =
-            interaction.guild.channels.cache.get(SESSION_BUTTON_LOG);
-        } else {
-          targetLogChannel =
-            interaction.guild.channels.cache.get(OTHER_BUTTON_LOG);
-        }
-
-        if (targetLogChannel) {
-          targetLogChannel.send({ embeds: [embed] }).catch(() => {});
-        }
-      }
-    }
-
-    // ------------------------------
-    // BANK JOIN ACCEPT
-    // ------------------------------
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("inv_accept_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const parts = interaction.customId.split("_");
-      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
-      const userId = parts[5];
-
-      console.log("🔍 Parsed IDs:", { bankId, userId });
-      console.log("🔍 Accept button clicked:", { bankId, userId });
-
-      const ownerRecord = await getUserRecord(interaction.user.id);
-      console.log(
-        "📂 Owner record loaded:",
-        ownerRecord.banks?.map((b) => b.id),
-      );
-
-      // Try to find the bank
-      let bank = ownerRecord.banks.find((b) => b.id === bankId);
-
-      // Fallback: search all records if not found
-      if (!bank) {
-        console.warn(
-          "⚠️ Bank not found in ownerRecord.banks, searching all records...",
-        );
-        const allRecords = await getAllUserRecords();
-        for (const rec of allRecords) {
-          if (!rec.banks) continue;
-          const found = rec.banks.find((b) => b.id === bankId);
-          if (found) {
-            bank = found;
-            console.log("✅ Bank found in another record:", found.name);
-            break;
-          }
-        }
-      }
-
-      if (!bank) {
-        console.error("❌ Bank still not found:", bankId);
-        const { embed } = embedTemplate({
-          title: "❌ Bank Not Found",
-          description: "> The specified bank could not be located.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
-      // ✅ Load or create user record
-      let userRecord = await getUserRecord(userId);
-      if (!userRecord) {
-        console.warn(
-          "⚠️ No user record found, creating new record for:",
-          userId,
-        );
-        userRecord = {
-          id: userId,
-          cash: 0,
-          banks: [],
-          joinedBanks: [],
-          records: { citations: [], warrants: [], blackpoints: 0 },
-        };
-        await updateUserRecord(userRecord); // ✅ Save new record immediately
-      }
-
-      console.log("👤 User record loaded or created:", userRecord.id);
-
-      // ✅ Add user to bank members
-      if (!bank.members.includes(userId)) bank.members.push(userId);
-      if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
-      if (!userRecord.joinedBanks.includes(bankId))
-        userRecord.joinedBanks.push(bankId);
-
-      // ✅ Remove join request
-      ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
-        (r) => !(r.bankId === bankId && r.userId === userId),
-      );
-
-      await updateUserRecord(ownerRecord);
-      await updateUserRecord(userRecord);
-
-      console.log("✅ Join request accepted for:", userId);
-
-      const { embed } = embedTemplate({
-        title: "✅ Join Request Accepted",
-        description:
-          `> ${ARROW} **Bank:** ${bank.name}\n` +
-          `> ${ARROW} **New Member:** <@${userId}>\n\n` +
-          `> The user has been successfully added as a co‑owner.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed], flags: 64 });
-    }
-
-    // ------------------------------
-    // BANK JOIN DENY
-    // ------------------------------
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("inv_deny_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const parts = interaction.customId.split("_");
-
-      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
-      const userId = parts[5];
-
-      console.log("🔍 Parsed IDs:", { bankId, userId });
-
-      const ownerRecord = await getUserRecord(interaction.user.id);
-
-      ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
-        (r) => !(r.bankId === bankId && r.userId === userId),
-      );
-
-      await updateUserRecord(ownerRecord);
-
-      console.log("❌ Join request denied for:", userId);
-
-      const { embed } = embedTemplate({
-        title: "❌ Join Request Denied",
-        description:
-          `> ${ARROW} **Bank ID:** ${bankId}\n` +
-          `> ${ARROW} **User:** <@${userId}>\n\n` +
-          `> The join request has been denied and removed from your list.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed], flags: 64 });
-    }
-
-    // ------------------------------
-    // REMOVE BANK MEMBER
-    // ------------------------------
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("removebankmember_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.customId.split("_")[2];
-      const removedId = interaction.values[0];
-      const ownerId = interaction.user.id;
-
-      const ownerRecord = await getUserRecord(ownerId);
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      // Remove from bank.members
-      bank.members = bank.members.filter((id) => id !== removedId);
-      await updateUserRecord(ownerRecord);
-
-      // Remove from user's joinedBanks
-      const removedRecord = await getUserRecord(removedId);
-      removedRecord.joinedBanks = (removedRecord.joinedBanks || []).filter(
-        (id) => id !== bankId,
-      );
-      await updateUserRecord(removedRecord);
-
-      // DM removed user
-      try {
-        const removedUser = await interaction.client.users.fetch(removedId);
-        await removedUser.send(
-          `❌ You have been removed as a co-owner of **${bank.name}**.`,
-        );
-      } catch {}
-
-      const { embed } = embedTemplate({
-        title: "🏦 Member Removed",
-        description:
-          `> ${ARROW} **Bank:** ${bank.name}\n` +
-          `> ${ARROW} **Removed:** <@${removedId}>\n\n` +
-          `> They are no longer a co-owner.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // ------------------------------
-    // MANAGEBANK SELECT HANDLER
-    // ------------------------------
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("managebank_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.values[0];
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      // Load all banks (owned + joined)
-      const banks = await loadAllBanks(userRecord);
-      const bank = banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      // Co-owner trying to manage
-      if (bank.owner !== interaction.user.id) {
-        const { embed } = embedTemplate({
-          title: "❌ Access Denied",
-          description:
-            `> Only the **bank owner** can manage this bank.\n` +
-            `> As a co‑owner, you can still:\n` +
-            `> ${ARROW} **Deposit** using /deposit\n` +
-            `> ${ARROW} **Withdraw** using /withdraw\n\n` +
-            `> You cannot delete or modify bank settings.`,
-          noLogo: true,
-        });
-
-        embed.setThumbnail(
-          interaction.user.displayAvatarURL({ dynamic: true }),
-        );
-
-        return interaction.editReply({ embeds: [embed] });
-      }
-
-      // Owner view
-      const { embed } = embedTemplate({
-        title: `${SUN} ${bank.name} ${SUN}`,
-        description:
-          `> ${ARROW} **Bank ID:** ${bank.id}\n` +
-          `> ${ARROW} **Type:** ${bank.type}\n` +
-          `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
-          `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
-          `> ${ARROW} **Password:** ${bank.password ? bank.password : "None Set"}\n` +
-          `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
-
-      const buttons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`bank_delete_${bank.id}`)
-          .setLabel("Delete Bank")
-          .setStyle(ButtonStyle.Danger),
-      );
-
-      return interaction.editReply({ embeds: [embed], components: [buttons] });
-    }
-
-    // NEW SESSION LINK HANDLER (short ID system)
-    if (
-      interaction.isButton() &&
-      (interaction.customId.startsWith("rl_") ||
-        interaction.customId.startsWith("ri_") ||
-        interaction.customId.startsWith("ea_") ||
-        interaction.customId.startsWith("regen_"))
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      // Fetch recent messages to find the one containing the button
       const messages = await interaction.channel.messages.fetch({ limit: 50 });
-
       const msg = messages.find(
         (m) =>
           m.components.length > 0 &&
@@ -1082,11 +966,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
-      const link = msg.sessionLink;
-
       const { embed } = embedTemplate({
         title: `${SUN} Session Link ${SUN}`,
-        description: `> ${ARROW} Here is your link:\n${link}`,
+        description: `> ${ARROW} Here is your link:\n${msg.sessionLink}`,
       });
 
       return interaction.editReply({ embeds: [embed] });
@@ -1190,32 +1072,24 @@ client.on(Events.MessageDeleteBulk, async (messages) => {
   }
 });
 
-// Reaction Goal Handler
+//Reaction Goal Handler
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
-    // Ignore bot reactions
     if (user.bot) return;
 
     const message = reaction.message;
-
-    // Only track startup embeds
     if (!message.embeds.length) return;
     const embed = message.embeds[0];
 
     if (!embed.title || !embed.title.includes("Session Startup")) return;
 
-    // Extract required reactions from embed description
     const match = embed.description.match(/Required reactions:\s\*\*(\d+)\*\*/);
     if (!match) return;
 
     const required = parseInt(match[1], 10);
-
-    // Count reactions
     const reactionCount = reaction.count;
 
-    // If goal met, send message
     if (reactionCount >= required) {
-      // Prevent duplicate notifications
       if (reaction.message.hasSentReady) return;
       reaction.message.hasSentReady = true;
 
