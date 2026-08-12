@@ -1,6 +1,9 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { getUserRecord } = require("../../economy/economyutils");
+const {
+  getUserRecord,
+  getAllUserRecords,
+} = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
@@ -10,13 +13,17 @@ async function loadAllBanks(userRecord) {
   const joinedIds = userRecord.joinedBanks || [];
   const joined = [];
 
-  for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[2]; // ✅ Corrected index
-    const ownerRecord = await getUserRecord(ownerId);
-    if (!ownerRecord?.banks) continue;
-
-    const bank = ownerRecord.banks.find((b) => b.id === bankId);
-    if (bank) joined.push(bank);
+  if (joinedIds.length > 0) {
+    const allRecords = await getAllUserRecords();
+    for (const bankId of joinedIds) {
+      for (const rec of allRecords) {
+        const bank = (rec.banks || []).find((b) => b.id === bankId);
+        if (bank) {
+          joined.push(bank);
+          break;
+        }
+      }
+    }
   }
 
   return { owned, joined };
@@ -46,7 +53,6 @@ module.exports = {
 
     let desc = `${ARROW} **Cash:** $${cash.toLocaleString()}\n\n`;
 
-    // Owned banks
     desc += `${ARROW} **Owned Banks:** ${owned.length}\n`;
     if (owned.length === 0) {
       desc += "> • None\n\n";
@@ -57,7 +63,6 @@ module.exports = {
       desc += "\n";
     }
 
-    // Joined banks (co-owned)
     desc += `${ARROW} **Co‑Owned Banks:** ${joined.length}\n`;
     if (joined.length === 0) {
       desc += "> • None\n";

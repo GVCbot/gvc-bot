@@ -4,19 +4,27 @@ const {
   StringSelectMenuBuilder,
 } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { getUserRecord } = require("../../economy/economyutils");
+const {
+  getUserRecord,
+  getAllUserRecords,
+} = require("../../economy/economyutils");
 
 async function loadAllBanks(userRecord) {
   const owned = userRecord.banks || [];
   const joinedIds = userRecord.joinedBanks || [];
   const joined = [];
 
-  for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[2];
-    const ownerRecord = await getUserRecord(ownerId);
-    if (!ownerRecord.banks) continue;
-    const bank = ownerRecord.banks.find((b) => b.id === bankId);
-    if (bank) joined.push(bank);
+  if (joinedIds.length > 0) {
+    const allRecords = await getAllUserRecords();
+    for (const bankId of joinedIds) {
+      for (const rec of allRecords) {
+        const bank = (rec.banks || []).find((b) => b.id === bankId);
+        if (bank) {
+          joined.push(bank);
+          break;
+        }
+      }
+    }
   }
 
   return [...owned, ...joined];
