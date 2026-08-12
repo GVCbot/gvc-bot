@@ -66,27 +66,6 @@ module.exports = {
 
     const ownerUser = await interaction.client.users.fetch(targetBank.owner);
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`bankjoin_accept_${targetBank.id}_${userId}`)
-        .setLabel("Accept")
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId(`bankjoin_deny_${targetBank.id}_${userId}`)
-        .setLabel("Deny")
-        .setStyle(ButtonStyle.Danger),
-    );
-
-    const { embed } = embedTemplate({
-      title: "🏦 Bank Join Request",
-      description:
-        `> ${interaction.user} wants to join your bank **${targetBank.name}**.\n\n` +
-        `> Approve or deny the request.`,
-      noLogo: true,
-    });
-
-    await ownerUser.send({ embeds: [embed], components: [row] });
-
     return interaction.editReply({
       content: "📨 Your join request has been sent to the bank owner.",
       flags: 64,
