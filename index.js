@@ -117,7 +117,6 @@ function logEvent(
   }
 }
 
-//Button Click Logging Helper
 function logButtonClick(interaction) {
   const unix = Math.floor(Date.now() / 1000);
   const timestamp = `<t:${unix}:F>`;
@@ -205,6 +204,38 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
     embeds: [embed],
     components: row.components.length ? [row] : [],
     flags: 64,
+  });
+}
+
+// Early Access button permission check
+if (interaction.isButton() && interaction.customId.startsWith("ea_")) {
+  const allowedRoles = [
+    "1350870925582798848", // Early Access role
+    "1350897509752373341", // Staff role
+    "1058635001329107005",
+    "1058635044308123719",
+    "1058636415166070784",
+    "1350838197684535327",
+  ];
+
+  const member = interaction.member;
+
+  const canClick = allowedRoles.some((roleId) =>
+    member.roles.cache.has(roleId),
+  );
+
+  if (!canClick) {
+    return interaction.reply({
+      content: "❌ You are not authorized to access Early Access.",
+      ephemeral: true,
+    });
+  }
+
+  // Authorized → send the link
+  const link = interaction.message.sessionLink;
+  return interaction.reply({
+    content: `🔗 **Early Access Link:** ${link}`,
+    ephemeral: true,
   });
 }
 
