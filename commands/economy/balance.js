@@ -20,7 +20,7 @@ async function loadAllBanks(userRecord) {
         const bank = (rec.banks || []).find((b) => b.id === bankId);
         if (bank) {
           joined.push(bank);
-          break;
+          break; // Found the bank on this owner's record
         }
       }
     }
@@ -58,7 +58,8 @@ module.exports = {
       desc += "> • None\n\n";
     } else {
       for (const b of owned) {
-        desc += `> • **${b.name}** — $${b.balance.toLocaleString()}\n`;
+        const sharedBalance = b.balance ?? 0;
+        desc += `> • **${b.name}** — $${sharedBalance.toLocaleString()}\n`;
       }
       desc += "\n";
     }
@@ -68,7 +69,9 @@ module.exports = {
       desc += "> • None\n";
     } else {
       for (const b of joined) {
-        desc += `> • **${b.name}** — $${b.balance.toLocaleString()}\n`;
+        // Fallback to 0 if b.balance is undefined or null
+        const sharedBalance = b.balance ?? 0;
+        desc += `> • **${b.name}** — $${sharedBalance.toLocaleString()}\n`;
       }
     }
 
