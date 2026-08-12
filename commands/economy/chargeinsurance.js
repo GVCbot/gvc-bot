@@ -6,8 +6,23 @@ const {
 } = require("../../economy/economyutils");
 
 const HR_ROLE_ID = "1350582607217430650";
-const BASIC_ROLE = "1537049129803448391";
-const ALL_ROLE = "1537048719805911060";
+
+const ROLES = {
+  fox_basic: "1537049129803448391",
+  fox_all: "1537048719805911060",
+  moat_basic: "1537066784279240724",
+  moat_all: "1537066846786949120",
+};
+
+const INSURANCE_PRICES = {
+  fox_basic: 600,
+  fox_all: 1000,
+  moat_basic: 600,
+  moat_all: 1000,
+};
+
+const SUN = "<a:gvcsunspin:1527220557890850846>";
+const ARROW = "<:arrowright:1534182706836144158>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -34,44 +49,38 @@ module.exports = {
 
       const member = guild.members.cache.get(userRecord.userId);
 
-      // BASIC INSURANCE
-      if (userRecord.store.basicInsured?.active) {
-        const cost = 600;
+      // Loop through all insurance types
+      for (const key of Object.keys(INSURANCE_PRICES)) {
+        const insurance = userRecord.store[key];
+        if (!insurance?.active) continue;
+
+        const cost = INSURANCE_PRICES[key];
 
         if ((userRecord.cash ?? 0) >= cost) {
+          // Charge user
           userRecord.cash -= cost;
-          userRecord.store.basicInsured.nextPayment =
-            now + 30 * 24 * 60 * 60 * 1000;
+          insurance.nextPayment = now + 30 * 24 * 60 * 60 * 1000;
           charged++;
         } else {
-          userRecord.store.basicInsured.active = false;
-          userRecord.store.basicInsured.nextPayment = 0;
+          // Cancel insurance
+          insurance.active = false;
+          insurance.nextPayment = 0;
           cancelled++;
 
-          if (member) {
-            await member.roles.remove(BASIC_ROLE).catch(() => {});
+          // Remove role
+          const roleId = ROLES[key];
+          if (member && roleId) {
+            await member.roles.remove(roleId).catch(() => {});
           }
-        }
 
-        await updateUserRecord(userRecord);
-      }
-
-      // ALL INSURANCE
-      if (userRecord.store.allInsured?.active) {
-        const cost = 1000;
-
-        if ((userRecord.cash ?? 0) >= cost) {
-          userRecord.cash -= cost;
-          userRecord.store.allInsured.nextPayment =
-            now + 30 * 24 * 60 * 60 * 1000;
-          charged++;
-        } else {
-          userRecord.store.allInsured.active = false;
-          userRecord.store.allInsured.nextPayment = 0;
-          cancelled++;
-
-          if (member) {
-            await member.roles.remove(ALL_ROLE).catch(() => {});
+          // Remove insured tag from banks they own
+          if (userRecord.banks) {
+            for (const bank of userRecord.banks) {
+              if (bank.insuredType === insurance.insuredType) {
+                bank.insured = false;
+                bank.insuredType = null;
+              }
+            }
           }
         }
 
@@ -80,10 +89,10 @@ module.exports = {
     }
 
     const { embed } = embedTemplate({
-      title: "📅 Insurance Billing Complete",
+      title: `${SUN} Insurance Billing Complete ${SUN}`,
       description:
-        `> **Charged:** ${charged} users\n` +
-        `> **Cancelled:** ${cancelled} users\n\n` +
+        `${ARROW} **Charged:** ${charged} users\n` +
+        `${ARROW} **Cancelled:** ${cancelled} users\n\n` +
         `Monthly insurance fees have been processed.`,
       noLogo: true,
     });
