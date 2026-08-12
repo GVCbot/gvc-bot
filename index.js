@@ -274,6 +274,88 @@ client.once(Events.ClientReady, () =>
   console.log(`🟢 Bot is online as ${client.user.tag}`),
 );
 
+// ===============================
+// 🔄 Automatic Insurance Billing
+// ===============================
+
+const BASIC_ROLE = "1537049129803448391";
+const ALL_ROLE = "1537048719805911060";
+
+async function runInsuranceBilling() {
+  const allRecords = await getAllUserRecords();
+  const guild = client.guilds.cache.get("1058305800252182528");
+  if (!guild) return;
+
+  const now = Date.now();
+
+  for (const userRecord of allRecords) {
+    if (!userRecord.store) continue;
+
+    // BASIC INSURANCE
+    if (userRecord.store.basicInsured?.active) {
+      if (now >= userRecord.store.basicInsured.nextPayment) {
+        const member = guild.members.cache.get(userRecord.userId);
+        const cost = 600;
+
+        if ((userRecord.cash ?? 0) >= cost) {
+          // Charge fee
+          userRecord.cash -= cost;
+          userRecord.store.basicInsured.nextPayment =
+            now + 30 * 24 * 60 * 60 * 1000;
+          await updateUserRecord(userRecord);
+        } else {
+          // Cancel insurance
+          userRecord.store.basicInsured.active = false;
+          userRecord.store.basicInsured.nextPayment = 0;
+          await updateUserRecord(userRecord);
+
+          if (member) {
+            await member.roles.remove(BASIC_ROLE).catch(() => {});
+            member
+              .send(
+                "⚠️ Your **Fox Basic Insured** plan has been cancelled due to insufficient funds.",
+              )
+              .catch(() => {});
+          }
+        }
+      }
+    }
+
+    // ALL INSURANCE
+    if (userRecord.store.allInsured?.active) {
+      if (now >= userRecord.store.allInsured.nextPayment) {
+        const member = guild.members.cache.get(userRecord.userId);
+        const cost = 1000;
+
+        if ((userRecord.cash ?? 0) >= cost) {
+          // Charge fee
+          userRecord.cash -= cost;
+          userRecord.store.allInsured.nextPayment =
+            now + 30 * 24 * 60 * 60 * 1000;
+          await updateUserRecord(userRecord);
+        } else {
+          // Cancel insurance
+          userRecord.store.allInsured.active = false;
+          userRecord.store.allInsured.nextPayment = 0;
+          await updateUserRecord(userRecord);
+
+          if (member) {
+            await member.roles.remove(ALL_ROLE).catch(() => {});
+            member
+              .send(
+                "⚠️ Your **Fox All Insured** plan has been cancelled due to insufficient funds.",
+              )
+              .catch(() => {});
+          }
+        }
+      }
+    }
+  }
+}
+
+// Run every 12 hours
+setInterval(runInsuranceBilling, 12 * 60 * 60 * 1000);
+
 //Interaction Handler
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
