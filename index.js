@@ -798,71 +798,60 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // ------------------------------
     // BANK JOIN ACCEPT
     // ------------------------------
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("bankjoin_accept_")
-    ) {
-      console.log("ACCEPT HANDLER REACHED");
+    if (interaction.isButton() && interaction.customId.startsWith("inv_accept_")) {
+  await interaction.deferReply({ flags: 64 });
 
-      await interaction.deferReply({ flags: 64 });
+  const [, , bankId, userId] = interaction.customId.split("_");
 
-      const [, , bankId, userId] = interaction.customId.split("_");
+  const ownerRecord = await getUserRecord(interaction.user.id);
+  const bank = ownerRecord.banks.find(b => b.id === bankId);
 
-      const ownerRecord = await getUserRecord(interaction.user.id);
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+  if (!bank) {
+    return interaction.editReply({ content: "❌ Bank not found.", flags: 64 });
+  }
 
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
+  const userRecord = await getUserRecord(userId);
 
-      const userRecord = await getUserRecord(userId);
+  bank.members.push(userId);
+  userRecord.joinedBanks.push(bankId);
 
-      bank.members.push(userId);
-      userRecord.joinedBanks.push(bankId);
+  // Remove request
+  ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
+    r => !(r.bankId === bankId && r.userId === userId)
+  );
 
-      await updateUserRecord(ownerRecord);
-      await updateUserRecord(userRecord);
+  await updateUserRecord(ownerRecord);
+  await updateUserRecord(userRecord);
 
-      try {
-        const user = await interaction.client.users.fetch(userId);
-        await user.send(
-          `✅ Your request to join **${bank.name}** was accepted!`,
-        );
-      } catch {
-        // DM closed — skip sending message
-      }
+  return interaction.editReply({
+    content: `✅ Added <@${userId}> to **${bank.name}**.`,
+    flags: 64,
+  });
+}
 
-      return interaction.editReply({
-        content: "User added as co-owner.",
-        flags: 64,
-      });
-    }
 
     // ------------------------------
     // BANK JOIN DENY
     // ------------------------------
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("bankjoin_deny_")
-    ) {
-      console.log("DENY HANDLER REACHED");
+    if (interaction.isButton() && interaction.customId.startsWith("inv_deny_")) {
+  await interaction.deferReply({ flags: 64 });
 
-      await interaction.deferReply({ flags: 64 });
+  const [, , bankId, userId] = interaction.customId.split("_");
 
-      const [, , bankId, userId] = interaction.customId.split("_");
+  const ownerRecord = await getUserRecord(interaction.user.id);
 
-      try {
-        const user = await interaction.client.users.fetch(userId);
-        await user.send(`❌ Your request to join the bank was denied.`);
-      } catch {
-        // DM closed — skip sending message
-      }
+  ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
+    r => !(r.bankId === bankId && r.userId === userId)
+  );
 
-      return interaction.editReply({ content: "Request denied.", flags: 64 });
-    }
+  await updateUserRecord(ownerRecord);
+
+  return interaction.editReply({
+    content: `❌ Denied join request from <@${userId}>.`,
+    flags: 64,
+  });
+}
+
 
     // ------------------------------
     // REMOVE BANK MEMBER
