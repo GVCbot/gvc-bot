@@ -1,7 +1,7 @@
 // modlogHelpers.js
 
 const punishmentTemplates = require("./punishmentTemplates");
-const { getUserRecord, updateUserRecord } = require("../economy/economyutils");
+const { getUserRecord, updateUserRecord } = require("./economy/economyutils");
 
 // ===============================
 // CASE ID GENERATOR
