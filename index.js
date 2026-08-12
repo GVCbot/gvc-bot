@@ -809,12 +809,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.deferReply({ flags: 64 });
 
       const parts = interaction.customId.split("_");
-
       const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
       const userId = parts[5];
 
       console.log("🔍 Parsed IDs:", { bankId, userId });
-
       console.log("🔍 Accept button clicked:", { bankId, userId });
 
       const ownerRecord = await getUserRecord(interaction.user.id);
@@ -853,13 +851,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.editReply({ embeds: [embed], flags: 64 });
       }
 
-      const userRecord = await getUserRecord(userId);
-      console.log("👤 User record loaded:", userRecord.id);
+      // ✅ Load or create user record
+      let userRecord = await getUserRecord(userId);
+      if (!userRecord) {
+        console.warn(
+          "⚠️ No user record found, creating new record for:",
+          userId,
+        );
+        userRecord = {
+          id: userId,
+          cash: 0,
+          banks: [],
+          joinedBanks: [],
+          records: { citations: [], warrants: [], blackpoints: 0 },
+        };
+      }
 
-      bank.members.push(userId);
-      userRecord.joinedBanks.push(bankId);
+      console.log("👤 User record loaded or created:", userRecord.id);
 
-      // Remove request
+      // ✅ Add user to bank members
+      if (!bank.members.includes(userId)) bank.members.push(userId);
+      if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
+      if (!userRecord.joinedBanks.includes(bankId))
+        userRecord.joinedBanks.push(bankId);
+
+      // ✅ Remove join request
       ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
         (r) => !(r.bankId === bankId && r.userId === userId),
       );
