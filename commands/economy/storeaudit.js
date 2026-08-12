@@ -12,7 +12,7 @@ module.exports = {
     .setDescription("HR ONLY — View all store insurance purchases."),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: false });
+    await interaction.deferReply({ ephemeral: true });
 
     if (!interaction.member.roles.cache.has(HR_ROLE_ID)) {
       return interaction.editReply("❌ Only HR can use this command.");
@@ -31,21 +31,41 @@ module.exports = {
         ? member.user.username
         : `Unknown (${userRecord.userId})`;
 
-      if (userRecord.store.basicInsured?.active) {
+      const store = userRecord.store;
+
+      if (store.fox_basic?.active) {
         transactions.push({
           username,
           userId: userRecord.userId,
           type: "Fox Basic Insured",
-          nextPayment: userRecord.store.basicInsured.nextPayment,
+          nextPayment: store.fox_basic.nextPayment,
         });
       }
 
-      if (userRecord.store.allInsured?.active) {
+      if (store.fox_all?.active) {
         transactions.push({
           username,
           userId: userRecord.userId,
           type: "Fox All Insured",
-          nextPayment: userRecord.store.allInsured.nextPayment,
+          nextPayment: store.fox_all.nextPayment,
+        });
+      }
+
+      if (store.moat_basic?.active) {
+        transactions.push({
+          username,
+          userId: userRecord.userId,
+          type: "Moat Castle Basic Insured",
+          nextPayment: store.moat_basic.nextPayment,
+        });
+      }
+
+      if (store.moat_all?.active) {
+        transactions.push({
+          username,
+          userId: userRecord.userId,
+          type: "Moat Castle All Insured",
+          nextPayment: store.moat_all.nextPayment,
         });
       }
     }

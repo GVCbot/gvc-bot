@@ -25,7 +25,6 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    // ⭐ Make logs hidden
     await interaction.deferReply({ ephemeral: true });
 
     const type = interaction.options.getString("type");
@@ -36,7 +35,6 @@ module.exports = {
     const isFoxAudit = memberRoles.has(FOX_AUDIT_ROLE);
     const isMoatAudit = memberRoles.has(MOAT_AUDIT_ROLE);
 
-    // Permission check
     if (!isHR) {
       if (type === "fox" && !isFoxAudit) {
         return interaction.editReply(
@@ -63,7 +61,6 @@ module.exports = {
         ? member.user.username
         : `Unknown (${userRecord.userId})`;
 
-      // Determine bank type
       let bankType = null;
 
       const ownedBanks = userRecord.banks || [];
@@ -74,7 +71,6 @@ module.exports = {
         if (b.type === "Moat Castle") bankType = "moat";
       }
 
-      // If no owned bank, check joined banks
       if (!bankType && joinedBanks.length > 0) {
         for (const rec of allRecords) {
           for (const b of rec.banks || []) {
@@ -88,22 +84,44 @@ module.exports = {
 
       if (bankType !== type) continue;
 
-      if (userRecord.store.basicInsured?.active) {
-        logs.push({
-          username,
-          userId: userRecord.userId,
-          plan: "Fox Basic Insured",
-          nextPayment: userRecord.store.basicInsured.nextPayment,
-        });
+      const store = userRecord.store;
+
+      if (type === "fox") {
+        if (store.fox_basic?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Fox Basic Insured",
+            nextPayment: store.fox_basic.nextPayment,
+          });
+        }
+        if (store.fox_all?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Fox All Insured",
+            nextPayment: store.fox_all.nextPayment,
+          });
+        }
       }
 
-      if (userRecord.store.allInsured?.active) {
-        logs.push({
-          username,
-          userId: userRecord.userId,
-          plan: "Fox All Insured",
-          nextPayment: userRecord.store.allInsured.nextPayment,
-        });
+      if (type === "moat") {
+        if (store.moat_basic?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Moat Castle Basic Insured",
+            nextPayment: store.moat_basic.nextPayment,
+          });
+        }
+        if (store.moat_all?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Moat Castle All Insured",
+            nextPayment: store.moat_all.nextPayment,
+          });
+        }
       }
     }
 
