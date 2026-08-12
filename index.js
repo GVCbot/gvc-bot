@@ -208,9 +208,24 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
   });
 }
 
-//Unified Bank Loader (owned + joined)
+// Normalize bank types so old banks still work
+function normalizeType(type) {
+  if (!type) return type;
+  const t = type.toLowerCase();
+
+  if (t.includes("fox")) return "Fox Bank";
+  if (t.includes("moat")) return "Moat Castle";
+
+  return type;
+}
+
+// Unified Bank Loader (owned + joined)
 async function loadAllBanks(userRecord) {
-  const owned = userRecord.banks || [];
+  const owned = (userRecord.banks || []).map((b) => ({
+    ...b,
+    type: normalizeType(b.type),
+  }));
+
   const joinedIds = userRecord.joinedBanks || [];
   const joined = [];
 
@@ -220,7 +235,10 @@ async function loadAllBanks(userRecord) {
       for (const rec of allRecords) {
         const bank = (rec.banks || []).find((b) => b.id === bankId);
         if (bank) {
-          joined.push(bank);
+          joined.push({
+            ...bank,
+            type: normalizeType(bank.type),
+          });
           break;
         }
       }
