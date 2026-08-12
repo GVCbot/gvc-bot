@@ -255,6 +255,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       )
         logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
     } else if (interaction.isButton()) {
+      if (!interaction.guild) return;
+
       // ------------------------------
       // BUTTON CLICK LOGGING (LONG ID SYSTEM)
       // ------------------------------
@@ -681,7 +683,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const ownerRecord = await getUserRecord(targetId);
 
-      // Find the bank
       const bank = ownerRecord.banks.find((b) => b.id === bankId);
       if (!bank) {
         return interaction.editReply({
@@ -693,7 +694,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // Remove bank from all members
       for (const memberId of bank.members) {
         const memberRecord = await getUserRecord(memberId);
-
         if (memberRecord.joinedBanks) {
           memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
             (id) => id !== bankId,
@@ -702,31 +702,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
       }
 
-      // ⭐ AUTO-WITHDRAW BEFORE DELETION
-      ownerRecord.cash = (ownerRecord.cash ?? 0) + bank.balance;
+      // HR wipe — no balance transfer
       bank.balance = 0;
-
-      // Remove bank from all members
-      for (const memberId of bank.members) {
-        const memberRecord = await getUserRecord(memberId);
-
-        if (memberRecord.joinedBanks) {
-          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
-            (id) => id !== bankId,
-          );
-          await updateUserRecord(memberRecord);
-        }
-      }
 
       // Remove bank from owner
       ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
       await updateUserRecord(ownerRecord);
 
       const { embed } = embedTemplate({
-        title: "🗑️ Bank Deleted",
-        description:
-          `> ${ARROW} Your bank **${bank.name}** has been deleted.\n` +
-          `> ${ARROW} **$${bank.balance.toLocaleString()}** was withdrawn into your cash.`,
+        title: "🏦 Bank Deleted",
+        description: `> ${ARROW} Bank **${bank.name}** has been permanently removed.`,
         noLogo: true,
       });
 
