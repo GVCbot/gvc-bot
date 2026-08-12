@@ -77,7 +77,10 @@ module.exports = {
     }
 
     const cash = userRecord.cash ?? 0;
-    const { owned, joined } = await loadAllBanks(userRecord);
+    const banks = await loadAllBanks(userRecord);
+
+    const owned = banks.filter((b) => b.owner === userRecord.userId);
+    const joined = banks.filter((b) => b.owner !== userRecord.userId);
 
     let desc = `${ARROW} **Cash:** $${cash.toLocaleString()}\n\n`;
 
