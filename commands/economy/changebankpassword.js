@@ -30,12 +30,14 @@ module.exports = {
     const userRecord = await getUserRecord(interaction.user.id);
     const ownedBanks = userRecord.banks || [];
 
+    // ⭐ Show ONLY owned banks — not co-owned
     const choices = ownedBanks.map((b) => ({
-      name: `${b.name} (${b.id})`,
+      name: `${b.name} — ${b.type} (${b.id})`,
       value: b.id,
     }));
 
-    await interaction.respond(choices);
+    // ⭐ Discord allows max 25 autocomplete choices
+    await interaction.respond(choices.slice(0, 25));
   },
 
   async execute(interaction) {
@@ -45,7 +47,7 @@ module.exports = {
     const newPassword = interaction.options.getString("newpassword").trim();
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // ✅ Only check owned banks
+    // ⭐ Only owned banks
     const bank = (userRecord.banks || []).find((b) => b.id === bankId);
 
     if (!bank) {
@@ -59,7 +61,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // ✅ Update password
+    // ⭐ Update password
     bank.password = newPassword;
     await updateUserRecord(userRecord);
 
