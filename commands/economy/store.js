@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
+const path = require("node:path");
 const {
   getUserRecord,
   updateUserRecord,
@@ -9,22 +10,28 @@ const {
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
+const STORE_BANNER = path.join(
+  __dirname,
+  "..",
+  "..",
+  "graphics",
+  "gvcstore.png",
+);
+
 const ITEMS = [
   {
     id: "basic",
     name: "Fox Basic Insured",
     roleId: "1537049129803448391",
     cost: 600,
-    description:
-      "Provides basic protection benefits within the game world, including coverage for minor damage and simple repairs.",
+    insuredType: "basic",
   },
   {
     id: "all",
     name: "Fox All Insured",
     roleId: "1537048719805911060",
     cost: 1000,
-    description:
-      "Provides extended protection benefits within the game world, including coverage for major damage, recovery support, and additional safety features.",
+    insuredType: "all",
   },
 ];
 
@@ -56,7 +63,6 @@ module.exports = {
     await interaction.deferReply({ ephemeral: false });
 
     const purchaseItem = interaction.options.getString("purchaseitem");
-
     const userRecord = await getUserRecord(interaction.user.id);
 
     // Ensure store object exists
@@ -67,32 +73,31 @@ module.exports = {
       };
     }
 
-    // ⭐ ALWAYS SHOW STORE LIST FIRST
-    let desc = "";
+    // ⭐ SLEEK STORE LIST
+    let desc = `${SUN} **GVC Store** ${SUN}\n\n`;
+
     for (const item of ITEMS) {
-      desc += `> ${ARROW} **${item.name}** — $${item.cost}/month\n`;
-      desc += `> ${item.description}\n\n`;
+      desc +=
+        `${ARROW} **${item.name}** — $${item.cost}/month\n` +
+        `> Insurance coverage for your **Fox Banks**.\n\n`;
     }
 
-    const { embed: listEmbed } = embedTemplate({
+    const { embed: listEmbed, files: listFiles } = embedTemplate({
       title: `${SUN} Store Items ${SUN}`,
       description: desc,
-      noLogo: true,
+      banner: STORE_BANNER,
+      noLogo: false,
     });
 
-    // If no purchase requested, just show the list
+    // If no purchase requested → show store list only
     if (!purchaseItem) {
-      return interaction.editReply({ embeds: [listEmbed] });
+      return interaction.editReply({ embeds: [listEmbed], files: listFiles });
     }
 
-    // ⭐ PURCHASE LOGIC BELOW
+    // ⭐ PURCHASE LOGIC
     const item = ITEMS.find((i) => i.id === purchaseItem);
+    if (!item) return interaction.editReply("❌ Invalid item.");
 
-    if (!item) {
-      return interaction.editReply({ content: "❌ Invalid item." });
-    }
-
-    // Must have a Fox Bank
     const allRecords = await getAllUserRecords();
     const ownedBanks = userRecord.banks || [];
     const joinedBanks = userRecord.joinedBanks || [];
@@ -115,10 +120,9 @@ module.exports = {
     }
 
     if (!hasFoxBank) {
-      return interaction.editReply({
-        content:
-          "❌ You must own or co‑own a **Fox Bank** to purchase this item.",
-      });
+      return interaction.editReply(
+        "❌ You must own or co‑own a **Fox Bank** to purchase this item.",
+      );
     }
 
     // Cannot buy both
@@ -138,16 +142,16 @@ module.exports = {
 
     // Check cash
     if ((userRecord.cash ?? 0) < item.cost) {
-      return interaction.editReply({
-        content: `❌ You need **$${item.cost}** to purchase this item.`,
-      });
+      return interaction.editReply(
+        `❌ You need **$${item.cost}** to purchase this item.`,
+      );
     }
 
     // Deduct cost
     userRecord.cash -= item.cost;
 
-    // Activate item
-    const nextPayment = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    // Activate insurance
+    const nextPayment = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
     if (item.id === "basic") {
       userRecord.store.basicInsured = { active: true, nextPayment };
@@ -155,20 +159,34 @@ module.exports = {
       userRecord.store.allInsured = { active: true, nextPayment };
     }
 
+    // ⭐ INSURANCE TAGGING — ONLY FOR BANKS YOU OWN
+    for (const bank of ownedBanks) {
+      if (normalizeType(bank.type) === "Fox Bank") {
+        bank.insured = true;
+        bank.insuredType = item.insuredType;
+      }
+    }
+
     // Give role
     await interaction.member.roles.add(item.roleId).catch(() => {});
 
     await updateUserRecord(userRecord);
 
-    const { embed } = embedTemplate({
+    // ⭐ SUCCESS EMBED
+    const { embed: successEmbed, files: successFiles } = embedTemplate({
       title: `${SUN} Purchase Successful ${SUN}`,
       description:
-        `> ${ARROW} **Item:** ${item.name}\n` +
-        `> ${ARROW} **Cost:** $${item.cost}\n` +
-        `> ${ARROW} **Next Payment:** <t:${Math.floor(nextPayment / 1000)}:F>`,
-      noLogo: true,
+        `${ARROW} **Item:** ${item.name}\n` +
+        `${ARROW} **Cost:** $${item.cost}\n` +
+        `${ARROW} **Next Payment:** <t:${Math.floor(nextPayment / 1000)}:F>\n` +
+        `${ARROW} Your **Fox Banks** are now **INSURED**.`,
+      banner: STORE_BANNER,
+      noLogo: false,
     });
 
-    return interaction.editReply({ embeds: [listEmbed, embed] });
+    return interaction.editReply({
+      embeds: [listEmbed, successEmbed],
+      files: [...listFiles, ...successFiles],
+    });
   },
 };

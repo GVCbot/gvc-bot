@@ -91,7 +91,8 @@ module.exports = {
     } else {
       for (const b of owned) {
         const bal = b.balance ?? 0;
-        desc += `> • **${b.name}** — $${bal.toLocaleString()}\n`;
+        const insuredTag = b.insured ? " — **INSURED**" : "";
+        desc += `> • **${b.name}** — $${bal.toLocaleString()}${insuredTag}\n`;
       }
       desc += "\n";
     }
@@ -103,7 +104,8 @@ module.exports = {
     } else {
       for (const b of joined) {
         const bal = b.balance ?? 0;
-        desc += `> • **${b.name}** — $${bal.toLocaleString()}\n`;
+        const insuredTag = b.insured ? " — **INSURED**" : "";
+        desc += `> • **${b.name}** — $${bal.toLocaleString()}${insuredTag}\n`;
       }
     }
 

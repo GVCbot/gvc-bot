@@ -25,7 +25,8 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: false });
+    // ⭐ Make logs hidden
+    await interaction.deferReply({ ephemeral: true });
 
     const type = interaction.options.getString("type");
 
