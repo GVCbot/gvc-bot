@@ -437,7 +437,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const [, viewerId, targetId] = interaction.customId.split("_");
       const targetRecord = await getUserRecord(targetId);
 
-      const banks = await loadAllBanks(targetRecord);
+      const banks = targetRecord.banks ?? [];
 
       if (banks.length === 0) {
         const { embed, files } = embedTemplate({
@@ -622,20 +622,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
-
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
       await updateUserRecord(ownerRecord);
 
       const { embed } = embedTemplate({
@@ -658,32 +644,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
       const userId = parts[5];
 
-      let ownerRecord = await getUserRecord(interaction.user.id);
-
-      // 🔍 Fallback: search all records if not found
-      if (!ownerRecord) {
-        console.warn(
-          "⚠️ Owner record not found, searching all user records...",
-        );
-        const allRecords = await getAllUserRecords();
-        ownerRecord = allRecords.find((r) =>
-          r.banks?.some((b) => b.id === bankId),
-        );
-      }
-
-      // ✅ Prevent accidental overwrite of owner record
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
+      const ownerRecord = await getUserRecord(interaction.user.id);
 
       let bank = ownerRecord.banks.find((b) => b.id === bankId);
 
@@ -761,19 +722,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         (r) => !(r.bankId === bankId && r.userId === userId),
       );
 
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
       await updateUserRecord(ownerRecord);
 
       const { embed } = embedTemplate({
@@ -810,20 +758,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       bank.members = bank.members.filter((id) => id !== removedId);
-
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
       await updateUserRecord(ownerRecord);
 
       const removedRecord = await getUserRecord(removedId);
