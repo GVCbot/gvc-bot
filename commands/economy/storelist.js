@@ -28,19 +28,23 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: false });
 
-    let desc = `${SUN} **GVC Store** ${SUN}\n\n`;
+    let desc = "";
 
-    desc += `${ARROW} **Fox Basic Insured** — $${INSURANCE_PRICES.fox_basic}/month\n`;
-    desc += `> Insurance coverage for your **Fox Banks**.\n\n`;
+    desc +=
+      `**Fox Basic Insured** — $${INSURANCE_PRICES.fox_basic}/month\n` +
+      `> ${ARROW} Coverage for your **Fox Banks**.\n\n`;
 
-    desc += `${ARROW} **Fox All Insured** — $${INSURANCE_PRICES.fox_all}/month\n`;
-    desc += `> Full insurance coverage for your **Fox Banks**.\n\n`;
+    desc +=
+      `**Fox All Insured** — $${INSURANCE_PRICES.fox_all}/month\n` +
+      `> ${ARROW} Full coverage for your **Fox Banks**.\n\n`;
 
-    desc += `${ARROW} **Moat Castle Basic Insured** — $${INSURANCE_PRICES.moat_basic}/month\n`;
-    desc += `> Insurance coverage for your **Moat Castle Banks**.\n\n`;
+    desc +=
+      `**Moat Castle Basic Insured** — $${INSURANCE_PRICES.moat_basic}/month\n` +
+      `> ${ARROW} Coverage for your **Moat Castle Banks**.\n\n`;
 
-    desc += `${ARROW} **Moat Castle All Insured** — $${INSURANCE_PRICES.moat_all}/month\n`;
-    desc += `> Full insurance coverage for your **Moat Castle Banks**.\n\n`;
+    desc +=
+      `**Moat Castle All Insured** — $${INSURANCE_PRICES.moat_all}/month\n` +
+      `> ${ARROW} Full coverage for your **Moat Castle Banks**.\n\n`;
 
     const { embed, files } = embedTemplate({
       title: `${SUN} Store Items ${SUN}`,
