@@ -2,9 +2,14 @@ const {
   SlashCommandBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { getUserRecord } = require("../../economy/economyutils");
+const {
+  getUserRecord,
+  getAllUserRecords,
+} = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
@@ -14,12 +19,17 @@ async function loadAllBanks(userRecord) {
   const joinedIds = userRecord.joinedBanks || [];
   const joined = [];
 
-  for (const bankId of joinedIds) {
-    const ownerId = bankId.split("_")[2];
-    const ownerRecord = await getUserRecord(ownerId);
-    if (!ownerRecord.banks) continue;
-    const bank = ownerRecord.banks.find((b) => b.id === bankId);
-    if (bank) joined.push(bank);
+  if (joinedIds.length > 0) {
+    const allRecords = await getAllUserRecords();
+    for (const bankId of joinedIds) {
+      for (const rec of allRecords) {
+        const bank = (rec.banks || []).find((b) => b.id === bankId);
+        if (bank) {
+          joined.push(bank);
+          break;
+        }
+      }
+    }
   }
 
   return [...owned, ...joined];
@@ -45,11 +55,14 @@ module.exports = {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    const options = banks.map((b) => ({
-      label: `${b.name}`,
-      description: `Balance: $${b.balance.toLocaleString()}`,
-      value: b.id,
-    }));
+    const options = banks.map((b) => {
+      const sharedBalance = b.balance ?? 0;
+      return {
+        label: `${b.name}`,
+        description: `Balance: $${sharedBalance.toLocaleString()}`,
+        value: b.id,
+      };
+    });
 
     const menu = new StringSelectMenuBuilder()
       .setCustomId(`managebank_select_${interaction.user.id}`)
