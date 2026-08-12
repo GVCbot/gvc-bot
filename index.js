@@ -275,6 +275,22 @@ const client = new Client({
 
 client.commands = new Collection();
 
+client.on("error", (err) => {
+  console.error("🔴 Discord client error:", err);
+});
+
+client.on("shardError", (err) => {
+  console.error("🔴 Shard error:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("🔴 Unhandled promise rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("🔴 Uncaught exception:", err);
+});
+
 //Command Loader
 const foldersPath = path.join(__dirname, "commands");
 for (const folder of fs.readdirSync(foldersPath)) {
@@ -1258,4 +1274,14 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 });
 
 //Login
-client.login(process.env.TOKEN);
+if (!process.env.TOKEN) {
+  console.error(
+    "🔴 TOKEN env var is missing or empty — check Render's Environment tab.",
+  );
+  process.exit(1);
+}
+
+client.login(process.env.TOKEN).catch((err) => {
+  console.error("🔴 client.login() failed:", err);
+  process.exit(1);
+});
