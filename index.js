@@ -671,54 +671,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
     }
 
-    // Bank Wipe Handler (Chunk 4A)
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("bankwipe_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const targetId = interaction.customId.split("_")[2];
-      const bankId = interaction.values[0];
-
-      const ownerRecord = await getUserRecord(targetId);
-
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      // Remove bank from all members
-      for (const memberId of bank.members) {
-        const memberRecord = await getUserRecord(memberId);
-        if (memberRecord.joinedBanks) {
-          memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
-            (id) => id !== bankId,
-          );
-          await updateUserRecord(memberRecord);
-        }
-      }
-
-      // HR wipe — no balance transfer
-      bank.balance = 0;
-
-      // Remove bank from owner
-      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
-      await updateUserRecord(ownerRecord);
-
-      const { embed } = embedTemplate({
-        title: "🏦 Bank Deleted",
-        description: `> ${ARROW} Bank **${bank.name}** has been permanently removed.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Delete Bank Button Handler (Chunk 4B)
+    // Delete Bank Button Handler (Chunk 4)
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("bank_delete_")
@@ -772,6 +725,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
+    // Bank join request accepted
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("bankjoin_accept_")
@@ -798,8 +752,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await updateUserRecord(ownerRecord);
       await updateUserRecord(userRecord);
 
-      const user = await interaction.client.users.fetch(userId);
-      await user.send(`✅ Your request to join **${bank.name}** was accepted!`);
+      try {
+        const user = await interaction.client.users.fetch(userId);
+        await user.send(
+          `✅ Your request to join **${bank.name}** was accepted!`,
+        );
+      } catch {
+        // DM closed — skip sending message
+      }
 
       return interaction.editReply({
         content: "User added as co-owner.",
@@ -816,8 +776,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const [, , bankId, userId] = interaction.customId.split("_");
 
-      const user = await interaction.client.users.fetch(userId);
-      await user.send(`❌ Your request to join the bank was denied.`);
+      try {
+        const user = await interaction.client.users.fetch(userId);
+        await user.send(`❌ Your request to join the bank was denied.`);
+      } catch {
+        // DM closed — skip sending message
+      }
 
       return interaction.editReply({ content: "Request denied.", flags: 64 });
     }
