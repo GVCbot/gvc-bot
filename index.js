@@ -805,18 +805,46 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.deferReply({ flags: 64 });
 
       const [, , bankId, userId] = interaction.customId.split("_");
+      console.log("🔍 Accept button clicked:", { bankId, userId });
 
       const ownerRecord = await getUserRecord(interaction.user.id);
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
+      console.log(
+        "📂 Owner record loaded:",
+        ownerRecord.banks?.map((b) => b.id),
+      );
+
+      // Try to find the bank
+      let bank = ownerRecord.banks.find((b) => b.id === bankId);
+
+      // Fallback: search all records if not found
+      if (!bank) {
+        console.warn(
+          "⚠️ Bank not found in ownerRecord.banks, searching all records...",
+        );
+        const allRecords = await getAllUserRecords();
+        for (const rec of allRecords) {
+          if (!rec.banks) continue;
+          const found = rec.banks.find((b) => b.id === bankId);
+          if (found) {
+            bank = found;
+            console.log("✅ Bank found in another record:", found.name);
+            break;
+          }
+        }
+      }
 
       if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
+        console.error("❌ Bank still not found:", bankId);
+        const { embed } = embedTemplate({
+          title: "❌ Bank Not Found",
+          description: "> The specified bank could not be located.",
+          noLogo: true,
         });
+        return interaction.editReply({ embeds: [embed], flags: 64 });
       }
 
       const userRecord = await getUserRecord(userId);
+      console.log("👤 User record loaded:", userRecord.id);
 
       bank.members.push(userId);
       userRecord.joinedBanks.push(bankId);
@@ -829,10 +857,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await updateUserRecord(ownerRecord);
       await updateUserRecord(userRecord);
 
-      return interaction.editReply({
-        content: `✅ Added <@${userId}> to **${bank.name}**.`,
-        flags: 64,
+      console.log("✅ Join request accepted for:", userId);
+
+      const { embed } = embedTemplate({
+        title: "✅ Join Request Accepted",
+        description:
+          `> ${ARROW} **Bank:** ${bank.name}\n` +
+          `> ${ARROW} **New Member:** <@${userId}>\n\n` +
+          `> The user has been successfully added as a co‑owner.`,
+        noLogo: true,
       });
+
+      return interaction.editReply({ embeds: [embed], flags: 64 });
     }
 
     // ------------------------------
@@ -845,6 +881,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.deferReply({ flags: 64 });
 
       const [, , bankId, userId] = interaction.customId.split("_");
+      console.log("🔍 Deny button clicked:", { bankId, userId });
 
       const ownerRecord = await getUserRecord(interaction.user.id);
 
@@ -854,10 +891,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await updateUserRecord(ownerRecord);
 
-      return interaction.editReply({
-        content: `❌ Denied join request from <@${userId}>.`,
-        flags: 64,
+      console.log("❌ Join request denied for:", userId);
+
+      const { embed } = embedTemplate({
+        title: "❌ Join Request Denied",
+        description:
+          `> ${ARROW} **Bank ID:** ${bankId}\n` +
+          `> ${ARROW} **User:** <@${userId}>\n\n` +
+          `> The join request has been denied and removed from your list.`,
+        noLogo: true,
       });
+
+      return interaction.editReply({ embeds: [embed], flags: 64 });
     }
 
     // ------------------------------
