@@ -7,7 +7,7 @@ const punishmentTemplates = require("../../punishmentTemplates");
 const {
   canUsePunishmentType,
   calculateSuspensionEnd,
-  buildDmMessage,
+  buildDmEmbed,
   buildStaffLogMessage,
   saveModlog,
 } = require("../../modlogHelpers");
