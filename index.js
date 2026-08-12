@@ -731,14 +731,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       return interaction.editReply({ embeds: [embed] });
-
-      const { embed } = embedTemplate({
-        title: "🏦 Bank Deleted",
-        description: `> ${ARROW} Bank **${bankId}** has been permanently removed.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
     }
 
     // Delete Bank Button Handler (Chunk 4B)
