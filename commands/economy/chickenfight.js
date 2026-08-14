@@ -1,9 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
-const {
-  getUserRecord,
-  updateUserRecord,
-} = require("../../economy/economyutils"); // Adjust path if needed
-const embedTemplate = require("../../utils/embedTemplate"); // Adjust path if needed
+const embedTemplate = require("../../utils/embedTemplate");
+const { getUserRecord } = require("../../economy/economyutils");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -64,7 +61,7 @@ module.exports = {
       return interaction.reply({ embeds: [embed], files, flags: 64 });
     }
 
-    // 50/50 Probability Engine
+    // 50/50 Win Chance
     const won = Math.random() < 0.5;
 
     let resultTitle = "";
@@ -72,14 +69,16 @@ module.exports = {
     let embedColor = 0x000000;
 
     if (won) {
-      const winnings = betAmount; // Net gain (since payout is 2x total, profit equals bet)
-      user.cash += winnings;
+      // 2x Return: Net gain equals the original bet (+300)
+      const payout = betAmount * 2;
+      user.cash += betAmount; // Adding +betAmount achieves the net 2x payout (Balance - Bet + Payout)
 
       resultTitle = "🐔 Chicken Fight — VICTORY!";
       resultDescription =
-        ` Your roost-master obliterated the opponent's chicken!\n\n` +
+        `Your roost-master obliterated the opponent's chicken!\n\n` +
         `**Bet Placed:** $${betAmount.toLocaleString()}\n` +
-        `**Profit:** +$${winnings.toLocaleString()}\n` +
+        `**Total Returned (2x):** $${payout.toLocaleString()}\n` +
+        `**Net Profit:** +$${betAmount.toLocaleString()}\n` +
         `**New Cash Balance:** $${user.cash.toLocaleString()}`;
       embedColor = 0x57f287; // Green
     } else {
@@ -87,7 +86,7 @@ module.exports = {
 
       resultTitle = "🐔 Chicken Fight — DEFEAT!";
       resultDescription =
-        ` Your chicken was turned into nuggets...\n\n` +
+        `Your chicken was turned into nuggets...\n\n` +
         `**Amount Lost:** -$${betAmount.toLocaleString()}\n` +
         `**New Cash Balance:** $${user.cash.toLocaleString()}`;
       embedColor = 0xed4245; // Red
