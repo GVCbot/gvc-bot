@@ -19,6 +19,8 @@ const {
 const fs = require("node:fs");
 const path = require("node:path");
 const embedTemplate = require("./utils/embedTemplate");
+const moatembedTemplate = require("./utils/moatembedTemplate");
+
 const {
   getUserRecord,
   updateUserRecord,
