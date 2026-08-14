@@ -54,6 +54,7 @@ module.exports = {
 
     // Create loan request object
     const loanRequest = {
+      id: Date.now().toString(),
       requesterId: user.id,
       amount,
       reason,
@@ -84,12 +85,12 @@ module.exports = {
     // Buttons for loan officers
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(`moat_loan_accept_${user.id}_${amount}`)
+        .setCustomId(`moat_loan_accept_${user.id}_${loanRequest.id}`)
         .setLabel("Accept Request")
         .setStyle(ButtonStyle.Success),
 
       new ButtonBuilder()
-        .setCustomId(`moat_loan_deny_${user.id}_${amount}`)
+        .setCustomId(`moat_loan_deny_${user.id}_${loanRequest.id}`)
         .setLabel("Deny Request")
         .setStyle(ButtonStyle.Danger),
     );
