@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const embedTemplate = require("../../utils/embedTemplate");
 const { MOATEMOJIS } = moatembedTemplate;
 const { ARROW, MOATCASTLE } = MOATEMOJIS;
 
@@ -69,6 +70,7 @@ module.exports = {
     await updateUserRecord(sender);
     await updateUserRecord(receiverRecord);
 
+    // ⭐ Detailed invoice → billing channel
     const invoice = moatembedTemplate({
       title: "🏦 Moat Castle Points Invoice",
       description:
@@ -88,9 +90,15 @@ module.exports = {
       invoiceChannel.send({ embeds: [invoice.embed], files: invoice.files });
     }
 
-    return interaction.editReply({
-      embeds: [invoice.embed],
-      files: invoice.files,
+    // ⭐ Simple confirmation → user
+    const { embed } = embedTemplate({
+      title: "Payment Sent",
+      description:
+        `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()} using Castle Points\n` +
+        `${ARROW} New Points: ${points.toLocaleString()}`,
+      noLogo: true,
     });
+
+    return interaction.editReply({ embeds: [embed] });
   },
 };

@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const embedTemplate = require("../../utils/embedTemplate");
 const { MOATEMOJIS } = moatembedTemplate;
 const { ARROW, MOATCASTLE } = MOATEMOJIS;
 
@@ -109,16 +110,20 @@ module.exports = {
 
     receiverRecord.cash += amount;
 
-    // Earn points ALWAYS for moat-pay
-    const earnedPoints = Math.floor(amount / 1000);
-    sender.moatCastle.rewards = Math.min(
-      sender.moatCastle.rewards + earnedPoints,
-      5000,
-    );
+    // ⭐ Points earned ONLY if backup points were NOT used
+    let earnedPoints = 0;
+    if (!useBackup) {
+      earnedPoints = Math.floor(amount / 1000);
+      sender.moatCastle.rewards = Math.min(
+        sender.moatCastle.rewards + earnedPoints,
+        5000,
+      );
+    }
 
     await updateUserRecord(sender);
     await updateUserRecord(receiverRecord);
 
+    // ⭐ Detailed invoice → billing channel
     const invoice = moatembedTemplate({
       title: "🏦 Moat Castle Billing Invoice",
       description:
@@ -141,9 +146,16 @@ module.exports = {
       invoiceChannel.send({ embeds: [invoice.embed], files: invoice.files });
     }
 
-    return interaction.editReply({
-      embeds: [invoice.embed],
-      files: invoice.files,
+    // ⭐ Simple confirmation → user
+    const { embed } = embedTemplate({
+      title: "Payment Sent",
+      description:
+        `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()}\n` +
+        `${ARROW} New Moat Balance: $${balance.toLocaleString()}\n` +
+        `${ARROW} New Points: ${sender.moatCastle.rewards.toLocaleString()}`,
+      noLogo: true,
     });
+
+    return interaction.editReply({ embeds: [embed] });
   },
 };
