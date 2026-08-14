@@ -68,10 +68,15 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Calculate points
-    const basePoints = Math.floor(amount / 10);
+    // Calculate points with cap
+    const basePoints = Math.floor(amount / 10); // 1 point per $10
     const multiplier = getTierMultiplier(userRecord.moatCastle.tier);
-    const earnedPoints = Math.floor(basePoints * multiplier);
+
+    // Bonus only (multiplier - 1)
+    const bonusPoints = Math.floor(basePoints * (multiplier - 1));
+
+    // Total points
+    const earnedPoints = Math.min(basePoints + bonusPoints, 5000);
 
     // Update records
     userRecord.cash -= amount;

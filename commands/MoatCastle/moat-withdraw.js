@@ -5,83 +5,71 @@ const {
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 
-function getTierMultiplier(tier) {
-  switch ((tier || "").toLowerCase()) {
-    case "silver":
-      return 1.5;
-    case "gold":
-      return 2;
-    case "platinum":
-      return 2.5;
-    case "black":
-      return 3;
-    default:
-      return 1;
-  }
-}
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-withdraw")
-    .setDescription("Withdraw Castle Points to gain cash.")
+    .setDescription("Withdraw money from your Moat Castle account.")
     .addIntegerOption((opt) =>
       opt
-        .setName("points")
-        .setDescription("Castle Points to withdraw")
+        .setName("amount")
+        .setDescription("Amount of cash to withdraw")
         .setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply({ flags: 64 });
 
-    const points = interaction.options.getInteger("points");
+    const amount = interaction.options.getInteger("amount");
     const userRecord = await getUserRecord(interaction.user.id);
 
+    // No account exists
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
-          `> <:moatcastleright:1537695231409918002> You must create an account first.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate**.`,
+          `> <:moatcastleright:1537695231409918002> You do not have a Moat Castle account.\n` +
+          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate** to open one.`,
         noLogo: true,
       });
+
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    if (points <= 0) {
+    // Invalid amount
+    if (amount <= 0) {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Amount",
-        description: "> Points must be greater than 0.",
+        description: "> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    if (userRecord.moatCastle.rewards < points) {
+    // Check Moat Castle balance
+    const acct = userRecord.moatCastle;
+
+    if (acct.balance < amount) {
       const { embed, files } = moatembedTemplate({
-        title: "Not Enough Points",
-        description: `> You only have **${userRecord.moatCastle.rewards.toLocaleString()} Castle Points**.`,
+        title: "Insufficient Account Balance",
+        description: `> <:moatcastleright:1537695231409918002> Your Moat Castle account only has **$${acct.balance.toLocaleString()}**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Convert points → cash
-    const cashGained = points * 10;
-
-    // Update records
-    userRecord.moatCastle.rewards -= points;
-    userRecord.cash += cashGained;
+    // Withdraw: move money from Moat Castle → cash
+    acct.balance -= amount;
+    userRecord.cash += amount;
 
     await updateUserRecord(userRecord);
 
     const { embed, files } = moatembedTemplate({
       title: "Withdrawal Successful",
       description:
-        `> <:moatcastleright:1537695231409918002> **Points Withdrawn:** ${points}\n` +
-        `> <:moatcastleright:1537695231409918002> **Cash Gained:** $${cashGained.toLocaleString()}\n\n` +
+        `> <:moatcastleright:1537695231409918002> **Cash Withdrawn:** $${amount.toLocaleString()}\n\n` +
         `> <:moatcastleright:1537695231409918002> **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Remaining Castle Points:** ${userRecord.moatCastle.rewards.toLocaleString()}`,
+        `> <:moatcastleright:1537695231409918002> **Moat Castle Account Balance:** $${acct.balance.toLocaleString()}\n` +
+        `> <:moatcastleright:1537695231409918002> **Castle Points:** ${acct.rewards.toLocaleString()}`,
       noLogo: false,
     });
 
