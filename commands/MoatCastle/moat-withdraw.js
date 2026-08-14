@@ -4,6 +4,8 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -31,8 +33,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
-          `> <:moatcastleright:1537695231409918002> You do not have a Moat Castle account.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate** to open one.`,
+          `> ${ARROW} You do not have a Moat Castle account.\n` +
+          `> ${ARROW} Use **/moat-accountcreate** to open one.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -54,8 +56,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Card Frozen",
         description:
-          `> <:moatcastleright:1537695231409918002> Your Moat Castle card is **Frozen**.\n` +
-          `> <:moatcastleright:1537695231409918002> You cannot withdraw until you unfreeze it.`,
+          `> ${ARROW} Your Moat Castle card is **Frozen**.\n` +
+          `> ${ARROW} You cannot withdraw until you unfreeze it.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -65,7 +67,7 @@ module.exports = {
     if (acct.balance < amount) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Account Balance",
-        description: `> <:moatcastleright:1537695231409918002> Your Moat Castle account only has **$${acct.balance.toLocaleString()}**.`,
+        description: `> ${ARROW} Your Moat Castle account only has **$${acct.balance.toLocaleString()}**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -80,10 +82,10 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Withdrawal Successful",
       description:
-        `> <:moatcastleright:1537695231409918002> **Withdrawn:** $${amount.toLocaleString()}\n\n` +
-        `> <:moatcastleright:1537695231409918002> **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Remaining Moat Castle Balance:** $${acct.balance.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Castle Points:** ${acct.rewards.toLocaleString()}`,
+        `> ${ARROW} **Withdrawn:** $${amount.toLocaleString()}\n\n` +
+        `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
+        `> ${ARROW} **Remaining Moat Castle Balance:** $${acct.balance.toLocaleString()}\n` +
+        `> ${ARROW} **Castle Points:** ${acct.rewards.toLocaleString()}`,
       noLogo: false,
     });
 

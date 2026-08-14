@@ -1,5 +1,8 @@
 const { SlashCommandBuilder } = require("discord.js");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
+
 const {
   getUserRecord,
   updateUserRecord,
@@ -41,7 +44,7 @@ module.exports = {
 
     const { embed, files } = moatembedTemplate({
       title: "Loans Cleared",
-      description: `> <:moatcastleright:1537695231409918002> Cleared all loans for **${target.tag}**.`,
+      description: `> ${ARROW} Cleared all loans for **${target.tag}**.`,
       noLogo: false,
     });
 

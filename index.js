@@ -1200,61 +1200,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    // ===============================
-    // 🔵 Loan Payment Handler (Loan Selector)
-    // ===============================
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId === "loan_select"
-    ) {
-      const moatStaffRole = "1537722114176581724"; // Moat Castle Staff
-
-      if (!interaction.member.roles.cache.has(moatStaffRole)) {
-        return interaction.reply({
-          content: "❌ Only Moat Castle staff can manage loan payments.",
-          ephemeral: true,
-        });
-      }
-
-      const loanIndex = parseInt(interaction.values[0]);
-      const userRecord = await getUserRecord(interaction.user.id);
-      const loan = userRecord.moatCastle.loans[loanIndex];
-
-      const amountInput =
-        interaction.message.interaction.options.getInteger("amount");
-      let amount = amountInput;
-
-      if (amountInput === "all") amount = loan.remaining;
-
-      if (userRecord.moatCastle.balance < amount) {
-        return interaction.update({
-          content: "❌ Not enough Moat Castle balance.",
-          components: [],
-        });
-      }
-
-      userRecord.moatCastle.balance -= amount;
-      loan.remaining -= amount;
-
-      let refund = 0;
-      if (loan.remaining < 0) {
-        refund = Math.abs(loan.remaining);
-        userRecord.moatCastle.balance += refund;
-        loan.remaining = 0;
-      }
-
-      if (loan.remaining === 0) {
-        userRecord.moatCastle.loans.splice(loanIndex, 1);
-      }
-
-      await updateUserRecord(userRecord);
-
-      return interaction.update({
-        content: `✅ Payment successful.\nPaid: $${amount.toLocaleString()}\nRefund: $${refund.toLocaleString()}\nRemaining: $${loan.remaining.toLocaleString()}`,
-        components: [],
-      });
-    }
-
     //Vehicle Handler
     if (
       interaction.isButton() &&

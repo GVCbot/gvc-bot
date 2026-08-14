@@ -4,6 +4,8 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 // Tier cost table
 const TIER_COSTS = {
@@ -53,8 +55,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
-          `> <:moatcastleright:1537695231409918002> You must create an account first.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate**.`,
+          `> ${ARROW} You must create an account first.\n` +
+          `> ${ARROW} Use **/moat-accountcreate**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -71,8 +73,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Already Black Tier",
         description:
-          `> <:moatcastleright:1537695231409918002> You already have the **Black Tier**.\n` +
-          `> <:moatcastleright:1537695231409918002> No further upgrades available.`,
+          `> ${ARROW} You already have the **Black Tier**.\n` +
+          `> ${ARROW} No further upgrades available.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -86,8 +88,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Upgrade",
         description:
-          `> <:moatcastleright:1537695231409918002> You cannot downgrade or re-select your current tier.\n` +
-          `> <:moatcastleright:1537695231409918002> Your current tier: **${userRecord.moatCastle.tier}**.`,
+          `> ${ARROW} You cannot downgrade or re-select your current tier.\n` +
+          `> ${ARROW} Your current tier: **${userRecord.moatCastle.tier}**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -112,8 +114,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Funds",
         description:
-          `> <:moatcastleright:1537695231409918002> **Upgrade Cost:** $${tierCost.toLocaleString()}\n` +
-          `> <:moatcastleright:1537695231409918002> You only have **$${userRecord.cash.toLocaleString()}**.`,
+          `> ${ARROW} **Upgrade Cost:** $${tierCost.toLocaleString()}\n` +
+          `> ${ARROW} You only have **$${userRecord.cash.toLocaleString()}**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -133,9 +135,9 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Code!",
         description:
-          `> <:moatcastleright:1537695231409918002> The Black Tier code you entered is invalid.\n` +
-          `> <:moatcastleright:1537695231409918002> You have been upgraded to **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
-          `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}`,
+          `> ${ARROW} The Black Tier code you entered is invalid.\n` +
+          `> ${ARROW} You have been upgraded to **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
+          `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}`,
         noLogo: false,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -145,9 +147,9 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Tier Upgrade Successful",
       description:
-        `> <:moatcastleright:1537695231409918002> **New Tier:** ${userRecord.moatCastle.tier}\n` +
-        `> <:moatcastleright:1537695231409918002> **Upgrade Cost:** $${tierCost.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}`,
+        `> ${ARROW} **New Tier:** ${userRecord.moatCastle.tier}\n` +
+        `> ${ARROW} **Upgrade Cost:** $${tierCost.toLocaleString()}\n` +
+        `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}`,
       noLogo: false,
     });
 

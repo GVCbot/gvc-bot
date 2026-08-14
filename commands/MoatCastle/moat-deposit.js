@@ -4,6 +4,8 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 function getTierMultiplier(tier) {
   switch ((tier || "").toLowerCase()) {
@@ -43,8 +45,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
-          `> <:moatcastleright:1537695231409918002> You must create an account first.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate**.`,
+          `> ${ARROW} You must create an account first.\n` +
+          `> ${ARROW} Use **/moat-accountcreate**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -63,8 +65,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Card Frozen",
         description:
-          `> <:moatcastleright:1537695231409918002> Your Moat Castle card is **Frozen**.\n` +
-          `> <:moatcastleright:1537695231409918002> You cannot deposit until you unfreeze it.`,
+          `> ${ARROW} Your Moat Castle card is **Frozen**.\n` +
+          `> ${ARROW} You cannot deposit until you unfreeze it.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -99,11 +101,11 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Deposit Successful",
       description:
-        `> <:moatcastleright:1537695231409918002> **Deposited:** $${amount.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Tier Multiplier:** ×${multiplier}\n` +
-        `> <:moatcastleright:1537695231409918002> **Points Earned:** ${earnedPoints}\n\n` +
-        `> <:moatcastleright:1537695231409918002> **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Total Castle Points:** ${userRecord.moatCastle.rewards.toLocaleString()}`,
+        `> ${ARROW} **Deposited:** $${amount.toLocaleString()}\n` +
+        `> ${ARROW} **Tier Multiplier:** ×${multiplier}\n` +
+        `> ${ARROW} **Points Earned:** ${earnedPoints}\n\n` +
+        `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
+        `> ${ARROW} **Total Castle Points:** ${userRecord.moatCastle.rewards.toLocaleString()}`,
       noLogo: false,
     });
 

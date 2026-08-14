@@ -4,6 +4,8 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 // Tier cost table
 const TIER_COSTS = {
@@ -66,8 +68,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Account Already Exists",
         description:
-          `> <:moatcastleright:1537695231409918002> You already have a Moat Castle account.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-viewaccount** to view it.`,
+          `> ${ARROW} You already have a Moat Castle account.\n` +
+          `> ${ARROW} Use **/moat-viewaccount** to view it.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -98,8 +100,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Funds",
         description:
-          `> <:moatcastleright:1537695231409918002> **Tier:** ${finalTier.toUpperCase()}\n` +
-          `> <:moatcastleright:1537695231409918002> **Cost:** $${tierCost.toLocaleString()}\n\n` +
+          `> ${ARROW} **Tier:** ${finalTier.toUpperCase()}\n` +
+          `> ${ARROW} **Cost:** $${tierCost.toLocaleString()}\n\n` +
           `> You only have **$${userRecord.cash.toLocaleString()}**.`,
         noLogo: true,
       });
@@ -134,14 +136,14 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Code!",
         description:
-          `> <:moatcastleright:1537695231409918002> The code you entered is invalid.\n` +
-          `> <:moatcastleright:1537695231409918002> You have been assigned the **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
-          `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +
-          `> <:moatcastleright:1537695231409918002> **Account ID:** ${accountId}\n` +
-          `> <:moatcastleright:1537695231409918002> **Card Number:** ${cardNumber}\n` +
-          `> <:moatcastleright:1537695231409918002> **Tier Cost:** $${tierCost.toLocaleString()}\n` +
-          `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
-          `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>`,
+          `> ${ARROW} The code you entered is invalid.\n` +
+          `> ${ARROW} You have been assigned the **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
+          `> ${ARROW} **Account Name:** ${accountName}\n` +
+          `> ${ARROW} **Account ID:** ${accountId}\n` +
+          `> ${ARROW} **Card Number:** ${cardNumber}\n` +
+          `> ${ARROW} **Tier Cost:** $${tierCost.toLocaleString()}\n` +
+          `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
+          `> ${ARROW} **Created:** <t:${createdUnix}:F>`,
         noLogo: false,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -151,14 +153,14 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Moat Castle Account Created",
       description:
-        `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +
-        `> <:moatcastleright:1537695231409918002> **Account ID:** ${accountId}\n` +
-        `> <:moatcastleright:1537695231409918002> **Card Number:** ${cardNumber}\n` +
-        `> <:moatcastleright:1537695231409918002> **Tier:** ${userRecord.moatCastle.tier}\n` +
-        `> <:moatcastleright:1537695231409918002> **Tier Cost:** $${tierCost.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>\n\n` +
-        `> <:moatcastleright:1537695231409918002> Use **/moat-viewaccount** to view your new account.`,
+        `> ${ARROW} **Account Name:** ${accountName}\n` +
+        `> ${ARROW} **Account ID:** ${accountId}\n` +
+        `> ${ARROW} **Card Number:** ${cardNumber}\n` +
+        `> ${ARROW} **Tier:** ${userRecord.moatCastle.tier}\n` +
+        `> ${ARROW} **Tier Cost:** $${tierCost.toLocaleString()}\n` +
+        `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
+        `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
+        `> ${ARROW} Use **/moat-viewaccount** to view your new account.`,
       noLogo: false,
     });
 

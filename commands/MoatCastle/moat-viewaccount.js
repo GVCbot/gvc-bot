@@ -1,6 +1,8 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { getUserRecord } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,8 +20,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Moat Castle Account Required",
         description:
-          `> <:moatcastleright:1537695231409918002> You do not have a Moat Castle account yet.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate name:** to open one.`,
+          `> ${ARROW} You do not have a Moat Castle account yet.\n` +
+          `> ${ARROW} Use **/moat-accountcreate name:** to open one.`,
         noLogo: true,
       });
 
@@ -36,14 +38,14 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Your Moat Castle Account",
       description:
-        `> <:moatcastleright:1537695231409918002> **Account Name:** ${acct.accountName}\n` +
-        `> <:moatcastleright:1537695231409918002> **Account ID:** ${acct.accountId}\n` +
-        `> <:moatcastleright:1537695231409918002> **Card Number:** ${acct.cardNumber}\n` +
-        `> <:moatcastleright:1537695231409918002> **Card Status:** ${cardStatus}\n\n` +
-        `> <:moatcastleright:1537695231409918002> **Balance:** $${acct.balance.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Tier:** ${acct.tier}\n` +
-        `> <:moatcastleright:1537695231409918002> **Rewards:** ${acct.rewards.toLocaleString()} points\n` +
-        `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>`,
+        `> ${ARROW} **Account Name:** ${acct.accountName}\n` +
+        `> ${ARROW} **Account ID:** ${acct.accountId}\n` +
+        `> ${ARROW} **Card Number:** ${acct.cardNumber}\n` +
+        `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
+        `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
+        `> ${ARROW} **Tier:** ${acct.tier}\n` +
+        `> ${ARROW} **Rewards:** ${acct.rewards.toLocaleString()} points\n` +
+        `> ${ARROW}**Created:** <t:${createdUnix}:F>`,
       noLogo: false,
     });
 

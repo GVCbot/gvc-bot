@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const path = require("node:path");
 
-module.exports = function moatembedTemplate({ title, description, noLogo }) {
+function moatembedTemplate({ title, description, noLogo }) {
   const MOATCASTLE = "<:moatcastle:1537694454998372372>";
   const ARROW = "<:moatcastleright:1537695231409918002>";
 
@@ -26,4 +26,11 @@ module.exports = function moatembedTemplate({ title, description, noLogo }) {
   ];
 
   return { embed, files };
+}
+
+module.exports = moatembedTemplate;
+
+module.exports.MOATEMOJIS = {
+  MOATCASTLE: "<:moatcastle:1537694454998372372>",
+  ARROW: "<:moatcastleright:1537695231409918002>",
 };

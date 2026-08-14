@@ -4,6 +4,8 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,8 +21,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
-          `> <:moatcastleright:1537695231409918002> You do not have a Moat Castle account.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate** to open one.`,
+          `> ${ARROW} You do not have a Moat Castle account.\n` +
+          `> ${ARROW} Use **/moat-accountcreate** to open one.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -38,10 +40,10 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Moat Castle Account Deleted",
       description:
-        `> <:moatcastleright:1537695231409918002> Your Moat Castle account has been permanently deleted.\n` +
-        `> <:moatcastleright:1537695231409918002> **Refunded:** $${refundedCash.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n\n` +
-        `> <:moatcastleright:1537695231409918002> You may create a new account anytime using **/moat-accountcreate**.`,
+        `> ${ARROW} Your Moat Castle account has been permanently deleted.\n` +
+        `> ${ARROW} **Refunded:** $${refundedCash.toLocaleString()}\n` +
+        `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n\n` +
+        `> ${ARROW} You may create a new account anytime using **/moat-accountcreate**.`,
       noLogo: false,
     });
 

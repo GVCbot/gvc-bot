@@ -6,6 +6,8 @@ const {
 } = require("discord.js");
 
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 const {
   getUserRecord,
   updateUserRecord,
@@ -40,17 +42,31 @@ module.exports = {
 
     const userRecord = await getUserRecord(user.id);
 
+    // Ensure Moat Castle account exists
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
-          `> <:moatcastleright:1537695231409918002> You must create a Moat Castle account first.\n` +
-          `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate**.`,
+          `> ${ARROW} You must create a Moat Castle account first.\n` +
+          `> ${ARROW} Use **/moat-accountcreate**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // ⭐ NEW: Prevent multiple active loans
+    if (userRecord.moatCastle.loans && userRecord.moatCastle.loans.length > 0) {
+      const { embed, files } = moatembedTemplate({
+        title: "Active Loan Exists",
+        description:
+          `> ${ARROW} You already have an active Moat Castle loan.\n` +
+          `> ${ARROW} You must pay or clear your existing loan before requesting another.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // Create loan request object
     const loanRequest = {
       id: Date.now().toString(),
       requesterId: user.id,
@@ -70,11 +86,11 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "💰 Moat Castle Loan Request",
       description:
-        `> <:moatcastleright:1537695231409918002> **Requester:** ${user} (${user.id})\n` +
-        `> <:moatcastleright:1537695231409918002> **Requested Amount:** $${amount.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Reason:** ${reason}\n` +
-        `> <:moatcastleright:1537695231409918002> **Status:** Pending Review\n\n` +
-        `> <:moatcastleright:1537695231409918002> <@&${loanRoleId}> please review this request.`,
+        `> ${ARROW} **Requester:** ${user} (${user.id})\n` +
+        `> ${ARROW} **Requested Amount:** $${amount.toLocaleString()}\n` +
+        `> ${ARROW} **Reason:** ${reason}\n` +
+        `> ${ARROW} **Status:** Pending Review\n\n` +
+        `> ${ARROW} <@&${loanRoleId}> please review this request.`,
       noLogo: false,
     });
 

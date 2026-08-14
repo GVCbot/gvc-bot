@@ -1,6 +1,9 @@
 const { SlashCommandBuilder } = require("discord.js");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { getUserRecord } = require("../../economy/economyutils");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
+
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,8 +19,8 @@ module.exports = {
       const { embed, files } = moatembedTemplate({
         title: "Account Deleted",
         description:
-          `> <:moatcastleright:1537695231409918002> Your Moat Castle account was **deleted**.\n` +
-          `> <:moatcastleright:1537695231409918002> No further action was taken.`,
+          `> ${ARROW} Your Moat Castle account was **deleted**.\n` +
+          `> ${ARROW} No further action was taken.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -28,7 +31,7 @@ module.exports = {
     if (loans.length === 0) {
       const { embed, files } = moatembedTemplate({
         title: "No Active Loans",
-        description: `> <:moatcastleright:1537695231409918002> You do not have any active loans.`,
+        description: `> ${ARROW} You do not have any active loans.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -38,11 +41,11 @@ module.exports = {
     loans.forEach((loan, i) => {
       const createdUnix = Math.floor(loan.createdAt / 1000);
       desc +=
-        `> <:moatcastleright:1537695231409918002> **Loan #${i + 1}**\n` +
-        `> Amount: $${loan.amount.toLocaleString()}\n` +
-        `> Remaining: $${loan.remaining.toLocaleString()}\n` +
-        `> Reason: ${loan.reason}\n` +
-        `> Created: <t:${createdUnix}:F>\n\n`;
+        `> ${ARROW} **Loan #${i + 1}**\n` +
+        `> ${ARROW} Amount: $${loan.amount.toLocaleString()}\n` +
+        `> ${ARROW} Remaining: $${loan.remaining.toLocaleString()}\n` +
+        `> ${ARROW} Reason: ${loan.reason}\n` +
+        `> ${ARROW} Created: <t:${createdUnix}:F>\n\n`;
     });
 
     const { embed, files } = moatembedTemplate({

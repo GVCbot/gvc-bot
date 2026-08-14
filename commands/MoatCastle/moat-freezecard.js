@@ -4,6 +4,8 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -30,8 +32,8 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Card Frozen",
       description:
-        `> <:moatcastleright:1537695231409918002> Your Moat Castle card is now **Frozen**.\n` +
-        `> <:moatcastleright:1537695231409918002> You cannot use it for payments until you unfreeze it.`,
+        `> ${ARROW} Your Moat Castle card is now **Frozen**.\n` +
+        `> ${ARROW} You cannot use it for payments until you unfreeze it.`,
       noLogo: false,
     });
 
