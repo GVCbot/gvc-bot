@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
@@ -57,7 +57,7 @@ module.exports = {
     // Load user record
     const receiverRecord = await getUserRecord(receiver.id);
 
-    // Add to CASH (correct for new system)
+    // Add to CASH only
     receiverRecord.cash = receiverRecord.cash ?? 0;
     receiverRecord.cash += amount;
 

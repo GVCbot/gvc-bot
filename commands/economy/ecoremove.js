@@ -10,7 +10,7 @@ const HR_ROLE_ID = "1350582607217430650"; // HR Staff role
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ecoremove")
-    .setDescription("HR: Remove money from a user's balance.")
+    .setDescription("HR: Remove money from a user's cash balance.")
     .addUserOption((option) =>
       option
         .setName("user")
@@ -33,7 +33,7 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:bulletpoint:1534184707900837961> Only HR staff can use this command.",
+          "> <:arrowright:1534182706836144158> Only HR staff can use this command.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -48,7 +48,7 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Invalid Amount <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:bulletpoint:1534184707900837961> Amount must be greater than 0.",
+          "> <:arrowright:1534182706836144158> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -57,58 +57,27 @@ module.exports = {
     const receiverRecord = await getUserRecord(receiver.id);
 
     receiverRecord.cash = receiverRecord.cash ?? 0;
-    receiverRecord.banks = receiverRecord.banks ?? [];
 
-    // Calculate total money (cash + all banks)
-    const totalBankBalance = receiverRecord.banks.reduce(
-      (sum, b) => sum + (b.balance ?? 0),
-      0,
-    );
-    const totalMoney = receiverRecord.cash + totalBankBalance;
-
-    if (totalMoney < amount) {
+    if (receiverRecord.cash < amount) {
       const { embed } = embedTemplate({
         title:
           "<a:gvcsunspin:1527220557890850846> Insufficient Funds <a:gvcsunspin:1527220557890850846>",
         description:
-          "> <:bulletpoint:1534184707900837961> That user does not have enough money.",
+          "> <:arrowright:1534182706836144158> That user does not have enough cash.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // Remove from cash first
-    let remaining = amount;
-
-    if (receiverRecord.cash >= remaining) {
-      receiverRecord.cash -= remaining;
-      remaining = 0;
-    } else {
-      remaining -= receiverRecord.cash;
-      receiverRecord.cash = 0;
-    }
-
-    // Remove from banks if needed
-    if (remaining > 0) {
-      for (const bank of receiverRecord.banks) {
-        if (bank.balance >= remaining) {
-          bank.balance -= remaining;
-          remaining = 0;
-          break;
-        } else {
-          remaining -= bank.balance;
-          bank.balance = 0;
-        }
-      }
-    }
+    // Remove ONLY from cash
+    receiverRecord.cash -= amount;
 
     await updateUserRecord(receiverRecord);
 
     const desc =
       `> <:bulletpoint:1534184707900837961> **Removed from:** <@${receiver.id}>\n` +
       `> <:bulletpoint:1534184707900837961> **Amount:** $${amount.toLocaleString()}\n` +
-      `> <:bulletpoint:1534184707900837961> **New Cash:** $${receiverRecord.cash.toLocaleString()}\n` +
-      `> <:bulletpoint:1534184707900837961> **Total Bank Balance:** $${receiverRecord.banks.reduce((s, b) => s + b.balance, 0).toLocaleString()}`;
+      `> <:bulletpoint:1534184707900837961> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title:
@@ -127,10 +96,9 @@ module.exports = {
         title:
           "<a:gvcsunspin:1527220557890850846> Money Removed <a:gvcsunspin:1527220557890850846>",
         description:
-          `> <:bulletpoint:1534184707900837961> **By:** ${hrMember.user.username} (HR)\n` +
-          `> <:bulletpoint:1534184707900837961> **Amount Removed:** $${amount.toLocaleString()}\n` +
-          `> <:bulletpoint:1534184707900837961> **New Cash:** $${receiverRecord.cash.toLocaleString()}\n` +
-          `> <:bulletpoint:1534184707900837961> **Total Bank Balance:** $${receiverRecord.banks.reduce((s, b) => s + b.balance, 0).toLocaleString()}`,
+          `> <:bulletpoint:1524621721318195230> **By:** ${hrMember.user.username} (HR)\n` +
+          `> <:bulletpoint:1524621721318195230> **Amount Removed:** $${amount.toLocaleString()}\n` +
+          `> <:bulletpoint:1524621721318195230> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
         noLogo: true,
       });
 
