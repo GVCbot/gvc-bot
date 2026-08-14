@@ -32,7 +32,7 @@ module.exports = {
         noLogo: true,
       });
 
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
     // Get account name
@@ -68,6 +68,6 @@ module.exports = {
       noLogo: false,
     });
 
-    return interaction.editReply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed], files });
   },
 };
