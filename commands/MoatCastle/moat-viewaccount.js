@@ -26,7 +26,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // If account exists
+    // If account exists, show details
     const acct = userRecord.moatCastle;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
@@ -35,7 +35,7 @@ module.exports = {
       description:
         `> <:moatcastleright:1537695231409918002> **Account Name:** ${acct.accountName}\n` +
         `> <:moatcastleright:1537695231409918002> **Account ID:** ${acct.accountId}\n` +
-        `> <:moatcastleright:1537695231409918002> **Balance:** $${acct.balance.toLocaleString()}\n` +
+        `> <:moatcastleright:1537695231409918002> **Balance:** $${userRecord.cash.toLocaleString()}\n` +
         `> <:moatcastleright:1537695231409918002> **Tier:** ${acct.tier}\n` +
         `> <:moatcastleright:1537695231409918002> **Rewards:** ${acct.rewards.toLocaleString()} points\n` +
         `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>`,

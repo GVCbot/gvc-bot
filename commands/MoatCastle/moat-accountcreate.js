@@ -5,6 +5,15 @@ const {
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 
+// Tier cost table
+const TIER_COSTS = {
+  standard: 0,
+  silver: 5000,
+  gold: 10000,
+  platinum: 25000,
+  black: 50000,
+};
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-accountcreate")
@@ -14,6 +23,19 @@ module.exports = {
         .setName("name")
         .setDescription("Your Moat Castle account name")
         .setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("tier")
+        .setDescription("Choose your starting tier")
+        .addChoices(
+          { name: "Standard (Free)", value: "standard" },
+          { name: "Silver ($5,000)", value: "silver" },
+          { name: "Gold ($10,000)", value: "gold" },
+          { name: "Platinum ($25,000)", value: "platinum" },
+          { name: "Black ($50,000)", value: "black" },
+        )
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -22,6 +44,7 @@ module.exports = {
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);
 
+    // Prevent duplicate accounts
     if (userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "Account Already Exists",
@@ -35,13 +58,35 @@ module.exports = {
     }
 
     const accountName = interaction.options.getString("name");
+    const chosenTier = interaction.options.getString("tier") || "standard";
+    const tierCost = TIER_COSTS[chosenTier];
+
+    // Check if user can afford the tier
+    if (userRecord.cash < tierCost) {
+      const { embed, files } = moatembedTemplate({
+        title: "Insufficient Funds",
+        description:
+          `> <:moatcastleright:1537695231409918002> **Tier:** ${chosenTier.toUpperCase()}\n` +
+          `> <:moatcastleright:1537695231409918002> **Cost:** $${tierCost.toLocaleString()}\n\n` +
+          `> You only have **$${userRecord.cash.toLocaleString()}**.`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // Deduct tier cost
+    userRecord.cash -= tierCost;
+
+    // Generate unique Moat Castle account ID
     const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+    // Create the account
     userRecord.moatCastle = {
       accountName,
       accountId,
       balance: 0,
-      tier: "Basic",
+      tier: chosenTier.charAt(0).toUpperCase() + chosenTier.slice(1),
       rewards: 0,
       createdAt: Date.now(),
     };
@@ -55,8 +100,9 @@ module.exports = {
       description:
         `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +
         `> <:moatcastleright:1537695231409918002> **Account ID:** ${accountId}\n` +
-        `> <:moatcastleright:1537695231409918002> **Tier:** Basic\n` +
-        `> <:moatcastleright:1537695231409918002> **Balance:** $0\n` +
+        `> <:moatcastleright:1537695231409918002> **Tier:** ${userRecord.moatCastle.tier}\n` +
+        `> <:moatcastleright:1537695231409918002> **Tier Cost:** $${tierCost.toLocaleString()}\n` +
+        `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
         `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>\n\n` +
         `> <:moatcastleright:1537695231409918002> Use **/moat-viewaccount** to view your new account.`,
       noLogo: false,
