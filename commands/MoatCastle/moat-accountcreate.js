@@ -22,9 +22,8 @@ module.exports = {
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);
 
-    // Prevent duplicate accounts
     if (userRecord.moatCastle) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "Account Already Exists",
         description:
           `> <:moatcastleright:1537695231409918002> You already have a Moat Castle account.\n` +
@@ -35,13 +34,9 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Get account name
     const accountName = interaction.options.getString("name");
-
-    // Generate unique Moat Castle account ID
     const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    // Create the account
     userRecord.moatCastle = {
       accountName,
       accountId,
@@ -53,10 +48,9 @@ module.exports = {
 
     await updateUserRecord(userRecord);
 
-    // Confirmation embed
     const createdUnix = Math.floor(Date.now() / 1000);
 
-    const { embed } = moatembedTemplate({
+    const { embed, files } = moatembedTemplate({
       title: "Moat Castle Account Created",
       description:
         `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +

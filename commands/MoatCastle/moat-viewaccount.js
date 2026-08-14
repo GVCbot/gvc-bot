@@ -15,7 +15,7 @@ module.exports = {
 
     // If no Moat Castle account exists
     if (!userRecord.moatCastle) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "Moat Castle Account Required",
         description:
           `> <:moatcastleright:1537695231409918002> You do not have a Moat Castle account yet.\n` +
@@ -26,12 +26,11 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // If account exists, show details
+    // If account exists
     const acct = userRecord.moatCastle;
-
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
-    const { embed } = moatembedTemplate({
+    const { embed, files } = moatembedTemplate({
       title: "Your Moat Castle Account",
       description:
         `> <:moatcastleright:1537695231409918002> **Account Name:** ${acct.accountName}\n` +

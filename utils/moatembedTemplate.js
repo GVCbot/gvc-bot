@@ -1,12 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
-const path = require("node:path");
 
-module.exports = function moatembedTemplate({
-  title,
-  description,
-  banner,
-  noLogo,
-}) {
+module.exports = function moatembedTemplate({ title, description, noLogo }) {
   const MOATCASTLE = "<:moatcastle:1537694454998372372>";
   const ARROW = "<:moatcastleright:1537695231409918002>";
 
@@ -15,23 +9,14 @@ module.exports = function moatembedTemplate({
     .setTitle(`${MOATCASTLE} ${title} ${MOATCASTLE}`)
     .setDescription(description);
 
-  // Default banner file
-  const bannerPath =
-    banner || path.join(__dirname, "../graphics/moatbanklogo.png");
-
-  // Attach file and reference it
-  const files = [
-    {
-      attachment: bannerPath,
-      name: "moatbanner.png",
-    },
-  ];
-
-  embed.setImage("attachment://moatbanner.png");
+  // No banner, no attachments, no setImage()
 
   if (!noLogo) {
-    embed.setFooter({ text: "Moat Castle Banking Division" });
+    embed.setFooter({
+      text: "Moat Castle Banking Division",
+      iconURL: "attachment://moatcastlebanklogo.png",
+    });
   }
 
-  return { embed, files };
+  return { embed };
 };
