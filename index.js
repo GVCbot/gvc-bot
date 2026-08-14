@@ -570,504 +570,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
 
-    //Bank Balance Handler
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("viewBalance_")
-    ) {
-      const [, viewerId, targetId] = interaction.customId.split("_");
-      const targetRecord = await getUserRecord(targetId);
-
-      const banks = await loadAllBanks(targetRecord);
-
-      if (banks.length === 0) {
-        const { embed, files } = embedTemplate({
-          title: "🏦 No Banks",
-          description: "> You are not in any banks.",
-          noLogo: true,
-        });
-        return interaction.reply({ embeds: [embed], files, flags: 64 });
-      }
-
-      const options = banks.map((b) => ({
-        label: `${b.type} (${b.id})`,
-        description: `Balance: $${b.balance}`,
-        value: b.id,
-      }));
-
-      const row = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId(`bank_select_${targetId}`)
-          .setPlaceholder("Choose a bank to view")
-          .addOptions(options),
-      );
-
-      const { embed, files } = embedTemplate({
-        title: "🏦 Select a Bank",
-        description: "> Choose which bank you want to view.",
-        noLogo: true,
-      });
-
-      return interaction.reply({
-        embeds: [embed],
-        files,
-        components: [row],
-        flags: 64,
-      });
-    }
-
-    // Bank Deposit Handler
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("deposit_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const [bankId, amountInput] = interaction.values[0].split("|");
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      // 1. Locate the true owner's record for this bank
-      const ownerRecord = await findBankOwnerRecord(bankId, userRecord);
-      if (!ownerRecord) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
-
-      // 2. Determine deposit amount
-      let amount =
-        amountInput === "all" ? userRecord.cash : parseInt(amountInput, 10);
-
-      if (isNaN(amount) || amount <= 0) {
-        return interaction.editReply({
-          content: "❌ Invalid amount.",
-          flags: 64,
-        });
-      }
-
-      if (userRecord.cash < amount) {
-        return interaction.editReply({
-          content: "❌ You don't have enough cash.",
-          flags: 64,
-        });
-      }
-
-      // 3. Update balances
-      userRecord.cash -= amount;
-      bank.balance = (bank.balance ?? 0) + amount;
-
-      // 4. Save both records (or just userRecord if the user owns the bank)
-      await updateUserRecord(userRecord);
-      if (ownerRecord.userId !== userRecord.userId) {
-        await updateUserRecord(ownerRecord);
-      }
-
-      // 5. Send confirmation using bank.name
-      const { embed } = embedTemplate({
-        title: "🏦 Deposit Successful",
-        description:
-          `> Deposited **$${amount.toLocaleString()}** into **${bank.name}**.\n\n` +
-          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
-          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Bank Withdraw Handler
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("withdraw_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const [bankId, amountInput] = interaction.values[0].split("|");
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      const ownerRecord = await findBankOwnerRecord(bankId, userRecord);
-      if (!ownerRecord) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
-
-      let amount =
-        amountInput === "all" ? bank.balance : parseInt(amountInput, 10);
-
-      if (isNaN(amount) || amount <= 0) {
-        return interaction.editReply({
-          content: "❌ Invalid amount.",
-          flags: 64,
-        });
-      }
-
-      if (bank.balance < amount) {
-        return interaction.editReply({
-          content: "❌ Not enough balance in this bank.",
-          flags: 64,
-        });
-      }
-
-      bank.balance -= amount;
-      userRecord.cash += amount;
-
-      await updateUserRecord(userRecord);
-      if (ownerRecord.userId !== userRecord.userId) {
-        await updateUserRecord(ownerRecord);
-      }
-
-      const { embed } = embedTemplate({
-        title: "🏦 Withdrawal Successful",
-        description:
-          `> Withdrew **$${amount.toLocaleString()}** from **${bank.name}**.\n\n` +
-          `> **New Cash:** $${userRecord.cash.toLocaleString()}\n` +
-          `> **Bank Balance:** $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Bank Delete Handler
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("bank_delete_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.customId.replace("bank_delete_", "");
-      const userId = interaction.user.id;
-
-      const ownerRecord = await getUserRecord(userId);
-
-      const bank = ownerRecord?.banks?.find((b) => b.id === bankId);
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      if (bank.owner !== userId) {
-        return interaction.editReply({
-          content: "❌ Only the bank owner can delete this bank.",
-          flags: 64,
-        });
-      }
-
-      // 1. Get remaining balance (default to 0 if undefined)
-      const returnedCash = Number(bank.balance) || 0;
-
-      // 2. Add bank balance back to owner's cash
-      ownerRecord.cash = (Number(ownerRecord.cash) || 0) + returnedCash;
-
-      // 3. Remove bank from owner's banks list
-      ownerRecord.banks = ownerRecord.banks.filter((b) => b.id !== bankId);
-
-      // 4. Save updated owner record IMMEDIATELY so the cash refund is persisted
-      await updateUserRecord(ownerRecord);
-
-      // 5. Clean up joinedBanks for co-owners AFTER saving ownerRecord
-      if (Array.isArray(bank.members) && bank.members.length > 0) {
-        for (const memberId of bank.members) {
-          // Ensure owner is completely skipped
-          if (memberId === userId) continue;
-
-          const memberRecord = await getUserRecord(memberId);
-          if (memberRecord?.joinedBanks) {
-            memberRecord.joinedBanks = memberRecord.joinedBanks.filter(
-              (id) => id !== bankId,
-            );
-            await updateUserRecord(memberRecord);
-          }
-        }
-      }
-
-      // 6. Respond with confirmation & refunded amount
-      const { embed } = embedTemplate({
-        title: "🗑️ Bank Deleted",
-        description:
-          `> ${ARROW} Your bank **${bank.name || bank.type}** has been deleted.\n` +
-          `> ${ARROW} **$${returnedCash.toLocaleString()}** was deposited back into your cash balance.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    //Bank Join Accept Handler
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("inv_accept_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const parts = interaction.customId.split("_");
-      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
-      const userId = parts[5];
-
-      let ownerRecord = await getUserRecord(interaction.user.id);
-
-      if (!ownerRecord) {
-        console.warn(
-          "⚠️ Owner record not found, searching all user records...",
-        );
-        const allRecords = await getAllUserRecords();
-        ownerRecord = allRecords.find((r) =>
-          r.banks?.some((b) => b.id === bankId),
-        );
-      }
-
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
-      let bank = ownerRecord.banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        const allRecords = await getAllUserRecords();
-        for (const rec of allRecords) {
-          if (!rec.banks) continue;
-          const found = rec.banks.find((b) => b.id === bankId);
-          if (found) {
-            bank = found;
-            break;
-          }
-        }
-      }
-
-      if (!bank) {
-        const { embed } = embedTemplate({
-          title: "❌ Bank Not Found",
-          description: "> The specified bank could not be located.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
-      let userRecord = await getUserRecord(userId);
-      if (!userRecord) {
-        userRecord = {
-          id: userId,
-          cash: 0,
-          banks: [],
-          joinedBanks: [],
-          records: { citations: [], warrants: [], blackpoints: 0 },
-        };
-        await updateUserRecord(userRecord);
-      }
-
-      if (!bank.members.includes(userId)) bank.members.push(userId);
-      if (!userRecord.joinedBanks) userRecord.joinedBanks = [];
-      if (!userRecord.joinedBanks.includes(bankId))
-        userRecord.joinedBanks.push(bankId);
-
-      ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
-        (r) => !(r.bankId === bankId && r.userId === userId),
-      );
-
-      await updateUserRecord(ownerRecord);
-      await updateUserRecord(userRecord);
-
-      const { embed } = embedTemplate({
-        title: "✅ Join Request Accepted",
-        description:
-          `> ${ARROW} **Bank:** ${bank.name}\n` +
-          `> ${ARROW} **New Member:** <@${userId}>\n\n` +
-          `> The user has been successfully added as a co‑owner.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed], flags: 64 });
-    }
-
-    //Bank Join Deny Handler
-    if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("inv_deny_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const parts = interaction.customId.split("_");
-      const bankId = `${parts[2]}_${parts[3]}_${parts[4]}`;
-      const userId = parts[5];
-
-      const ownerRecord = await getUserRecord(interaction.user.id);
-
-      ownerRecord.joinRequests = ownerRecord.joinRequests.filter(
-        (r) => !(r.bankId === bankId && r.userId === userId),
-      );
-
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
-      await updateUserRecord(ownerRecord);
-
-      const { embed } = embedTemplate({
-        title: "❌ Join Request Denied",
-        description:
-          `> ${ARROW} **Bank ID:** ${bankId}\n` +
-          `> ${ARROW} **User:** <@${userId}>\n\n` +
-          `> The join request has been denied and removed from your list.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed], flags: 64 });
-    }
-
-    //Remove Bank Member Handler
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("removebankmember_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.customId.replace(
-        "removebankmember_select_",
-        "",
-      );
-      const removedId = interaction.values[0];
-      const ownerId = interaction.user.id;
-
-      const ownerRecord = await getUserRecord(ownerId);
-      const bank = ownerRecord.banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      bank.members = bank.members.filter((id) => id !== removedId);
-
-      if (!ownerRecord || !ownerRecord.userId) {
-        console.error(
-          "❌ Owner record missing, aborting update to prevent overwrite.",
-        );
-        const { embed } = embedTemplate({
-          title: "⚠️ Internal Error",
-          description:
-            "> Could not verify the bank owner record. Please try again later.",
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], flags: 64 });
-      }
-
-      await updateUserRecord(ownerRecord);
-
-      const removedRecord = await getUserRecord(removedId);
-      removedRecord.joinedBanks = (removedRecord.joinedBanks || []).filter(
-        (id) => id !== bankId,
-      );
-      await updateUserRecord(removedRecord);
-
-      try {
-        const removedUser = await interaction.client.users.fetch(removedId);
-        await removedUser.send(
-          `❌ You have been removed as a co-owner of **${bank.name}**.`,
-        );
-      } catch {}
-
-      const { embed } = embedTemplate({
-        title: "🏦 Member Removed",
-        description:
-          `> ${ARROW} **Bank:** ${bank.name}\n` +
-          `> ${ARROW} **Removed:** <@${removedId}>\n\n` +
-          `> They are no longer a co-owner.`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    //Manage Bank Select Handler
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith("managebank_select_")
-    ) {
-      await interaction.deferReply({ flags: 64 });
-
-      const bankId = interaction.values[0];
-      const userRecord = await getUserRecord(interaction.user.id);
-
-      const banks = await loadAllBanks(userRecord);
-      const bank = banks.find((b) => b.id === bankId);
-
-      if (!bank) {
-        return interaction.editReply({
-          content: "❌ Bank not found.",
-          flags: 64,
-        });
-      }
-
-      if (bank.owner !== interaction.user.id) {
-        const { embed } = embedTemplate({
-          title: "❌ Access Denied",
-          description:
-            `> Only the **bank owner** can manage this bank.\n` +
-            `> As a co‑owner, you can still:\n` +
-            `> ${ARROW} **Deposit** using /deposit\n` +
-            `> ${ARROW} **Withdraw** using /withdraw\n\n` +
-            `> You cannot delete or modify bank settings.`,
-          noLogo: true,
-        });
-
-        embed.setThumbnail(
-          interaction.user.displayAvatarURL({ dynamic: true }),
-        );
-
-        return interaction.editReply({ embeds: [embed] });
-      }
-
-      const { embed } = embedTemplate({
-        title: `${SUN} ${bank.name} ${SUN}`,
-        description:
-          `> ${ARROW} **Bank ID:** ${bank.id}\n` +
-          `> ${ARROW} **Type:** ${bank.type}\n` +
-          `> ${ARROW} **Owner:** <@${bank.owner}>\n` +
-          `> ${ARROW} **Members:** ${bank.members.map((m) => `<@${m}>`).join(", ")}\n` +
-          `> ${ARROW} **Password:** ${bank.password ? bank.password : "None Set"}\n` +
-          `> ${ARROW} **Balance:** $${bank.balance.toLocaleString()}`,
-        noLogo: true,
-      });
-
-      embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
-
-      const buttons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`bank_delete_${bank.id}`)
-          .setLabel("Delete Bank")
-          .setStyle(ButtonStyle.Danger),
-      );
-
-      return interaction.editReply({ embeds: [embed], components: [buttons] });
-    }
     // ===============================
     // 🔵 Moat Castle Loan Accept / Deny Handler
     // ===============================
@@ -1202,6 +704,135 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.message.reply({ embeds: [channelEmbed] });
 
       // Staff confirmation
+      return interaction.editReply({
+        content: `Loan ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
+      });
+    }
+
+    // ===============================
+    // 🦊 Fox Bank Loan Accept / Deny Handler
+    // ===============================
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("fox_loan_")
+    ) {
+      const foxStaffRole = "1537894455779270717"; // Fox Bank Staff
+
+      if (!interaction.member.roles.cache.has(foxStaffRole)) {
+        return interaction.reply({
+          content: "❌ Only Fox Bank staff can manage loans.",
+          ephemeral: true,
+        });
+      }
+
+      await interaction.deferReply({ ephemeral: true });
+
+      const parts = interaction.customId.split("_");
+      const action = parts[2]; // accept or deny
+      const requesterId = parts[3];
+      const requestId = parts[4];
+
+      const requesterRecord = await getUserRecord(requesterId);
+
+      if (!requesterRecord.foxBank) {
+        const { embed } = foxbankembedTemplate({
+          title: "Account Deleted",
+          description:
+            `> ${ARROW} The requester’s Fox Bank account was **deleted**.\n` +
+            `> ${ARROW} No further action was taken.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      const loanRequests = requesterRecord.foxBank.loanRequests || [];
+      const request = loanRequests.find((r) => r.id === requestId);
+
+      if (!request) {
+        return interaction.editReply({ content: "❌ Loan request not found." });
+      }
+
+      const requesterUser = await interaction.client.users.fetch(requesterId);
+
+      if (!requesterRecord.foxBank.loans) {
+        requesterRecord.foxBank.loans = [];
+      }
+
+      requesterRecord.foxBank.loanRequests =
+        requesterRecord.foxBank.loanRequests.filter((r) => r !== request);
+
+      let channelEmbed;
+
+      // ===============================
+      // ✔ ACCEPT LOAN
+      // ===============================
+      if (action === "accept") {
+        requesterRecord.foxBank.loans.push({
+          amount: request.amount,
+          remaining: request.amount,
+          reason: request.reason,
+          createdAt: Date.now(),
+        });
+
+        requesterRecord.foxBank.balance += request.amount;
+        requesterRecord.foxBank.updatedAt = Date.now();
+
+        await updateUserRecord(requesterRecord);
+
+        channelEmbed = foxbankembedTemplate({
+          title: "✅ Loan Accepted",
+          description:
+            `> ${ARROW} **Requester:** <@${requesterId}>\n` +
+            `> ${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `> ${ARROW} Loan has been **approved** and added to their Fox Bank balance.`,
+          noLogo: false,
+        }).embed;
+
+        try {
+          const { embed: dmEmbed } = foxbankembedTemplate({
+            title: "🦊 Fox Bank Loan Approved",
+            description:
+              `> ${ARROW} Your loan for **$${request.amount.toLocaleString()}** has been **approved**.\n` +
+              `> ${ARROW} Funds have been added to your Fox Bank balance.\n\n` +
+              `> ${ARROW} You can review your loan using **/fox-loanreview**.`,
+            noLogo: false,
+          });
+          await requesterUser.send({ embeds: [dmEmbed] });
+        } catch {}
+      }
+
+      // ===============================
+      // ❌ DENY LOAN
+      // ===============================
+      if (action === "deny") {
+        requesterRecord.foxBank.loans = [];
+        requesterRecord.foxBank.updatedAt = Date.now();
+
+        await updateUserRecord(requesterRecord);
+
+        channelEmbed = foxbankembedTemplate({
+          title: "❌ Loan Denied",
+          description:
+            `> ${ARROW} **Requester:** <@${requesterId}>\n` +
+            `> ${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `> ${ARROW} Loan request has been **denied**.`,
+          noLogo: false,
+        }).embed;
+
+        try {
+          const { embed: dmEmbed } = foxbankembedTemplate({
+            title: "🦊 Fox Bank Loan Denied",
+            description:
+              `> ${ARROW} Your loan request for **$${request.amount.toLocaleString()}** has been **denied**.\n` +
+              `> ${ARROW} You may submit another request using **/fox-loanrequest** if needed.`,
+            noLogo: false,
+          });
+          await requesterUser.send({ embeds: [dmEmbed] });
+        } catch {}
+      }
+
+      await interaction.message.reply({ embeds: [channelEmbed] });
+
       return interaction.editReply({
         content: `Loan ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
       });

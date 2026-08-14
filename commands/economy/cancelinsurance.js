@@ -25,7 +25,7 @@ module.exports = {
 
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // Ensure store object exists
+    // Ensure store exists
     if (!userRecord.store) {
       userRecord.store = {
         fox_basic: { active: false, nextPayment: 0 },
@@ -61,22 +61,11 @@ module.exports = {
         await interaction.member.roles.remove(roleId).catch(() => {});
       }
 
-      // Remove insured tag from banks you own
-      if (userRecord.banks) {
-        for (const bank of userRecord.banks) {
-          if (bank.insuredType === insurance.insuredType) {
-            bank.insured = false;
-            bank.insuredType = null;
-          }
-        }
-      }
-
       cancelledList.push(key);
     }
 
     await updateUserRecord(userRecord);
 
-    // Build sleek cancellation message
     let desc = `${SUN} **Insurance Cancelled** ${SUN}\n\n`;
 
     for (const key of cancelledList) {

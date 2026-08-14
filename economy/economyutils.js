@@ -17,7 +17,6 @@ async function getDB() {
       console.log("✅ MongoDB connected");
     }
 
-    // ✅ Connect directly to the economy database
     const db = client.db("economy");
     console.log("📂 Using database: economy");
     return db;
@@ -98,33 +97,35 @@ async function getUserRecord(userId) {
       cash: 0,
       lastCollect: 0,
       lastWork: 0,
-      banks: [],
-      joinedBanks: [],
+
       records: { citations: [], warrants: [], blackpoints: 0 },
       vehicles: [],
-      joinRequests: [],
 
-      // ⭐ NEW — Moat Castle account system
+      // ⭐ Moat Castle banking system
       moatCastle: null,
+
+      // ⭐ NEW — Fox Bank banking system
+      foxBank: null,
     };
 
     await collection.insertOne(user);
     return user;
   }
 
-  // ⭐ Ensure missing fields are added automatically
-  user.banks = user.banks || [];
-  user.joinedBanks = user.joinedBanks || [];
+  // ⭐ Ensure missing fields exist
   user.records = user.records || {
     citations: [],
     warrants: [],
     blackpoints: 0,
   };
-  user.vehicles = user.vehicles || [];
-  user.joinRequests = user.joinRequests || [];
 
-  // ⭐ NEW — Ensure Moat Castle field exists
+  user.vehicles = user.vehicles || [];
+
+  // ⭐ Ensure Moat Castle exists
   user.moatCastle = user.moatCastle || null;
+
+  // ⭐ Ensure Fox Bank exists
+  user.foxBank = user.foxBank || null;
 
   return user;
 }

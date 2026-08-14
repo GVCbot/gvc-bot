@@ -49,7 +49,6 @@ module.exports = {
 
       const member = guild.members.cache.get(userRecord.userId);
 
-      // Loop through all insurance types
       for (const key of Object.keys(INSURANCE_PRICES)) {
         const insurance = userRecord.store[key];
         if (!insurance?.active) continue;
@@ -57,30 +56,17 @@ module.exports = {
         const cost = INSURANCE_PRICES[key];
 
         if ((userRecord.cash ?? 0) >= cost) {
-          // Charge user
           userRecord.cash -= cost;
           insurance.nextPayment = now + 30 * 24 * 60 * 60 * 1000;
           charged++;
         } else {
-          // Cancel insurance
           insurance.active = false;
           insurance.nextPayment = 0;
           cancelled++;
 
-          // Remove role
           const roleId = ROLES[key];
           if (member && roleId) {
             await member.roles.remove(roleId).catch(() => {});
-          }
-
-          // Remove insured tag from banks they own
-          if (userRecord.banks) {
-            for (const bank of userRecord.banks) {
-              if (bank.insuredType === insurance.insuredType) {
-                bank.insured = false;
-                bank.insuredType = null;
-              }
-            }
           }
         }
 

@@ -3,7 +3,6 @@ const embedTemplate = require("../../utils/embedTemplate");
 const {
   getUserRecord,
   updateUserRecord,
-  getAllUserRecords,
 } = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
@@ -21,39 +20,23 @@ const ITEMS = [
     id: "fox_basic",
     name: "Fox Basic Insured",
     roleId: "1537049129803448391",
-    insuredType: "basic",
-    bankType: "Fox Bank",
   },
   {
     id: "fox_all",
     name: "Fox All Insured",
     roleId: "1537048719805911060",
-    insuredType: "all",
-    bankType: "Fox Bank",
   },
   {
     id: "moat_basic",
     name: "Moat Castle Basic Insured",
     roleId: "1537066784279240724",
-    insuredType: "basic",
-    bankType: "Moat Castle",
   },
   {
     id: "moat_all",
     name: "Moat Castle All Insured",
     roleId: "1537066846786949120",
-    insuredType: "all",
-    bankType: "Moat Castle",
   },
 ];
-
-function normalizeType(type) {
-  if (!type) return type;
-  const t = type.toLowerCase();
-  if (t.includes("fox")) return "Fox Bank";
-  if (t.includes("moat")) return "Moat Castle";
-  return type;
-}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -92,23 +75,6 @@ module.exports = {
 
     const cost = INSURANCE_PRICES[purchaseItem];
 
-    const allRecords = await getAllUserRecords();
-    const ownedBanks = userRecord.banks || [];
-
-    let hasRequiredBank = false;
-
-    for (const b of ownedBanks) {
-      if (normalizeType(b.type) === item.bankType) {
-        hasRequiredBank = true;
-      }
-    }
-
-    if (!hasRequiredBank) {
-      return interaction.editReply(
-        `❌ You must own a **${item.bankType}** to purchase this insurance.`,
-      );
-    }
-
     if ((userRecord.cash ?? 0) < cost) {
       return interaction.editReply(
         `❌ You need **$${cost}** to purchase this item.`,
@@ -124,14 +90,6 @@ module.exports = {
       nextPayment,
     };
 
-    // ⭐ INSURANCE TAGGING — ONLY FOR BANKS YOU OWN
-    for (const bank of ownedBanks) {
-      if (normalizeType(bank.type) === item.bankType) {
-        bank.insured = true;
-        bank.insuredType = item.insuredType;
-      }
-    }
-
     await interaction.member.roles.add(item.roleId).catch(() => {});
     await updateUserRecord(userRecord);
 
@@ -140,8 +98,7 @@ module.exports = {
       description:
         `${ARROW} **Item:** ${item.name}\n` +
         `${ARROW} **Cost:** $${cost}\n` +
-        `${ARROW} **Next Payment:** <t:${Math.floor(nextPayment / 1000)}:F>\n` +
-        `${ARROW} Your **${item.bankType}** banks are now **INSURED**.`,
+        `${ARROW} **Next Payment:** <t:${Math.floor(nextPayment / 1000)}:F>\n`,
       noLogo: true,
     });
 
