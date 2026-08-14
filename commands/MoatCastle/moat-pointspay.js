@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
-const embedTemplate = require("../../utils/embedTemplate");
 const { MOATEMOJIS } = moatembedTemplate;
 const { ARROW, MOATCASTLE } = MOATEMOJIS;
 
@@ -8,6 +7,7 @@ const {
   getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
+
 const invoiceChannelId = "1537770259677847612";
 
 module.exports = {
@@ -28,39 +28,43 @@ module.exports = {
     const receiver = interaction.options.getUser("user");
     const amount = interaction.options.getInteger("amount");
 
+    // Prevent self-payment
     if (receiver.id === senderId) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "Payment Error",
         description: `${ARROW} You cannot pay yourself.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
     const sender = await getUserRecord(senderId);
     const receiverRecord = await getUserRecord(receiver.id);
 
+    // Ensure Moat Castle account exists
     if (!sender.moatCastle) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description: `${ARROW} You must create an account first.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
     let points = sender.moatCastle.rewards;
     const pointsValue = points * 1000;
 
+    // Check if points are enough
     if (pointsValue < amount) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "Insufficient Points",
         description: `${ARROW} You do not have enough Castle Points.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Deduct points
     const pointsUsed = Math.ceil(amount / 1000);
     points -= pointsUsed;
 
@@ -79,26 +83,30 @@ module.exports = {
         `${ARROW} **Receiver:** <@${receiver.id}>\n` +
         `${ARROW} **Amount:** $${amount.toLocaleString()}\n\n` +
         `${ARROW} **Points Used:** ${pointsUsed}\n` +
-        `${ARROW} **New Points:** ${points.toLocaleString()}\n` +
+        `${ARROW} **Remaining Points:** ${points.toLocaleString()}\n` +
         `${ARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
       noLogo: false,
     });
 
     const invoiceChannel =
       interaction.client.channels.cache.get(invoiceChannelId);
+
     if (invoiceChannel) {
-      invoiceChannel.send({ embeds: [invoice.embed], files: invoice.files });
+      invoiceChannel.send({
+        embeds: [invoice.embed],
+        files: invoice.files,
+      });
     }
 
-    // ⭐ Simple confirmation → user
-    const { embed } = embedTemplate({
+    // ⭐ Simple confirmation → user (Moat Castle style)
+    const { embed, files } = moatembedTemplate({
       title: "Payment Sent",
       description:
-        `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()} using Castle Points\n` +
-        `${ARROW} New Points: ${points.toLocaleString()}`,
-      noLogo: true,
+        `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()} using Castle Points.\n` +
+        `${ARROW} Remaining Castle Points: ${points.toLocaleString()}`,
+      noLogo: false,
     });
 
-    return interaction.editReply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed], files });
   },
 };

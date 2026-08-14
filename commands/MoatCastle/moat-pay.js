@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
-const embedTemplate = require("../../utils/embedTemplate");
 const { MOATEMOJIS } = moatembedTemplate;
 const { ARROW, MOATCASTLE } = MOATEMOJIS;
 
@@ -8,6 +7,7 @@ const {
   getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
+
 const invoiceChannelId = "1537770259677847612";
 
 module.exports = {
@@ -38,34 +38,37 @@ module.exports = {
     const useBackup =
       interaction.options.getBoolean("use_backup_points") ?? false;
 
+    // Prevent self-payment
     if (receiver.id === senderId) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "Payment Error",
         description: `${ARROW} You cannot pay yourself.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
     const sender = await getUserRecord(senderId);
     const receiverRecord = await getUserRecord(receiver.id);
 
+    // Ensure Moat Castle account exists
     if (!sender.moatCastle) {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description: `${ARROW} You must create an account first.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Ensure card is not frozen
     if (sender.moatCastle.cardStatus === "Frozen") {
-      const { embed } = moatembedTemplate({
+      const { embed, files } = moatembedTemplate({
         title: "Card Frozen",
         description: `${ARROW} Your Moat Castle card is frozen.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
     let balance = sender.moatCastle.balance;
@@ -74,34 +77,41 @@ module.exports = {
     let amountPaidFromBalance = 0;
     let amountPaidFromPoints = 0;
 
+    // Case 1: Balance covers full amount
     if (balance >= amount) {
       amountPaidFromBalance = amount;
       balance -= amount;
-    } else if (useBackup) {
+    }
+
+    // Case 2: Balance insufficient, backup points enabled
+    else if (useBackup) {
       amountPaidFromBalance = balance;
       const remaining = amount - balance;
 
       const pointsValue = points * 1000;
       if (pointsValue < remaining) {
-        const { embed } = moatembedTemplate({
+        const { embed, files } = moatembedTemplate({
           title: "Insufficient Funds",
           description: `${ARROW} Balance + points are not enough to cover this payment.`,
           noLogo: true,
         });
-        return interaction.editReply({ embeds: [embed] });
+        return interaction.editReply({ embeds: [embed], files });
       }
 
       const pointsUsed = Math.ceil(remaining / 1000);
       points -= pointsUsed;
       amountPaidFromPoints = remaining;
       balance = 0;
-    } else {
-      const { embed } = moatembedTemplate({
+    }
+
+    // Case 3: Balance insufficient, backup disabled
+    else {
+      const { embed, files } = moatembedTemplate({
         title: "Insufficient Balance",
         description: `${ARROW} Your Moat Castle balance is not enough.`,
         noLogo: true,
       });
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed], files });
     }
 
     // Apply payment
@@ -142,20 +152,24 @@ module.exports = {
 
     const invoiceChannel =
       interaction.client.channels.cache.get(invoiceChannelId);
+
     if (invoiceChannel) {
-      invoiceChannel.send({ embeds: [invoice.embed], files: invoice.files });
+      invoiceChannel.send({
+        embeds: [invoice.embed],
+        files: invoice.files,
+      });
     }
 
-    // ⭐ Simple confirmation → user
-    const { embed } = embedTemplate({
+    // ⭐ Simple confirmation → user (Moat Castle style)
+    const { embed, files } = moatembedTemplate({
       title: "Payment Sent",
       description:
-        `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()}\n` +
-        `${ARROW} New Moat Balance: $${balance.toLocaleString()}\n` +
-        `${ARROW} New Points: ${sender.moatCastle.rewards.toLocaleString()}`,
-      noLogo: true,
+        `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()}.\n` +
+        `${ARROW} Remaining Moat Balance: $${balance.toLocaleString()}\n` +
+        `${ARROW} Remaining Castle Points: ${sender.moatCastle.rewards.toLocaleString()}`,
+      noLogo: false,
     });
 
-    return interaction.editReply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed], files });
   },
 };
