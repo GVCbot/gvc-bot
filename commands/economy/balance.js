@@ -36,7 +36,7 @@ module.exports = {
     const desc =
       `${ARROW} **Cash Balance:** $${cash.toLocaleString()}\n\n` +
       `> ${ARROW} This shows **GVC cash only**.\n` +
-      `> ${ARROW} Moat Castle balance is separate and accessed via moat commands.`;
+      `> ${ARROW} Bank balance is separate and accessed via bank commands.`;
 
     const { embed } = embedTemplate({
       title: `${SUN} Balance — ${targetUser.username} ${SUN}`,
