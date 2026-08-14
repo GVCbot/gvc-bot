@@ -103,7 +103,11 @@ async function getUserRecord(userId) {
       records: { citations: [], warrants: [], blackpoints: 0 },
       vehicles: [],
       joinRequests: [],
+
+      // ⭐ NEW — Moat Castle account system
+      moatCastle: null,
     };
+
     await collection.insertOne(user);
     return user;
   }
@@ -118,6 +122,9 @@ async function getUserRecord(userId) {
   };
   user.vehicles = user.vehicles || [];
   user.joinRequests = user.joinRequests || [];
+
+  // ⭐ NEW — Ensure Moat Castle field exists
+  user.moatCastle = user.moatCastle || null;
 
   return user;
 }
