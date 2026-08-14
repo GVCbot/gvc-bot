@@ -92,7 +92,7 @@ module.exports = {
     const multiplier = getTierMultiplier(userRecord.moatCastle.tier);
 
     // Bonus points from multiplier
-    const bonusPoints = Math.floor(basePoints * (multiplier - 1));
+    const earnedPoints = Math.floor(basePoints * multiplier);
 
     // Total earned points
     const earnedPoints = basePoints + bonusPoints;
