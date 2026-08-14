@@ -1,10 +1,14 @@
 const { SlashCommandBuilder } = require("discord.js");
+const embedTemplate = require("../../utils/embedTemplate");
+const { GVCEMOJIS } = require("../../utils/embedTemplate");
 const { getAllUserRecords } = require("../../economy/economyutils");
+
+const { GVCARROW, SUN } = GVCEMOJIS;
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("hrviewallaccounts")
-    .setDescription("HR-only: View global banking statistics."),
+    .setDescription("HR-only: View Fox Bank and Moat Castle statistics."),
 
   async execute(interaction) {
     const hrRole = "1350582607217430650";
@@ -24,9 +28,6 @@ module.exports = {
     let moatCount = 0;
     let foxCount = 0;
     let bothCount = 0;
-    let neitherCount = 0;
-
-    let totalCash = 0;
     let totalMoatBalance = 0;
     let totalFoxBalance = 0;
 
@@ -37,30 +38,26 @@ module.exports = {
       if (hasMoat) moatCount++;
       if (hasFox) foxCount++;
       if (hasMoat && hasFox) bothCount++;
-      if (!hasMoat && !hasFox) neitherCount++;
-
-      totalCash += user.cash || 0;
 
       if (hasMoat) totalMoatBalance += user.moatCastle.balance || 0;
       if (hasFox) totalFoxBalance += user.foxBank.balance || 0;
     }
 
-    const totalUsers = users.length;
-
-    const embed = {
-      color: 0x00aaff,
-      title: "📊 Global Banking Statistics",
+    const { embed, files } = embedTemplate({
+      title: "Global Banking Statistics",
       description:
-        `**Total Users:** ${totalUsers}\n\n` +
-        `**🏰 Moat Castle Accounts:** ${moatCount}\n` +
-        `**🦊 Fox Bank Accounts:** ${foxCount}\n` +
-        `**🔗 Users with Both:** ${bothCount}\n` +
-        `**🚫 Users with Neither:** ${neitherCount}\n\n` +
-        `**💵 Total Cash in Circulation:** $${totalCash.toLocaleString()}\n` +
-        `**🏰 Total Moat Castle Balance:** $${totalMoatBalance.toLocaleString()}\n` +
-        `**🦊 Total Fox Bank Balance:** $${totalFoxBalance.toLocaleString()}`,
-    };
+        `${GVCARROW} **🏰 Moat Castle Accounts:** ${moatCount}\n` +
+        `${GVCARROW} **🦊 Fox Bank Accounts:** ${foxCount}\n` +
+        `${GVCARROW} **🔗 Users with Both:** ${bothCount}\n\n` +
+        `${GVCARROW} **🏰 Total Moat Castle Money:** $${totalMoatBalance.toLocaleString()}\n` +
+        `${GVCARROW} **🦊 Total Fox Bank Money:** $${totalFoxBalance.toLocaleString()}`,
+      noLogo: false,
+    });
 
-    return interaction.editReply({ embeds: [embed] });
+    embed.setTitle(`${SUN} Global Banking Statistics ${SUN}`);
+    embed.setFooter({ text: "Greenville Community • HR Division" });
+    embed.setTimestamp();
+
+    return interaction.editReply({ embeds: [embed], files });
   },
 };
