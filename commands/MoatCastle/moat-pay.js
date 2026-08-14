@@ -10,6 +10,22 @@ const {
 
 const invoiceChannelId = "1537770259677847612";
 
+// Cashback table
+function getCashbackPercent(tier) {
+  switch ((tier || "").toLowerCase()) {
+    case "silver":
+      return 0.02;
+    case "gold":
+      return 0.03;
+    case "platinum":
+      return 0.04;
+    case "black":
+      return 0.05;
+    default:
+      return 0.01; // Standard
+  }
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-pay")
@@ -120,12 +136,15 @@ module.exports = {
 
     receiverRecord.cash += amount;
 
-    // ⭐ Points earned ONLY if backup points were NOT used
-    let earnedPoints = 0;
+    // ⭐ Cashback ONLY if backup points were NOT used
+    let cashbackPoints = 0;
+
     if (!useBackup) {
-      earnedPoints = Math.floor(amount / 1000);
+      const cashbackPercent = getCashbackPercent(sender.moatCastle.tier);
+      cashbackPoints = Math.floor(amountPaidFromBalance * cashbackPercent);
+
       sender.moatCastle.rewards = Math.min(
-        sender.moatCastle.rewards + earnedPoints,
+        sender.moatCastle.rewards + cashbackPoints,
         5000,
       );
     }
@@ -142,8 +161,8 @@ module.exports = {
         `${ARROW} **Receiver:** <@${receiver.id}>\n` +
         `${ARROW} **Amount:** $${amount.toLocaleString()}\n\n` +
         `${ARROW} **Paid From Balance:** $${amountPaidFromBalance.toLocaleString()}\n` +
-        `${ARROW} **Paid From Points:** $${amountPaidFromPoints.toLocaleString()}\n` +
-        `${ARROW} **Points Earned:** ${earnedPoints}\n\n` +
+        `${ARROW} **Paid From Points:** $${amountPaidFromPoints.toLocaleString()}\n\n` +
+        `${ARROW} **Cashback Earned:** ${cashbackPoints}\n` +
         `${ARROW} **New Balance:** $${balance.toLocaleString()}\n` +
         `${ARROW} **New Points:** ${sender.moatCastle.rewards.toLocaleString()}\n` +
         `${ARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
@@ -152,21 +171,18 @@ module.exports = {
 
     const invoiceChannel =
       interaction.client.channels.cache.get(invoiceChannelId);
-
     if (invoiceChannel) {
-      invoiceChannel.send({
-        embeds: [invoice.embed],
-        files: invoice.files,
-      });
+      invoiceChannel.send({ embeds: [invoice.embed], files: invoice.files });
     }
 
-    // ⭐ Simple confirmation → user (Moat Castle style)
+    // ⭐ Simple confirmation → user
     const { embed, files } = moatembedTemplate({
       title: "Payment Sent",
       description:
         `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()}.\n` +
+        `${ARROW} Cashback Earned: ${cashbackPoints}\n` +
         `${ARROW} Remaining Moat Balance: $${balance.toLocaleString()}\n` +
-        `${ARROW} Remaining Castle Points: ${sender.moatCastle.rewards.toLocaleString()}`,
+        `${ARROW} Total Castle Points: ${sender.moatCastle.rewards.toLocaleString()}`,
       noLogo: false,
     });
 

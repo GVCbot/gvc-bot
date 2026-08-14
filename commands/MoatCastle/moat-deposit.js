@@ -3,24 +3,10 @@ const {
   getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
+
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
-
-function getTierMultiplier(tier) {
-  switch ((tier || "").toLowerCase()) {
-    case "silver":
-      return 1.5;
-    case "gold":
-      return 2;
-    case "platinum":
-      return 2.5;
-    case "black":
-      return 3;
-    default:
-      return 1;
-  }
-}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -82,22 +68,11 @@ module.exports = {
     }
 
     // ============================
-    // ⭐ NEW POINT SYSTEM
+    // ⭐ SIMPLE POINT SYSTEM (NO MULTIPLIER)
     // ============================
 
-    // Base points: 1 per 1000 deposited
-    const basePoints = Math.floor(amount / 1000);
+    const earnedPoints = Math.floor(amount / 1000);
 
-    // Tier multiplier
-    const multiplier = getTierMultiplier(userRecord.moatCastle.tier);
-
-    // Bonus points from multiplier
-    const earnedPoints = Math.floor(basePoints * multiplier);
-
-    // Total earned points
-    const earnedPoints = basePoints + bonusPoints;
-
-    // Apply 5,000 cap
     userRecord.moatCastle.rewards = Math.min(
       userRecord.moatCastle.rewards + earnedPoints,
       5000,
@@ -123,7 +98,6 @@ module.exports = {
       title: "Deposit Successful",
       description:
         `> ${ARROW} **Deposited:** $${amount.toLocaleString()}\n` +
-        `> ${ARROW} **Tier Multiplier:** ×${multiplier}\n` +
         `> ${ARROW} **Points Earned:** ${earnedPoints}\n\n` +
         `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
         `> ${ARROW} **Total Castle Points:** ${userRecord.moatCastle.rewards.toLocaleString()}`,
