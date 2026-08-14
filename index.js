@@ -1104,12 +1104,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const requesterUser = await interaction.client.users.fetch(requesterId);
 
-      if (action === "accept") {
-        // Initialize loans array if missing
-        if (!requesterRecord.moatCastle.loans) {
-          requesterRecord.moatCastle.loans = [];
-        }
+      // Initialize loans array if missing
+      if (!requesterRecord.moatCastle.loans) {
+        requesterRecord.moatCastle.loans = [];
+      }
 
+      // Remove request from pending list
+      requesterRecord.moatCastle.loanRequests =
+        requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
+
+      let channelEmbed;
+
+      if (action === "accept") {
         // Add loan to active loans
         requesterRecord.moatCastle.loans.push({
           amount: request.amount,
@@ -1121,20 +1127,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // Add loan money to Moat Castle balance
         requesterRecord.moatCastle.balance += request.amount;
 
-        // Remove request
-        requesterRecord.moatCastle.loanRequests =
-          requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
-
         await updateUserRecord(requesterRecord);
 
-        const { embed } = moatembedTemplate({
-          title: "Loan Accepted",
+        // Channel confirmation embed
+        channelEmbed = moatembedTemplate({
+          title: "✅ Loan Accepted",
           description:
-            `> <:moatcastleright:1537695231409918002> **Loan Amount:** $${request.amount.toLocaleString()}\n` +
             `> <:moatcastleright:1537695231409918002> **Requester:** <@${requesterId}>\n` +
+            `> <:moatcastleright:1537695231409918002> **Amount:** $${request.amount.toLocaleString()}\n` +
             `> <:moatcastleright:1537695231409918002> Loan has been **approved** and added to their Moat Castle balance.`,
           noLogo: false,
-        });
+        }).embed;
 
         // DM requester
         try {
@@ -1146,27 +1149,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
               `> <:moatcastleright:1537695231409918002> You can review your loan using **/moat-loanreview**.`,
             noLogo: false,
           });
-
           await requesterUser.send({ embeds: [dmEmbed] });
         } catch {}
-
-        return interaction.editReply({ embeds: [embed] });
       }
 
       if (action === "deny") {
-        requesterRecord.moatCastle.loanRequests =
-          requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
+        // Clear any active loans (for safety)
+        requesterRecord.moatCastle.loans = [];
 
         await updateUserRecord(requesterRecord);
 
-        const { embed } = moatembedTemplate({
-          title: "Loan Denied",
+        // Channel confirmation embed
+        channelEmbed = moatembedTemplate({
+          title: "❌ Loan Denied",
           description:
-            `> <:moatcastleright:1537695231409918002> **Loan Amount:** $${request.amount.toLocaleString()}\n` +
             `> <:moatcastleright:1537695231409918002> **Requester:** <@${requesterId}>\n` +
+            `> <:moatcastleright:1537695231409918002> **Amount:** $${request.amount.toLocaleString()}\n` +
             `> <:moatcastleright:1537695231409918002> Loan request has been **denied**.`,
           noLogo: false,
-        });
+        }).embed;
 
         // DM requester
         try {
@@ -1179,9 +1180,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
           });
           await requesterUser.send({ embeds: [dmEmbed] });
         } catch {}
-
-        return interaction.editReply({ embeds: [embed] });
       }
+
+      // ✅ Reply in the channel (not ephemeral)
+      await interaction.message.reply({ embeds: [channelEmbed] });
+
+      // ✅ Confirm to staff privately
+      return interaction.editReply({
+        content: `Loan ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
+      });
     }
 
     //Vehicle Handler
