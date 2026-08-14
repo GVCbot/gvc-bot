@@ -77,6 +77,13 @@ module.exports = {
     acct.balance -= amount;
     userRecord.cash += amount;
 
+    userRecord.moatCastle.lastWithdrawal = {
+      amount,
+      timestamp: Date.now(),
+    };
+
+    userRecord.moatCastle.updatedAt = Date.now();
+
     await updateUserRecord(userRecord);
 
     const { embed, files } = moatembedTemplate({

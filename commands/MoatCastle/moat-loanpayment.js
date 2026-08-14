@@ -95,6 +95,13 @@ module.exports = {
     userRecord.moatCastle.balance -= amount;
     loan.remaining -= amount;
 
+    userRecord.moatCastle.lastLoanPayment = {
+      amount,
+      timestamp: Date.now(),
+    };
+
+    userRecord.moatCastle.updatedAt = Date.now();
+
     let refund = 0;
     let finished = false;
 

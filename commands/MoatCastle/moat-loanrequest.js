@@ -81,6 +81,8 @@ module.exports = {
     }
 
     userRecord.moatCastle.loanRequests.push(loanRequest);
+    userRecord.moatCastle.updatedAt = Date.now();
+
     await updateUserRecord(userRecord);
 
     const { embed, files } = moatembedTemplate({

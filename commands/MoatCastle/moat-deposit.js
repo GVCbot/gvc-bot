@@ -96,6 +96,13 @@ module.exports = {
     userRecord.moatCastle.balance += amount;
     userRecord.moatCastle.rewards += earnedPoints;
 
+    userRecord.moatCastle.lastDeposit = {
+      amount,
+      timestamp: Date.now(),
+    };
+
+    userRecord.moatCastle.updatedAt = Date.now();
+
     await updateUserRecord(userRecord);
 
     const { embed, files } = moatembedTemplate({

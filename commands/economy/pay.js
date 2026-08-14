@@ -1,5 +1,9 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
+const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = moatembedTemplate;
+const { MOATCASTLE, ARROW } = MOATEMOJIS;
+
 const {
   getUserRecord,
   updateUserRecord,
@@ -27,8 +31,8 @@ module.exports = {
         .setDescription(
           "Pay using your Moat Castle card to earn Castle Points.",
         )
-        .setRequired(false)
-        .addChoices({ name: "Use Moat Castle Card", value: "use_card" }),
+        .addChoices({ name: "Use Moat Castle Card", value: "use_card" })
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -39,11 +43,12 @@ module.exports = {
     const amountInput = interaction.options.getString("amount");
     const moatCardOption = interaction.options.getString("moat_card");
 
+    const invoiceChannelId = "1537770259677847612";
+
     if (receiver.id === senderId) {
       const { embed } = embedTemplate({
         title: "Payment Error",
-        description:
-          "> <:bulletpoint:1534184707900837961> You cannot pay yourself.",
+        description: "> You cannot pay yourself.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -64,8 +69,7 @@ module.exports = {
       if (isNaN(amount)) {
         const { embed } = embedTemplate({
           title: "Payment Error",
-          description:
-            "> <:bulletpoint:1534184707900837961> Amount must be a number or 'all'.",
+          description: "> Amount must be a number or 'all'.",
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -75,69 +79,87 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title: "Payment Error",
-        description:
-          "> <:bulletpoint:1534184707900837961> Amount must be greater than 0.",
+        description: "> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
 
     let moatCardUsedText = "";
+    let invoiceEmbed;
+    let invoiceFiles;
 
-    // ⭐ If user selected Moat Castle card
+    // ============================
+    // ⭐ Moat Castle Payment
+    // ============================
     if (moatCardOption === "use_card") {
       if (!sender.moatCastle) {
         const { embed } = embedTemplate({
           title: "Moat Castle Card Error",
-          description:
-            "> <:bulletpoint:1534184707900837961> You do not have a Moat Castle account or card.",
+          description: "> You do not have a Moat Castle account or card.",
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
 
-      // ⭐ Check if card is frozen
       if (sender.moatCastle.cardStatus === "Frozen") {
         const { embed } = embedTemplate({
           title: "Card Frozen",
           description:
-            "> <:bulletpoint:1534184707900837961> Your Moat Castle card is **Frozen**.\n" +
-            "> <:bulletpoint:1534184707900837961> Unfreeze it using **/moat-unfreezecard**.",
+            "> Your Moat Castle card is **Frozen**.\n" +
+            "> Unfreeze it using **/moat-unfreezecard**.",
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
 
-      // ⭐ Check Moat Castle balance
       if (sender.moatCastle.balance < amount) {
         const { embed } = embedTemplate({
           title: "Insufficient Moat Castle Balance",
           description:
-            `> <:bulletpoint:1534184707900837961> Your Moat Castle account only has **$${sender.moatCastle.balance.toLocaleString()}**.\n` +
-            `> <:bulletpoint:1534184707900837961> You need **$${amount.toLocaleString()}** to complete this payment.`,
+            `> Your Moat Castle account only has **$${sender.moatCastle.balance.toLocaleString()}**.\n` +
+            `> You need **$${amount.toLocaleString()}** to complete this payment.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
 
-      // ⭐ Deduct from Moat Castle balance instead of cash
+      // Deduct from Moat Castle
       sender.moatCastle.balance -= amount;
       receiverRecord.cash += amount;
 
-      // ⭐ Award points (1 per 100)
+      // Award points (1 per 100)
       const earnedPoints = Math.floor(amount / 100);
       sender.moatCastle.rewards += earnedPoints;
 
       moatCardUsedText =
-        `> <:bulletpoint:1534184707900837961> **Moat Castle Card Used:** ${sender.moatCastle.cardNumber}\n` +
-        `> <:bulletpoint:1534184707900837961> **Points Earned:** ${earnedPoints}\n`;
+        `${ARROW} **Moat Castle Card Used:** ${sender.moatCastle.cardNumber}\n` +
+        `${ARROW} **Points Earned:** ${earnedPoints}\n`;
+
+      // ⭐ Create Moat Castle invoice
+      const invoice = moatembedTemplate({
+        title: "🏦 Moat Castle Billing Invoice",
+        description:
+          `${MOATCASTLE} **Payment Processed via Moat Castle**\n\n` +
+          `${ARROW} **Sender:** <@${senderId}>\n` +
+          `${ARROW} **Receiver:** <@${receiver.id}>\n` +
+          `${ARROW} **Amount:** $${amount.toLocaleString()}\n` +
+          `${ARROW} **Card Number:** ${sender.moatCastle.cardNumber}\n` +
+          `${ARROW} **Points Earned:** ${earnedPoints}\n` +
+          `${ARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+        noLogo: false,
+      });
+
+      invoiceEmbed = invoice.embed;
+      invoiceFiles = invoice.files;
     } else {
-      // ⭐ Normal cash payment
+      // ============================
+      // ⭐ Normal Cash Payment
+      // ============================
       if (sender.cash < amount) {
         const { embed } = embedTemplate({
           title: "Payment Error",
-          description:
-            "> <:bulletpoint:1534184707900837961> You do not have enough cash to make this payment.",
+          description: "> You do not have enough cash to make this payment.",
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -145,15 +167,46 @@ module.exports = {
 
       sender.cash -= amount;
       receiverRecord.cash += amount;
+
+      // ⭐ Create GVC invoice
+      const invoice = embedTemplate({
+        title: "💵 GVC Billing Invoice",
+        description:
+          `> **Cash Payment Processed**\n\n` +
+          `> **Sender:** <@${senderId}>\n` +
+          `> **Receiver:** <@${receiver.id}>\n` +
+          `> **Amount:** $${amount.toLocaleString()}\n` +
+          `> **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+        noLogo: true,
+      });
+
+      invoiceEmbed = invoice.embed;
+      invoiceFiles = invoice.files;
     }
 
+    // Save changes
     await updateUserRecord(sender);
     await updateUserRecord(receiverRecord);
 
+    // ============================
+    // ⭐ Send invoice to invoice channel
+    // ============================
+    const invoiceChannel =
+      interaction.client.channels.cache.get(invoiceChannelId);
+    if (invoiceChannel) {
+      await invoiceChannel.send({
+        embeds: [invoiceEmbed],
+        files: invoiceFiles,
+      });
+    }
+
+    // ============================
+    // ⭐ User-facing confirmation
+    // ============================
     const desc =
-      `> <:bulletpoint:1534184707900837961> **You paid:** <@${receiver.id}> $${amount.toLocaleString()}\n` +
+      `${ARROW} **You paid:** <@${receiver.id}> $${amount.toLocaleString()}\n` +
       moatCardUsedText +
-      `> <:bulletpoint:1534184707900837961> **Your new cash balance:** $${sender.cash.toLocaleString()}`;
+      `${ARROW} **Your new cash balance:** $${sender.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title: "Payment Sent",
@@ -170,17 +223,14 @@ module.exports = {
       const { embed: dmEmbed } = embedTemplate({
         title: "Payment Received",
         description:
-          `> <:bulletpoint:1534184707900837961> **From:** ${interaction.user.username}\n` +
-          `> <:bulletpoint:1534184707900837961> **Amount:** $${amount.toLocaleString()}\n` +
-          `> <:bulletpoint:1534184707900837961> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
+          `> **From:** ${interaction.user.username}\n` +
+          `> **Amount:** $${amount.toLocaleString()}\n` +
+          `> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
         noLogo: true,
       });
 
       dmEmbed.setThumbnail(receiver.displayAvatarURL({ dynamic: true }));
-
       await receiver.send({ embeds: [dmEmbed] });
-    } catch {
-      // Ignore DM errors
-    }
+    } catch {}
   },
 };

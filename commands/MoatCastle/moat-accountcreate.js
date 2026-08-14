@@ -115,7 +115,6 @@ module.exports = {
     const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const cardNumber = generateCardNumber();
 
-    // Create account
     userRecord.moatCastle = {
       accountName,
       accountId,
@@ -125,6 +124,18 @@ module.exports = {
       tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
       rewards: 0,
       createdAt: Date.now(),
+      updatedAt: Date.now(),
+
+      // NEW
+      lastDeposit: null,
+      lastWithdrawal: null,
+      lastLoanPayment: null,
+
+      // NEW — card replacement history
+      cardReplacements: [],
+
+      loans: [],
+      loanRequests: [],
     };
 
     await updateUserRecord(userRecord);

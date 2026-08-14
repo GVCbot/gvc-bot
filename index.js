@@ -1097,8 +1097,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const { embed } = moatembedTemplate({
           title: "Account Deleted",
           description:
-            `> <:moatcastleright:1537695231409918002> The requester’s Moat Castle account was **deleted**.\n` +
-            `> <:moatcastleright:1537695231409918002> No further action was taken.`,
+            `> ${ARROW} The requester’s Moat Castle account was **deleted**.\n` +
+            `> ${ARROW} No further action was taken.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -1124,8 +1124,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       let channelEmbed;
 
+      // ===============================
+      // ✔ ACCEPT LOAN
+      // ===============================
       if (action === "accept") {
-        // Add loan to active loans
         requesterRecord.moatCastle.loans.push({
           amount: request.amount,
           remaining: request.amount,
@@ -1133,18 +1135,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
           createdAt: Date.now(),
         });
 
-        // Add loan money to Moat Castle balance
         requesterRecord.moatCastle.balance += request.amount;
+
+        // ⭐ NEW: Update last modified timestamp
+        requesterRecord.moatCastle.updatedAt = Date.now();
 
         await updateUserRecord(requesterRecord);
 
-        // Channel confirmation embed
         channelEmbed = moatembedTemplate({
           title: "✅ Loan Accepted",
           description:
-            `> <:moatcastleright:1537695231409918002> **Requester:** <@${requesterId}>\n` +
-            `> <:moatcastleright:1537695231409918002> **Amount:** $${request.amount.toLocaleString()}\n` +
-            `> <:moatcastleright:1537695231409918002> Loan has been **approved** and added to their Moat Castle balance.`,
+            `> ${ARROW} **Requester:** <@${requesterId}>\n` +
+            `> ${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `> ${ARROW} Loan has been **approved** and added to their Moat Castle balance.`,
           noLogo: false,
         }).embed;
 
@@ -1153,28 +1156,32 @@ client.on(Events.InteractionCreate, async (interaction) => {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏦 Moat Castle Loan Approved",
             description:
-              `> <:moatcastleright:1537695231409918002> Your loan for **$${request.amount.toLocaleString()}** has been **approved**.\n` +
-              `> <:moatcastleright:1537695231409918002> Funds have been added to your Moat Castle balance.\n\n` +
-              `> <:moatcastleright:1537695231409918002> You can review your loan using **/moat-loanreview**.`,
+              `> ${ARROW} Your loan for **$${request.amount.toLocaleString()}** has been **approved**.\n` +
+              `> ${ARROW} Funds have been added to your Moat Castle balance.\n\n` +
+              `> ${ARROW} You can review your loan using **/moat-loanreview**.`,
             noLogo: false,
           });
           await requesterUser.send({ embeds: [dmEmbed] });
         } catch {}
       }
 
+      // ===============================
+      // ❌ DENY LOAN
+      // ===============================
       if (action === "deny") {
-        // Clear any active loans (for safety)
         requesterRecord.moatCastle.loans = [];
+
+        // ⭐ NEW: Update last modified timestamp
+        requesterRecord.moatCastle.updatedAt = Date.now();
 
         await updateUserRecord(requesterRecord);
 
-        // Channel confirmation embed
         channelEmbed = moatembedTemplate({
           title: "❌ Loan Denied",
           description:
-            `> <:moatcastleright:1537695231409918002> **Requester:** <@${requesterId}>\n` +
-            `> <:moatcastleright:1537695231409918002> **Amount:** $${request.amount.toLocaleString()}\n` +
-            `> <:moatcastleright:1537695231409918002> Loan request has been **denied**.`,
+            `> ${ARROW} **Requester:** <@${requesterId}>\n` +
+            `> ${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `> ${ARROW} Loan request has been **denied**.`,
           noLogo: false,
         }).embed;
 
@@ -1183,8 +1190,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏦 Moat Castle Loan Denied",
             description:
-              `> <:moatcastleright:1537695231409918002> Your loan request for **$${request.amount.toLocaleString()}** has been **denied**.\n` +
-              `> <:moatcastleright:1537695231409918002> You may submit another request using **/moat-loanrequest** if needed.`,
+              `> ${ARROW} Your loan request for **$${request.amount.toLocaleString()}** has been **denied**.\n` +
+              `> ${ARROW} You may submit another request using **/moat-loanrequest** if needed.`,
             noLogo: false,
           });
           await requesterUser.send({ embeds: [dmEmbed] });
