@@ -20,6 +20,18 @@ module.exports = {
         .setName("amount")
         .setDescription("Amount to pay (number or 'all').")
         .setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("moat_card")
+        .setDescription(
+          "Pay using your Moat Castle card to earn Castle Points.",
+        )
+        .setRequired(false)
+        .addChoices(
+          // This will be dynamically replaced later
+          { name: "Your Moat Castle Card", value: "use_card" },
+        ),
     ),
 
   async execute(interaction) {
@@ -28,13 +40,12 @@ module.exports = {
     const senderId = interaction.user.id;
     const receiver = interaction.options.getUser("user");
     const amountInput = interaction.options.getString("amount");
+    const moatCardOption = interaction.options.getString("moat_card");
 
     if (receiver.id === senderId) {
       const { embed } = embedTemplate({
-        title:
-          "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
-        description:
-          "> <:bulletpoint:1534184707900837961> You cannot pay yourself.",
+        title: "Payment Error",
+        description: "> You cannot pay yourself.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -54,10 +65,8 @@ module.exports = {
       amount = parseInt(amountInput, 10);
       if (isNaN(amount)) {
         const { embed } = embedTemplate({
-          title:
-            "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
-          description:
-            "> <:bulletpoint:1534184707900837961> Amount must be a number or 'all'.",
+          title: "Payment Error",
+          description: "> Amount must be a number or 'all'.",
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -66,10 +75,8 @@ module.exports = {
 
     if (amount <= 0) {
       const { embed } = embedTemplate({
-        title:
-          "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
-        description:
-          "> <:bulletpoint:1534184707900837961> Amount must be greater than 0.",
+        title: "Payment Error",
+        description: "> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -77,10 +84,8 @@ module.exports = {
 
     if (sender.cash < amount) {
       const { embed } = embedTemplate({
-        title:
-          "<a:gvcsunspin:1527220557890850846> Payment Error <a:gvcsunspin:1527220557890850846>",
-        description:
-          "> <:bulletpoint:1534184707900837961> You do not have enough cash to make this payment.",
+        title: "Payment Error",
+        description: "> You do not have enough cash to make this payment.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -90,16 +95,28 @@ module.exports = {
     sender.cash -= amount;
     receiverRecord.cash += amount;
 
+    let moatCardUsedText = "";
+
+    // If user selected Moat Castle card
+    if (moatCardOption === "use_card" && sender.moatCastle) {
+      const earnedPoints = Math.floor(amount / 100);
+      sender.moatCastle.rewards += earnedPoints;
+
+      moatCardUsedText =
+        `> <:moatcastleright:1537695231409918002> **Moat Castle Card Used:** ${sender.moatCastle.cardNumber}\n` +
+        `> <:moatcastleright:1537695231409918002> **Points Earned:** ${earnedPoints}\n`;
+    }
+
     await updateUserRecord(sender);
     await updateUserRecord(receiverRecord);
 
     const desc =
       `> <:bulletpoint:1534184707900837961> **You paid:** <@${receiver.id}> $${amount.toLocaleString()}\n` +
+      moatCardUsedText +
       `> <:bulletpoint:1534184707900837961> **Your new cash balance:** $${sender.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
-      title:
-        "<a:gvcsunspin:1527220557890850846> Payment Sent <a:gvcsunspin:1527220557890850846>",
+      title: "Payment Sent",
       description: desc,
       noLogo: true,
     });
@@ -108,11 +125,10 @@ module.exports = {
 
     await interaction.editReply({ embeds: [embed] });
 
-    // DM the receiver
+    // DM receiver
     try {
       const { embed: dmEmbed } = embedTemplate({
-        title:
-          "<a:gvcsunspin:1527220557890850846> Payment Received <a:gvcsunspin:1527220557890850846>",
+        title: "Payment Received",
         description:
           `> <:bulletpoint:1534184707900837961> **From:** ${interaction.user.username}\n` +
           `> <:bulletpoint:1534184707900837961> **Amount:** $${amount.toLocaleString()}\n` +
@@ -124,7 +140,7 @@ module.exports = {
 
       await receiver.send({ embeds: [dmEmbed] });
     } catch {
-      // Ignore if DMs are closed
+      // Ignore DM errors
     }
   },
 };

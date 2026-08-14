@@ -30,12 +30,17 @@ module.exports = {
     const acct = userRecord.moatCastle;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
+    // Default card status (freeze system added later)
+    const cardStatus = acct.cardStatus || "Active";
+
     const { embed, files } = moatembedTemplate({
       title: "Your Moat Castle Account",
       description:
         `> <:moatcastleright:1537695231409918002> **Account Name:** ${acct.accountName}\n` +
         `> <:moatcastleright:1537695231409918002> **Account ID:** ${acct.accountId}\n` +
-        `> <:moatcastleright:1537695231409918002> **Balance:** $${userRecord.cash.toLocaleString()}\n` +
+        `> <:moatcastleright:1537695231409918002> **Card Number:** ${acct.cardNumber}\n` +
+        `> <:moatcastleright:1537695231409918002> **Card Status:** ${cardStatus}\n\n` +
+        `> <:moatcastleright:1537695231409918002> **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> <:moatcastleright:1537695231409918002> **Tier:** ${acct.tier}\n` +
         `> <:moatcastleright:1537695231409918002> **Rewards:** ${acct.rewards.toLocaleString()} points\n` +
         `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>`,

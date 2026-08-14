@@ -11,11 +11,20 @@ const TIER_COSTS = {
   silver: 5000,
   gold: 10000,
   platinum: 25000,
-  black: 50000, // still defined for internal use
+  black: 50000,
 };
 
 // Secret Black Tier code
 const BLACK_TIER_CODE = "moat_HAMOODx1212";
+
+// Generate 16-digit card number
+function generateCardNumber() {
+  let num = "";
+  for (let i = 0; i < 16; i++) {
+    num += Math.floor(Math.random() * 10);
+  }
+  return num;
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -74,7 +83,7 @@ module.exports = {
     let tierCost = TIER_COSTS[chosenTier];
     let invalidCode = false;
 
-    // Handle Black Tier code logic
+    // Handle Black Tier code
     if (enteredCode) {
       if (enteredCode === BLACK_TIER_CODE) {
         finalTier = "black";
@@ -84,7 +93,7 @@ module.exports = {
       }
     }
 
-    // Check if user can afford the tier
+    // Check funds
     if (userRecord.cash < tierCost) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Funds",
@@ -100,13 +109,15 @@ module.exports = {
     // Deduct tier cost
     userRecord.cash -= tierCost;
 
-    // Generate unique Moat Castle account ID
+    // Generate account ID + card number
     const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const cardNumber = generateCardNumber();
 
-    // Create the account
+    // Create account
     userRecord.moatCastle = {
       accountName,
       accountId,
+      cardNumber,
       balance: 0,
       tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
       rewards: 0,
@@ -117,7 +128,7 @@ module.exports = {
 
     const createdUnix = Math.floor(Date.now() / 1000);
 
-    // Handle invalid code message
+    // Invalid code message
     if (invalidCode) {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Code!",
@@ -126,6 +137,7 @@ module.exports = {
           `> <:moatcastleright:1537695231409918002> You have been assigned the **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
           `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +
           `> <:moatcastleright:1537695231409918002> **Account ID:** ${accountId}\n` +
+          `> <:moatcastleright:1537695231409918002> **Card Number:** ${cardNumber}\n` +
           `> <:moatcastleright:1537695231409918002> **Tier Cost:** $${tierCost.toLocaleString()}\n` +
           `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
           `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>`,
@@ -140,6 +152,7 @@ module.exports = {
       description:
         `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +
         `> <:moatcastleright:1537695231409918002> **Account ID:** ${accountId}\n` +
+        `> <:moatcastleright:1537695231409918002> **Card Number:** ${cardNumber}\n` +
         `> <:moatcastleright:1537695231409918002> **Tier:** ${userRecord.moatCastle.tier}\n` +
         `> <:moatcastleright:1537695231409918002> **Tier Cost:** $${tierCost.toLocaleString()}\n` +
         `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
