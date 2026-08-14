@@ -11,8 +11,11 @@ const TIER_COSTS = {
   silver: 5000,
   gold: 10000,
   platinum: 25000,
-  black: 50000,
+  black: 50000, // still defined for internal use
 };
+
+// Secret Black Tier code
+const BLACK_TIER_CODE = "moat_HAMOODx1212";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -33,8 +36,13 @@ module.exports = {
           { name: "Silver ($5,000)", value: "silver" },
           { name: "Gold ($10,000)", value: "gold" },
           { name: "Platinum ($25,000)", value: "platinum" },
-          { name: "Black ($50,000)", value: "black" },
         )
+        .setRequired(false),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("black_tier_code")
+        .setDescription("Enter your Black Tier invite code (optional)")
         .setRequired(false),
     ),
 
@@ -53,25 +61,39 @@ module.exports = {
           `> <:moatcastleright:1537695231409918002> Use **/moat-viewaccount** to view it.`,
         noLogo: true,
       });
-
       return interaction.editReply({ embeds: [embed], files });
     }
 
     const accountName = interaction.options.getString("name");
     const chosenTier = interaction.options.getString("tier") || "standard";
-    const tierCost = TIER_COSTS[chosenTier];
+    const enteredCode = interaction.options
+      .getString("black_tier_code")
+      ?.trim();
+
+    let finalTier = chosenTier;
+    let tierCost = TIER_COSTS[chosenTier];
+    let invalidCode = false;
+
+    // Handle Black Tier code logic
+    if (enteredCode) {
+      if (enteredCode === BLACK_TIER_CODE) {
+        finalTier = "black";
+        tierCost = TIER_COSTS.black;
+      } else {
+        invalidCode = true;
+      }
+    }
 
     // Check if user can afford the tier
     if (userRecord.cash < tierCost) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Funds",
         description:
-          `> <:moatcastleright:1537695231409918002> **Tier:** ${chosenTier.toUpperCase()}\n` +
+          `> <:moatcastleright:1537695231409918002> **Tier:** ${finalTier.toUpperCase()}\n` +
           `> <:moatcastleright:1537695231409918002> **Cost:** $${tierCost.toLocaleString()}\n\n` +
           `> You only have **$${userRecord.cash.toLocaleString()}**.`,
         noLogo: true,
       });
-
       return interaction.editReply({ embeds: [embed], files });
     }
 
@@ -86,7 +108,7 @@ module.exports = {
       accountName,
       accountId,
       balance: 0,
-      tier: chosenTier.charAt(0).toUpperCase() + chosenTier.slice(1),
+      tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
       rewards: 0,
       createdAt: Date.now(),
     };
@@ -95,6 +117,24 @@ module.exports = {
 
     const createdUnix = Math.floor(Date.now() / 1000);
 
+    // Handle invalid code message
+    if (invalidCode) {
+      const { embed, files } = moatembedTemplate({
+        title: "Invalid Code!",
+        description:
+          `> <:moatcastleright:1537695231409918002> The code you entered is invalid.\n` +
+          `> <:moatcastleright:1537695231409918002> You have been assigned the **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
+          `> <:moatcastleright:1537695231409918002> **Account Name:** ${accountName}\n` +
+          `> <:moatcastleright:1537695231409918002> **Account ID:** ${accountId}\n` +
+          `> <:moatcastleright:1537695231409918002> **Tier Cost:** $${tierCost.toLocaleString()}\n` +
+          `> <:moatcastleright:1537695231409918002> **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
+          `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>`,
+        noLogo: false,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // Normal success message
     const { embed, files } = moatembedTemplate({
       title: "Moat Castle Account Created",
       description:

@@ -8,11 +8,15 @@ const moatembedTemplate = require("../../utils/moatembedTemplate");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-withdraw")
-    .setDescription("Withdraw money from your Moat Castle account.")
+    .setDescription(
+      "Withdraw money from your Moat Castle account to your cash balance.",
+    )
     .addIntegerOption((opt) =>
       opt
         .setName("amount")
-        .setDescription("Amount of cash to withdraw")
+        .setDescription(
+          "Amount of money to withdraw from your Moat Castle account",
+        )
         .setRequired(true),
     ),
 
@@ -22,7 +26,7 @@ module.exports = {
     const amount = interaction.options.getInteger("amount");
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // No account exists
+    // Check if account exists
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
@@ -31,11 +35,10 @@ module.exports = {
           `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate** to open one.`,
         noLogo: true,
       });
-
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Invalid amount
+    // Validate amount
     if (amount <= 0) {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Amount",
@@ -45,9 +48,9 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Check Moat Castle balance
     const acct = userRecord.moatCastle;
 
+    // Check if account has enough balance
     if (acct.balance < amount) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Account Balance",
@@ -57,7 +60,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Withdraw: move money from Moat Castle → cash
+    // Withdraw: move money from Moat Castle → user cash
     acct.balance -= amount;
     userRecord.cash += amount;
 
@@ -66,9 +69,9 @@ module.exports = {
     const { embed, files } = moatembedTemplate({
       title: "Withdrawal Successful",
       description:
-        `> <:moatcastleright:1537695231409918002> **Cash Withdrawn:** $${amount.toLocaleString()}\n\n` +
+        `> <:moatcastleright:1537695231409918002> **Withdrawn:** $${amount.toLocaleString()}\n\n` +
         `> <:moatcastleright:1537695231409918002> **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Moat Castle Account Balance:** $${acct.balance.toLocaleString()}\n` +
+        `> <:moatcastleright:1537695231409918002> **Remaining Moat Castle Balance:** $${acct.balance.toLocaleString()}\n` +
         `> <:moatcastleright:1537695231409918002> **Castle Points:** ${acct.rewards.toLocaleString()}`,
       noLogo: false,
     });
