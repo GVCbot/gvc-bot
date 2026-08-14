@@ -1067,6 +1067,93 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed], components: [buttons] });
     }
 
+    // ===============================
+    // 🔵 Moat Castle Loan Accept / Deny Handler
+    // ===============================
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("moat_loan_")
+    ) {
+      await interaction.deferReply({ ephemeral: true });
+
+      const parts = interaction.customId.split("_");
+      const action = parts[2]; // accept or deny
+      const requesterId = parts[3];
+      const amount = parseInt(parts[4], 10);
+
+      const requesterRecord = await getUserRecord(requesterId);
+
+      if (!requesterRecord.moatCastle) {
+        const { embed } = moatembedTemplate({
+          title: "Account Deleted",
+          description:
+            `> <:moatcastleright:1537695231409918002> The requester’s Moat Castle account was **deleted**.\n` +
+            `> <:moatcastleright:1537695231409918002> No further action was taken.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      const loanRequests = requesterRecord.moatCastle.loanRequests || [];
+      const request = loanRequests.find(
+        (r) => r.amount === amount && r.requesterId === requesterId,
+      );
+
+      if (!request) {
+        return interaction.editReply({ content: "❌ Loan request not found." });
+      }
+
+      if (action === "accept") {
+        // Add loan to active loans
+        requesterRecord.moatCastle.loans = [
+          {
+            amount,
+            remaining: amount,
+            reason: request.reason,
+            createdAt: Date.now(),
+          },
+        ];
+
+        // Add loan money to Moat Castle balance
+        requesterRecord.moatCastle.balance += amount;
+
+        // Remove request
+        requesterRecord.moatCastle.loanRequests =
+          requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
+
+        await updateUserRecord(requesterRecord);
+
+        const { embed } = moatembedTemplate({
+          title: "Loan Accepted",
+          description:
+            `> <:moatcastleright:1537695231409918002> **Loan Amount:** $${amount.toLocaleString()}\n` +
+            `> <:moatcastleright:1537695231409918002> **Requester:** <@${requesterId}>\n` +
+            `> <:moatcastleright:1537695231409918002> Loan has been **approved** and added to their Moat Castle balance.`,
+          noLogo: false,
+        });
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      if (action === "deny") {
+        requesterRecord.moatCastle.loanRequests =
+          requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
+
+        await updateUserRecord(requesterRecord);
+
+        const { embed } = moatembedTemplate({
+          title: "Loan Denied",
+          description:
+            `> <:moatcastleright:1537695231409918002> **Loan Amount:** $${amount.toLocaleString()}\n` +
+            `> <:moatcastleright:1537695231409918002> **Requester:** <@${requesterId}>\n` +
+            `> <:moatcastleright:1537695231409918002> Loan request has been **denied**.`,
+          noLogo: false,
+        });
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+    }
+
     //Vehicle Handler
     if (
       interaction.isButton() &&
