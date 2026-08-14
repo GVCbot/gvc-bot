@@ -35,12 +35,11 @@ module.exports = {
     const reason = interaction.options.getString("reason");
     const user = interaction.user;
 
-    const loanChannelId = "1537722326496452678"; // Loan review channel
-    const loanRoleId = "1537722114176581724"; // Loan officer role
+    const loanChannelId = "1537722326496452678";
+    const loanRoleId = "1537722114176581724";
 
     const userRecord = await getUserRecord(user.id);
 
-    // Ensure Moat Castle account exists
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
@@ -52,7 +51,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Create loan request object
     const loanRequest = {
       id: Date.now().toString(),
       requesterId: user.id,
@@ -62,7 +60,6 @@ module.exports = {
       status: "pending",
     };
 
-    // Store loan request in user record
     if (!userRecord.moatCastle.loanRequests) {
       userRecord.moatCastle.loanRequests = [];
     }
@@ -70,7 +67,6 @@ module.exports = {
     userRecord.moatCastle.loanRequests.push(loanRequest);
     await updateUserRecord(userRecord);
 
-    // Build embed for loan officers
     const { embed, files } = moatembedTemplate({
       title: "💰 Moat Castle Loan Request",
       description:
@@ -82,7 +78,6 @@ module.exports = {
       noLogo: false,
     });
 
-    // Buttons for loan officers
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`moat_loan_accept_${user.id}_${loanRequest.id}`)
@@ -95,7 +90,6 @@ module.exports = {
         .setStyle(ButtonStyle.Danger),
     );
 
-    // Send to loan review channel
     const loanChannel = interaction.client.channels.cache.get(loanChannelId);
     if (loanChannel) {
       await loanChannel.send({
@@ -106,7 +100,6 @@ module.exports = {
       });
     }
 
-    // User confirmation
     return interaction.editReply({
       content: `✅ Your Moat Castle loan request for **$${amount.toLocaleString()}** has been submitted.`,
     });

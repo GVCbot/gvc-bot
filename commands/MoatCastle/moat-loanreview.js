@@ -34,17 +34,20 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const loan = loans[0];
-    const createdUnix = Math.floor(loan.createdAt / 1000);
+    let desc = "";
+    loans.forEach((loan, i) => {
+      const createdUnix = Math.floor(loan.createdAt / 1000);
+      desc +=
+        `> <:moatcastleright:1537695231409918002> **Loan #${i + 1}**\n` +
+        `> Amount: $${loan.amount.toLocaleString()}\n` +
+        `> Remaining: $${loan.remaining.toLocaleString()}\n` +
+        `> Reason: ${loan.reason}\n` +
+        `> Created: <t:${createdUnix}:F>\n\n`;
+    });
 
     const { embed, files } = moatembedTemplate({
       title: "💰 Moat Castle Loan Status",
-      description:
-        `> <:moatcastleright:1537695231409918002> **Loan Amount:** $${loan.amount.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Remaining:** $${loan.remaining.toLocaleString()}\n` +
-        `> <:moatcastleright:1537695231409918002> **Reason:** ${loan.reason}\n` +
-        `> <:moatcastleright:1537695231409918002> **Created:** <t:${createdUnix}:F>\n` +
-        `> <:moatcastleright:1537695231409918002> **Status:** Active`,
+      description: desc,
       noLogo: false,
     });
 
