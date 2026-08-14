@@ -23,6 +23,12 @@ module.exports = {
         .setName("amount")
         .setDescription("Amount to pay (number or 'all').")
         .setRequired(true),
+    )
+    .addIntegerOption((opt) =>
+      opt
+        .setName("points")
+        .setDescription("How many Castle Points to use (optional).")
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -53,6 +59,7 @@ module.exports = {
 
     const loanIndex = interaction.options.getInteger("loan") - 1;
     const amountInput = interaction.options.getString("amount");
+    const pointsInput = interaction.options.getInteger("points") ?? 0;
 
     if (loanIndex < 0 || loanIndex >= loans.length) {
       const { embed, files } = moatembedTemplate({
@@ -80,20 +87,73 @@ module.exports = {
       }
     }
 
-    const balance = userRecord.moatCastle.balance;
-    if (balance < amount) {
+    let balance = userRecord.moatCastle.balance;
+    let points = userRecord.moatCastle.rewards;
+
+    // ============================
+    // ⭐ User chooses EXACT points to use
+    // ============================
+
+    if (pointsInput < 0) {
       const { embed, files } = moatembedTemplate({
-        title: "Insufficient Balance",
-        description:
-          `> ${ARROW} Your Moat Castle balance is **$${balance.toLocaleString()}**.\n` +
-          `> ${ARROW} You need **$${amount.toLocaleString()}** to make this payment.`,
+        title: "Invalid Points",
+        description: `> ${ARROW} Points must be **0 or higher**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    userRecord.moatCastle.balance -= amount;
+    if (pointsInput > points) {
+      const { embed, files } = moatembedTemplate({
+        title: "Not Enough Points",
+        description:
+          `> ${ARROW} You only have **${points} Castle Points**.\n` +
+          `> ${ARROW} You cannot use **${pointsInput} points**.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    const pointsValue = pointsInput * 1000;
+
+    // Total available to pay
+    const totalAvailable = balance + pointsValue;
+
+    if (totalAvailable < amount) {
+      const { embed, files } = moatembedTemplate({
+        title: "Insufficient Funds",
+        description:
+          `> ${ARROW} You tried to pay **$${amount.toLocaleString()}**.\n\n` +
+          `> ${ARROW} Moat Balance: $${balance.toLocaleString()}\n` +
+          `> ${ARROW} Points Used: ${pointsInput} (worth $${pointsValue.toLocaleString()})\n\n` +
+          `> ${ARROW} Total Available: $${totalAvailable.toLocaleString()}\n` +
+          `> ${ARROW} **This is not enough to cover the payment.**`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // ============================
+    // ⭐ Apply payment
+    // ============================
+
+    let amountPaidFromBalance = Math.min(balance, amount);
+    let remainingAfterBalance = amount - amountPaidFromBalance;
+
+    let amountPaidFromPoints = remainingAfterBalance;
+
+    // Deduct balance
+    balance -= amountPaidFromBalance;
+
+    // Deduct points
+    const pointsUsed = Math.ceil(amountPaidFromPoints / 1000);
+    points -= pointsUsed;
+
+    // Apply to loan
     loan.remaining -= amount;
+
+    userRecord.moatCastle.balance = balance;
+    userRecord.moatCastle.rewards = points;
 
     userRecord.moatCastle.lastLoanPayment = {
       amount,
@@ -122,12 +182,15 @@ module.exports = {
       title: finished ? "Loan Fully Paid" : "Loan Payment Successful",
       description:
         `> ${ARROW} **Loan #${loanIndex + 1}**\n` +
-        `> ${ARROW} **Payment Amount:** $${amount.toLocaleString()}\n` +
+        `> ${ARROW} **Total Payment:** $${amount.toLocaleString()}\n` +
+        `> ${ARROW} **Paid From Balance:** $${amountPaidFromBalance.toLocaleString()}\n` +
+        `> ${ARROW} **Paid From Points:** $${amountPaidFromPoints.toLocaleString()} (1 point = 1000)\n` +
         (refund > 0
           ? `> ${ARROW} **Refunded Extra:** $${refund.toLocaleString()}\n`
           : "") +
-        `> ${ARROW} **Remaining Loan:** $${finished ? "0" : loan.remaining.toLocaleString()}\n\n` +
-        `> ${ARROW}**New Moat Castle Balance:** $${userRecord.moatCastle.balance.toLocaleString()}`,
+        `> ${ARROW} **Remaining Loan:** ${finished ? "0" : loan.remaining.toLocaleString()}\n\n` +
+        `> ${ARROW} **New Moat Balance:** $${balance.toLocaleString()}\n` +
+        `> ${ARROW} **Remaining Castle Points:** ${points.toLocaleString()}`,
       noLogo: false,
     });
 

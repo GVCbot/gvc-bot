@@ -81,20 +81,34 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Calculate points with cap
-    const basePoints = Math.floor(amount / 10); // 1 point per $10
+    // ============================
+    // ⭐ NEW POINT SYSTEM
+    // ============================
+
+    // Base points: 1 per 1000 deposited
+    const basePoints = Math.floor(amount / 1000);
+
+    // Tier multiplier
     const multiplier = getTierMultiplier(userRecord.moatCastle.tier);
 
-    // Bonus only (multiplier - 1)
+    // Bonus points from multiplier
     const bonusPoints = Math.floor(basePoints * (multiplier - 1));
 
-    // Total points
-    const earnedPoints = Math.min(basePoints + bonusPoints, 5000);
+    // Total earned points
+    const earnedPoints = basePoints + bonusPoints;
 
-    // Update records
+    // Apply 5,000 cap
+    userRecord.moatCastle.rewards = Math.min(
+      userRecord.moatCastle.rewards + earnedPoints,
+      5000,
+    );
+
+    // ============================
+    // ⭐ Update balances + history
+    // ============================
+
     userRecord.cash -= amount;
     userRecord.moatCastle.balance += amount;
-    userRecord.moatCastle.rewards += earnedPoints;
 
     userRecord.moatCastle.lastDeposit = {
       amount,

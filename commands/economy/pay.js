@@ -4,6 +4,8 @@ const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { MOATEMOJIS } = moatembedTemplate;
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
+const GVCARROW = "<:arrowright:1534182706836144158>";
+
 const {
   getUserRecord,
   updateUserRecord,
@@ -33,6 +35,12 @@ module.exports = {
         )
         .addChoices({ name: "Use Moat Castle Card", value: "use_card" })
         .setRequired(false),
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName("points")
+        .setDescription("Castle Points to use (optional).")
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -42,13 +50,14 @@ module.exports = {
     const receiver = interaction.options.getUser("user");
     const amountInput = interaction.options.getString("amount");
     const moatCardOption = interaction.options.getString("moat_card");
+    const pointsInput = interaction.options.getInteger("points") ?? 0;
 
     const invoiceChannelId = "1537770259677847612";
 
     if (receiver.id === senderId) {
       const { embed } = embedTemplate({
         title: "Payment Error",
-        description: "> You cannot pay yourself.",
+        description: `${GVCARROW} You cannot pay yourself.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -63,13 +72,16 @@ module.exports = {
     let amount;
 
     if (amountInput.toLowerCase() === "all") {
-      amount = sender.cash;
+      amount =
+        moatCardOption === "use_card"
+          ? (sender.moatCastle?.balance ?? 0)
+          : sender.cash;
     } else {
       amount = parseInt(amountInput, 10);
       if (isNaN(amount)) {
         const { embed } = embedTemplate({
           title: "Payment Error",
-          description: "> Amount must be a number or 'all'.",
+          description: `${GVCARROW} Amount must be a number or 'all'.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -79,7 +91,7 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title: "Payment Error",
-        description: "> Amount must be greater than 0.",
+        description: `${GVCARROW} Amount must be greater than 0.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -90,13 +102,13 @@ module.exports = {
     let invoiceFiles;
 
     // ============================
-    // ⭐ Moat Castle Payment
+    // ⭐ Moat Castle Payment (with optional points)
     // ============================
     if (moatCardOption === "use_card") {
       if (!sender.moatCastle) {
         const { embed } = embedTemplate({
           title: "Moat Castle Card Error",
-          description: "> You do not have a Moat Castle account or card.",
+          description: `${GVCARROW} You do not have a Moat Castle account or card.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -106,37 +118,81 @@ module.exports = {
         const { embed } = embedTemplate({
           title: "Card Frozen",
           description:
-            "> Your Moat Castle card is **Frozen**.\n" +
-            "> Unfreeze it using **/moat-unfreezecard**.",
+            `${GVCARROW} Your Moat Castle card is **Frozen**.\n` +
+            `${GVCARROW} Unfreeze it using **/moat-unfreezecard**.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
 
-      if (sender.moatCastle.balance < amount) {
+      let balance = sender.moatCastle.balance;
+      let points = sender.moatCastle.rewards;
+
+      if (pointsInput < 0) {
         const { embed } = embedTemplate({
-          title: "Insufficient Moat Castle Balance",
-          description:
-            `> Your Moat Castle account only has **$${sender.moatCastle.balance.toLocaleString()}**.\n` +
-            `> You need **$${amount.toLocaleString()}** to complete this payment.`,
+          title: "Invalid Points",
+          description: `${GVCARROW} Points must be **0 or higher**.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
 
-      // Deduct from Moat Castle
-      sender.moatCastle.balance -= amount;
+      if (pointsInput > points) {
+        const { embed } = embedTemplate({
+          title: "Not Enough Points",
+          description:
+            `${GVCARROW} You only have **${points} Castle Points**.\n` +
+            `${GVCARROW} You cannot use **${pointsInput} points**.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      const pointsValue = pointsInput * 1000;
+      const totalAvailable = balance + pointsValue;
+
+      if (totalAvailable < amount) {
+        const { embed } = embedTemplate({
+          title: "Insufficient Funds",
+          description:
+            `${GVCARROW} You tried to pay **$${amount.toLocaleString()}**.\n\n` +
+            `${GVCARROW} Moat Balance: $${balance.toLocaleString()}\n` +
+            `${GVCARROW} Points Used: ${pointsInput} (worth $${pointsValue.toLocaleString()})\n\n` +
+            `${GVCARROW} Total Available: $${totalAvailable.toLocaleString()}\n` +
+            `${GVCARROW} **This is not enough to cover the payment.**`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // Deduct balance first
+      const amountPaidFromBalance = Math.min(balance, amount);
+      balance -= amountPaidFromBalance;
+
+      // Deduct points second
+      const remainingAfterBalance = amount - amountPaidFromBalance;
+      const pointsUsed = Math.ceil(remainingAfterBalance / 1000);
+      points -= pointsUsed;
+
+      sender.moatCastle.balance = balance;
+      sender.moatCastle.rewards = points;
+
       receiverRecord.cash += amount;
 
-      // Award points (1 per 100)
-      const earnedPoints = Math.floor(amount / 100);
-      sender.moatCastle.rewards += earnedPoints;
+      // ⭐ Award points (1 per 1000) with 5k cap
+      const earnedPoints = Math.floor(amount / 1000);
+      sender.moatCastle.rewards = Math.min(
+        sender.moatCastle.rewards + earnedPoints,
+        5000,
+      );
 
       moatCardUsedText =
         `${ARROW} **Moat Castle Card Used:** ${sender.moatCastle.cardNumber}\n` +
-        `${ARROW} **Points Earned:** ${earnedPoints}\n`;
+        `${ARROW} **Points Used:** ${pointsUsed}\n` +
+        `${ARROW} **Points Earned:** ${earnedPoints}\n` +
+        `${ARROW} **Total Points:** ${sender.moatCastle.rewards.toLocaleString()}\n`;
 
-      // ⭐ Create Moat Castle invoice
+      // ⭐ Moat Castle Invoice
       const invoice = moatembedTemplate({
         title: "🏦 Moat Castle Billing Invoice",
         description:
@@ -144,7 +200,7 @@ module.exports = {
           `${ARROW} **Sender:** <@${senderId}>\n` +
           `${ARROW} **Receiver:** <@${receiver.id}>\n` +
           `${ARROW} **Amount:** $${amount.toLocaleString()}\n` +
-          `${ARROW} **Card Number:** ${sender.moatCastle.cardNumber}\n` +
+          `${ARROW} **Points Used:** ${pointsUsed}\n` +
           `${ARROW} **Points Earned:** ${earnedPoints}\n` +
           `${ARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
         noLogo: false,
@@ -154,12 +210,12 @@ module.exports = {
       invoiceFiles = invoice.files;
     } else {
       // ============================
-      // ⭐ Normal Cash Payment
+      // ⭐ Normal GVC Cash Payment
       // ============================
       if (sender.cash < amount) {
         const { embed } = embedTemplate({
           title: "Payment Error",
-          description: "> You do not have enough cash to make this payment.",
+          description: `${GVCARROW} You do not have enough cash to make this payment.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -168,15 +224,15 @@ module.exports = {
       sender.cash -= amount;
       receiverRecord.cash += amount;
 
-      // ⭐ Create GVC invoice
+      // ⭐ GVC Invoice
       const invoice = embedTemplate({
         title: "💵 GVC Billing Invoice",
         description:
-          `> **Cash Payment Processed**\n\n` +
-          `> **Sender:** <@${senderId}>\n` +
-          `> **Receiver:** <@${receiver.id}>\n` +
-          `> **Amount:** $${amount.toLocaleString()}\n` +
-          `> **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+          `${GVCARROW} **Cash Payment Processed**\n\n` +
+          `${GVCARROW} **Sender:** <@${senderId}>\n` +
+          `${GVCARROW} **Receiver:** <@${receiver.id}>\n` +
+          `${GVCARROW} **Amount:** $${amount.toLocaleString()}\n` +
+          `${GVCARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
         noLogo: true,
       });
 
@@ -203,10 +259,12 @@ module.exports = {
     // ============================
     // ⭐ User-facing confirmation
     // ============================
+    const arrowEmoji = moatCardOption === "use_card" ? ARROW : GVCARROW;
+
     const desc =
-      `${ARROW} **You paid:** <@${receiver.id}> $${amount.toLocaleString()}\n` +
+      `${arrowEmoji} **You paid:** <@${receiver.id}> $${amount.toLocaleString()}\n` +
       moatCardUsedText +
-      `${ARROW} **Your new cash balance:** $${sender.cash.toLocaleString()}`;
+      `${arrowEmoji} **Your new cash balance:** $${sender.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title: "Payment Sent",
@@ -215,7 +273,6 @@ module.exports = {
     });
 
     embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
-
     await interaction.editReply({ embeds: [embed] });
 
     // DM receiver
@@ -223,9 +280,9 @@ module.exports = {
       const { embed: dmEmbed } = embedTemplate({
         title: "Payment Received",
         description:
-          `> **From:** ${interaction.user.username}\n` +
-          `> **Amount:** $${amount.toLocaleString()}\n` +
-          `> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
+          `${GVCARROW} **From:** ${interaction.user.username}\n` +
+          `${GVCARROW} **Amount:** $${amount.toLocaleString()}\n` +
+          `${GVCARROW} **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
         noLogo: true,
       });
 
