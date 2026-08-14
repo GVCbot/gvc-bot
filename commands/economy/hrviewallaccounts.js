@@ -1,9 +1,9 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { GVCEMOJIS } = require("../../utils/embedTemplate");
 const { getAllUserRecords } = require("../../economy/economyutils");
 
-const { GVCARROW, SUN } = GVCEMOJIS;
+const ARROW = "<:arrowright:1534182706836144158>";
+const SUN = "<a:gvcsunspin:1527220557890850846>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,11 +17,11 @@ module.exports = {
     if (!interaction.member.roles.cache.has(hrRole)) {
       return interaction.reply({
         content: "❌ Only HR staff can use this command.",
-        ephemeral: true,
+        flags: 64, // ephemeral replacement
       });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
 
     const users = await getAllUserRecords();
 
@@ -46,14 +46,15 @@ module.exports = {
     const { embed, files } = embedTemplate({
       title: "Global Banking Statistics",
       description:
-        `${GVCARROW} **🏰 Moat Castle Accounts:** ${moatCount}\n` +
-        `${GVCARROW} **🦊 Fox Bank Accounts:** ${foxCount}\n` +
-        `${GVCARROW} **🔗 Users with Both:** ${bothCount}\n\n` +
-        `${GVCARROW} **🏰 Total Moat Castle Money:** $${totalMoatBalance.toLocaleString()}\n` +
-        `${GVCARROW} **🦊 Total Fox Bank Money:** $${totalFoxBalance.toLocaleString()}`,
+        `${ARROW} **🏰 Moat Castle Accounts:** ${moatCount}\n` +
+        `${ARROW} **🦊 Fox Bank Accounts:** ${foxCount}\n` +
+        `${ARROW} **🔗 Users with Both:** ${bothCount}\n\n` +
+        `${ARROW} **🏰 Total Moat Castle Money:** $${totalMoatBalance.toLocaleString()}\n` +
+        `${ARROW} **🦊 Total Fox Bank Money:** $${totalFoxBalance.toLocaleString()}`,
       noLogo: false,
     });
 
+    // Add GVC-style title + footer
     embed.setTitle(`${SUN} Global Banking Statistics ${SUN}`);
     embed.setFooter({ text: "Greenville Community • HR Division" });
     embed.setTimestamp();
