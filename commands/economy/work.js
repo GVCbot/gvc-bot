@@ -21,7 +21,7 @@ function getWorkPayout() {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("work")
-    .setDescription("Work a job and earn money (1 hour cooldown)"),
+    .setDescription("Work a job and earn money (6 hour cooldown)"),
 
   async execute(interaction) {
     const userId = interaction.user.id;
@@ -30,7 +30,7 @@ module.exports = {
     const bypassRole = "1368142895181205636";
     const isBypass = interaction.member.roles.cache.has(bypassRole);
 
-    const cooldown = 60 * 60 * 1000;
+    const cooldown = 60 * 60 * 1000 * 6;
     const now = Date.now();
 
     if (!isBypass && user.lastWork && now - user.lastWork < cooldown) {

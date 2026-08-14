@@ -20,7 +20,7 @@ module.exports = {
     const user = await getUserRecord(userId);
 
     const now = Date.now();
-    const cooldownMs = 60 * 60 * 1000; // 1 hour
+    const cooldownMs = 60 * 60 * 1000 *6;
 
     // Bypass cooldown using ROLE
     const bypassRole = "1368142895181205636";
