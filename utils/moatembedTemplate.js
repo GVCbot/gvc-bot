@@ -11,7 +11,7 @@ module.exports = function moatembedTemplate({
   const ARROW = "<:moatcastleright:1537695231409918002>";
 
   const embed = new EmbedBuilder()
-    .setColor("#422E57") // Moat Castle theme color
+    .setColor("#422E57") // Moat Castle purple theme
     .setTitle(`${MOATCASTLE} ${title} ${MOATCASTLE}`)
     .setDescription(description)
     .setImage(banner || path.join(__dirname, "../graphics/moatbanklogo.png"));
