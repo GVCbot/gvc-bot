@@ -28,10 +28,7 @@ module.exports = {
           "Pay using your Moat Castle card to earn Castle Points.",
         )
         .setRequired(false)
-        .addChoices(
-          // This will be dynamically replaced later
-          { name: "Your Moat Castle Card", value: "use_card" },
-        ),
+        .addChoices({ name: "Use Moat Castle Card", value: "use_card" }),
     ),
 
   async execute(interaction) {
@@ -45,7 +42,8 @@ module.exports = {
     if (receiver.id === senderId) {
       const { embed } = embedTemplate({
         title: "Payment Error",
-        description: "> You cannot pay yourself.",
+        description:
+          "> <:bulletpoint:1534184707900837961> You cannot pay yourself.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -66,7 +64,8 @@ module.exports = {
       if (isNaN(amount)) {
         const { embed } = embedTemplate({
           title: "Payment Error",
-          description: "> Amount must be a number or 'all'.",
+          description:
+            "> <:bulletpoint:1534184707900837961> Amount must be a number or 'all'.",
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
@@ -76,35 +75,76 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title: "Payment Error",
-        description: "> Amount must be greater than 0.",
+        description:
+          "> <:bulletpoint:1534184707900837961> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
     }
-
-    if (sender.cash < amount) {
-      const { embed } = embedTemplate({
-        title: "Payment Error",
-        description: "> You do not have enough cash to make this payment.",
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Process payment
-    sender.cash -= amount;
-    receiverRecord.cash += amount;
 
     let moatCardUsedText = "";
 
-    // If user selected Moat Castle card
-    if (moatCardOption === "use_card" && sender.moatCastle) {
+    // ⭐ If user selected Moat Castle card
+    if (moatCardOption === "use_card") {
+      if (!sender.moatCastle) {
+        const { embed } = embedTemplate({
+          title: "Moat Castle Card Error",
+          description:
+            "> <:bulletpoint:1534184707900837961> You do not have a Moat Castle account or card.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // ⭐ Check if card is frozen
+      if (sender.moatCastle.cardStatus === "Frozen") {
+        const { embed } = embedTemplate({
+          title: "Card Frozen",
+          description:
+            "> <:bulletpoint:1534184707900837961> Your Moat Castle card is **Frozen**.\n" +
+            "> <:bulletpoint:1534184707900837961> Unfreeze it using **/moat-unfreezecard**.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // ⭐ Check Moat Castle balance
+      if (sender.moatCastle.balance < amount) {
+        const { embed } = embedTemplate({
+          title: "Insufficient Moat Castle Balance",
+          description:
+            `> <:bulletpoint:1534184707900837961> Your Moat Castle account only has **$${sender.moatCastle.balance.toLocaleString()}**.\n` +
+            `> <:bulletpoint:1534184707900837961> You need **$${amount.toLocaleString()}** to complete this payment.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // ⭐ Deduct from Moat Castle balance instead of cash
+      sender.moatCastle.balance -= amount;
+      receiverRecord.cash += amount;
+
+      // ⭐ Award points (1 per 100)
       const earnedPoints = Math.floor(amount / 100);
       sender.moatCastle.rewards += earnedPoints;
 
       moatCardUsedText =
-        `> <:moatcastleright:1537695231409918002> **Moat Castle Card Used:** ${sender.moatCastle.cardNumber}\n` +
-        `> <:moatcastleright:1537695231409918002> **Points Earned:** ${earnedPoints}\n`;
+        `> <:bulletpoint:1534184707900837961> **Moat Castle Card Used:** ${sender.moatCastle.cardNumber}\n` +
+        `> <:bulletpoint:1534184707900837961> **Points Earned:** ${earnedPoints}\n`;
+    } else {
+      // ⭐ Normal cash payment
+      if (sender.cash < amount) {
+        const { embed } = embedTemplate({
+          title: "Payment Error",
+          description:
+            "> <:bulletpoint:1534184707900837961> You do not have enough cash to make this payment.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      sender.cash -= amount;
+      receiverRecord.cash += amount;
     }
 
     await updateUserRecord(sender);

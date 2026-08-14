@@ -59,6 +59,17 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    if (userRecord.moatCastle.cardStatus === "Frozen") {
+      const { embed, files } = moatembedTemplate({
+        title: "Card Frozen",
+        description:
+          `> <:moatcastleright:1537695231409918002> Your Moat Castle card is **Frozen**.\n` +
+          `> <:moatcastleright:1537695231409918002> You cannot deposit until you unfreeze it.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
     if (userRecord.cash < amount) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Cash",

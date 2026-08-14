@@ -26,11 +26,11 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // If account exists, show details
+    // Account exists
     const acct = userRecord.moatCastle;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
-    // Default card status (freeze system added later)
+    // Default card status if missing
     const cardStatus = acct.cardStatus || "Active";
 
     const { embed, files } = moatembedTemplate({

@@ -50,6 +50,17 @@ module.exports = {
 
     const acct = userRecord.moatCastle;
 
+    if (acct.cardStatus === "Frozen") {
+      const { embed, files } = moatembedTemplate({
+        title: "Card Frozen",
+        description:
+          `> <:moatcastleright:1537695231409918002> Your Moat Castle card is **Frozen**.\n` +
+          `> <:moatcastleright:1537695231409918002> You cannot withdraw until you unfreeze it.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
     // Check if account has enough balance
     if (acct.balance < amount) {
       const { embed, files } = moatembedTemplate({

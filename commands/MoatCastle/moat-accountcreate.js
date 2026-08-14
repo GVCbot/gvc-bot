@@ -118,6 +118,7 @@ module.exports = {
       accountName,
       accountId,
       cardNumber,
+      cardStatus: "Active",
       balance: 0,
       tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
       rewards: 0,
