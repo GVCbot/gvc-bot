@@ -1,6 +1,9 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { getUserRecord } = require("../../economy/economyutils");
+const {
+  getUserRecord,
+  updateUserRecord,
+} = require("../../economy/economyutils");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -71,7 +74,7 @@ module.exports = {
     if (won) {
       // 2x Return: Net gain equals the original bet (+300)
       const payout = betAmount * 2;
-      user.cash += betAmount; // Adding +betAmount achieves the net 2x payout (Balance - Bet + Payout)
+      user.cash += betAmount; // Adding +betAmount achieves the net 2x payout
 
       resultTitle = "🐔 Chicken Fight — VICTORY!";
       resultDescription =
