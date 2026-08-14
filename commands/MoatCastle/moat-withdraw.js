@@ -21,7 +21,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    await interaction.deferReply({ flags: 64 });
+    await interaction.deferReply();
 
     const amount = interaction.options.getInteger("amount");
     const userRecord = await getUserRecord(interaction.user.id);

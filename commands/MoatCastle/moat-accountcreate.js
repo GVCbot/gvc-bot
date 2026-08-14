@@ -47,7 +47,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    await interaction.deferReply({ flags: 64 });
+    await interaction.deferReply();
 
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);

@@ -11,11 +11,10 @@ module.exports = {
     .setDescription("Delete your Moat Castle account permanently."),
 
   async execute(interaction) {
-    await interaction.deferReply({ flags: 64 });
+    await interaction.deferReply();
 
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // No account exists
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
@@ -24,15 +23,14 @@ module.exports = {
           `> <:moatcastleright:1537695231409918002> Use **/moat-accountcreate** to open one.`,
         noLogo: true,
       });
-
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Refund balance (Moat Castle balance = cash)
+    // ⭐ Refund balance
     const refundedCash = userRecord.moatCastle.balance || 0;
     userRecord.cash += refundedCash;
 
-    // Delete the account
+    // ⭐ Delete account
     userRecord.moatCastle = null;
 
     await updateUserRecord(userRecord);
