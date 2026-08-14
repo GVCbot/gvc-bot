@@ -156,4 +156,5 @@ module.exports = {
   getUserRecord,
   updateUserRecord,
   getAllUserRecords,
+  getDB,
 };
