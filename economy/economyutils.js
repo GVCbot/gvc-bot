@@ -126,12 +126,12 @@ async function getUserRecord(userId) {
     user = {
       userId,
       cash: 0,
+      moatBalance: 0,
       lastCollect: 0,
       lastWork: 0,
 
       records: { citations: [], warrants: [], blackpoints: 0 },
       vehicles: [],
-
       moatCastle: null,
       foxBank: null,
 
@@ -166,6 +166,14 @@ async function getUserRecord(userId) {
   if (!Array.isArray(user.homes.lakeville)) user.homes.lakeville = [];
   if (!Array.isArray(user.homes.sixhousent)) user.homes.sixhousent = [];
 
+  // ⭐ Ensure balances are numeric
+  user.cash = Number(user.cash) || 0;
+  user.moatBalance = Number(user.moatBalance) || 0;
+
+  if (user.foxBank && typeof user.foxBank.balance !== "number") {
+    user.foxBank.balance = Number(user.foxBank.balance) || 0;
+  }
+
   return user;
 }
 
@@ -184,6 +192,9 @@ async function updateUserRecord(user) {
   console.log(`💾 Updated user record for ${user.userId}`);
 }
 
+// -----------------------------------------------------
+// GET ALL USER RECORDS
+// -----------------------------------------------------
 async function getAllUserRecords() {
   const db = await getDB();
   return await db.collection("users").find({}).toArray();
@@ -197,7 +208,6 @@ module.exports = {
   updateUserRecord,
   getAllUserRecords,
   getDB,
-
   loadLakevillePrices,
   loadSixhousentPrices,
 };
