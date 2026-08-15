@@ -30,11 +30,24 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Check for active homes
+    if (userRecord.homes.lakeville || userRecord.homes.sixhousnet) {
+      const { embed, files } = foxbankembedTemplate({
+        title: "Active Home Detected",
+        description:
+          `> ${ARROW} You currently own a home.\n` +
+          `> ${ARROW} You **must sell your home first** before deleting your Fox Bank account.\n\n` +
+          `> ${ARROW} Use **/fox-homesell** to sell your home.`,
+        noLogo: false,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
     // Refund Fox Bank balance
     const refundedCash = userRecord.foxBank.balance || 0;
     userRecord.cash += refundedCash;
 
-    // Delete ONLY Fox Bank account
+    // Delete Fox Bank account
     userRecord.foxBank = null;
 
     await updateUserRecord(userRecord);

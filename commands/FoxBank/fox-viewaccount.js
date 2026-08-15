@@ -65,6 +65,34 @@ module.exports = {
     }
 
     // ================================
+    // ⭐ OWNED HOMES DISPLAY
+    // ================================
+    let homesText = "";
+
+    const lakeville = userRecord.homes?.lakeville;
+    const sixhousnet = userRecord.homes?.sixhousnet;
+
+    if (!lakeville && !sixhousnet) {
+      homesText += `> ${ARROW} **Owned Homes:** None\n\n`;
+    } else {
+      homesText += `> ${ARROW} **Owned Homes:**\n`;
+
+      if (lakeville) {
+        homesText +=
+          `> ${ARROW} Lakeville Home #${lakeville.homeId} — ` +
+          `$${lakeville.price.toLocaleString()}\n`;
+      }
+
+      if (sixhousnet) {
+        homesText +=
+          `> ${ARROW} Sixhousnet Home #${sixhousnet.homeId} — ` +
+          `$${sixhousnet.price.toLocaleString()}\n`;
+      }
+
+      homesText += `\n`;
+    }
+
+    // ================================
     // ⭐ FINAL EMBED
     // ================================
     const { embed, files } = foxbankembedTemplate({
@@ -77,6 +105,7 @@ module.exports = {
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> ${ARROW} **Tier:** ${acct.tier}\n` +
         `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
+        homesText +
         insuranceText,
       noLogo: false,
     });

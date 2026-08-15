@@ -52,19 +52,57 @@ module.exports = {
       ? `<t:${Math.floor(fb.updatedAt / 1000)}:F>`
       : "Unknown";
 
-    // Recent Deposit
+    // ================================
+    // ⭐ OWNED HOMES DISPLAY
+    // ================================
+    let homesText = "";
+
+    const lakeville = userRecord.homes?.lakeville;
+    const sixhousnet = userRecord.homes?.sixhousnet;
+
+    if (!lakeville && !sixhousnet) {
+      homesText += `${ARROW} **Owned Homes:** None\n\n`;
+    } else {
+      homesText += `${ARROW} **Owned Homes:**\n`;
+
+      if (lakeville) {
+        homesText +=
+          `${ARROW} Lakeville Home #${lakeville.homeId} — ` +
+          `$${lakeville.price.toLocaleString()}\n`;
+      }
+
+      if (sixhousnet) {
+        homesText +=
+          `${ARROW} Sixhousnet Home #${sixhousnet.homeId} — ` +
+          `$${sixhousnet.price.toLocaleString()}\n`;
+      }
+
+      homesText += `\n`;
+    }
+
+    // ================================
+    // ⭐ Recent Deposit
+    // ================================
     const depositSection = fb.lastDeposit
       ? `${ARROW} **Amount:** $${fb.lastDeposit.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(fb.lastDeposit.timestamp / 1000)}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(
+          fb.lastDeposit.timestamp / 1000,
+        )}:F>\n`
       : `${ARROW} No deposits recorded.\n`;
 
-    // Recent Withdrawal
+    // ================================
+    // ⭐ Recent Withdrawal
+    // ================================
     const withdrawalSection = fb.lastWithdrawal
       ? `${ARROW} **Amount:** $${fb.lastWithdrawal.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(fb.lastWithdrawal.timestamp / 1000)}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(
+          fb.lastWithdrawal.timestamp / 1000,
+        )}:F>\n`
       : `${ARROW} No withdrawals recorded.\n`;
 
-    // Card Replacement History
+    // ================================
+    // ⭐ Card Replacement History
+    // ================================
     const cardHistory = fb.cardReplacements || [];
     let cardSection = "";
 
@@ -82,6 +120,9 @@ module.exports = {
       });
     }
 
+    // ================================
+    // ⭐ FINAL EMBED
+    // ================================
     const { embed, files } = foxbankembedTemplate({
       title: `Customer Lookup: ${target.username}`,
       description:
@@ -94,6 +135,7 @@ module.exports = {
         `${ARROW} **Balance:** $${balance.toLocaleString()}\n` +
         `${ARROW} **Created:** ${createdAt}\n` +
         `${ARROW} **Last Updated:** ${updatedAt}\n\n` +
+        homesText +
         `**💳 Card Replacement History:**\n${cardSection}\n` +
         `**📘 Most Recent Deposit:**\n${depositSection}\n` +
         `**📙 Most Recent Withdrawal:**\n${withdrawalSection}\n`,

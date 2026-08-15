@@ -82,6 +82,37 @@ async function loadWorkMessages() {
 }
 
 // -----------------------------------------------------
+// LOAD HOME PRICES — LAKEVILLE
+// -----------------------------------------------------
+async function loadLakevillePrices() {
+  const db = await getDB();
+  const docs = await db.collection("foxlakevillehomeprices").find({}).toArray();
+
+  const prices = {};
+  for (const d of docs) {
+    prices[d.homeId] = d.price; // price OR null
+  }
+  return prices;
+}
+
+// -----------------------------------------------------
+// LOAD HOME PRICES — SIXHOUSNET
+// -----------------------------------------------------
+async function loadSixhousnetPrices() {
+  const db = await getDB();
+  const docs = await db
+    .collection("foxsixhousnethomeprices")
+    .find({})
+    .toArray();
+
+  const prices = {};
+  for (const d of docs) {
+    prices[d.homeId] = d.price;
+  }
+  return prices;
+}
+
+// -----------------------------------------------------
 // GET OR CREATE USER RECORD
 // -----------------------------------------------------
 async function getUserRecord(userId) {
@@ -101,18 +132,21 @@ async function getUserRecord(userId) {
       records: { citations: [], warrants: [], blackpoints: 0 },
       vehicles: [],
 
-      // ⭐ Moat Castle banking system
       moatCastle: null,
-
-      // ⭐ NEW — Fox Bank banking system
       foxBank: null,
+
+      // ⭐ NEW — Home ownership system
+      homes: {
+        lakeville: null,
+        sixhousnet: null,
+      },
     };
 
     await collection.insertOne(user);
     return user;
   }
 
-  // ⭐ Ensure missing fields exist
+  // Ensure missing fields exist
   user.records = user.records || {
     citations: [],
     warrants: [],
@@ -121,11 +155,14 @@ async function getUserRecord(userId) {
 
   user.vehicles = user.vehicles || [];
 
-  // ⭐ Ensure Moat Castle exists
   user.moatCastle = user.moatCastle || null;
-
-  // ⭐ Ensure Fox Bank exists
   user.foxBank = user.foxBank || null;
+
+  // ⭐ Ensure homes exist
+  user.homes = user.homes || {
+    lakeville: null,
+    sixhousnet: null,
+  };
 
   return user;
 }
@@ -158,4 +195,8 @@ module.exports = {
   updateUserRecord,
   getAllUserRecords,
   getDB,
+
+  // ⭐ Export home price loaders
+  loadLakevillePrices,
+  loadSixhousnetPrices,
 };
