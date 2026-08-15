@@ -8,10 +8,10 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
-// ⭐ Fox Bank invoice channel
+// Fox Bank invoice channel
 const invoiceChannelId = "1537770259677847612";
 
-// ⭐ Cashback table
+// Cashback table (still works, but now adds CASH instead of points)
 function getCashbackPercent(tier) {
   switch ((tier || "").toLowerCase()) {
     case "silver":
@@ -30,20 +30,12 @@ function getCashbackPercent(tier) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-pay")
-    .setDescription(
-      "Pay a user using Fox Bank balance (with optional backup Fox Points).",
-    )
+    .setDescription("Pay a user using Fox Bank balance.")
     .addUserOption((opt) =>
       opt.setName("user").setDescription("User to pay").setRequired(true),
     )
     .addIntegerOption((opt) =>
       opt.setName("amount").setDescription("Amount to pay").setRequired(true),
-    )
-    .addBooleanOption((opt) =>
-      opt
-        .setName("use_backup_points")
-        .setDescription("Use Fox Points if balance is not enough")
-        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -52,8 +44,6 @@ module.exports = {
     const senderId = interaction.user.id;
     const receiver = interaction.options.getUser("user");
     const amount = interaction.options.getInteger("amount");
-    const useBackup =
-      interaction.options.getBoolean("use_backup_points") ?? false;
 
     // Prevent self-payment
     if (receiver.id === senderId) {
@@ -89,40 +79,9 @@ module.exports = {
     }
 
     let balance = sender.foxBank.balance;
-    let points = sender.foxBank.rewards;
 
-    let amountPaidFromBalance = 0;
-    let amountPaidFromPoints = 0;
-
-    // Case 1: Balance covers full amount
-    if (balance >= amount) {
-      amountPaidFromBalance = amount;
-      balance -= amount;
-    }
-
-    // Case 2: Balance insufficient, backup points enabled
-    else if (useBackup) {
-      amountPaidFromBalance = balance;
-      const remaining = amount - balance;
-
-      const pointsValue = points * 1000;
-      if (pointsValue < remaining) {
-        const { embed, files } = foxbankembedTemplate({
-          title: "Insufficient Funds",
-          description: `${ARROW} Balance + Fox Points are not enough to cover this payment.`,
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], files });
-      }
-
-      const pointsUsed = Math.ceil(remaining / 1000);
-      points -= pointsUsed;
-      amountPaidFromPoints = remaining;
-      balance = 0;
-    }
-
-    // Case 3: Balance insufficient, backup disabled
-    else {
+    // Insufficient balance
+    if (balance < amount) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Balance",
         description: `${ARROW} Your Fox Bank balance is not enough.`,
@@ -132,30 +91,20 @@ module.exports = {
     }
 
     // Apply payment
-    sender.foxBank.balance = balance;
-    sender.foxBank.rewards = points;
-
+    sender.foxBank.balance -= amount;
     receiverRecord.cash += amount;
 
-    // ⭐ Cashback ONLY if backup points were NOT used
-    let cashbackPoints = 0;
+    // Cashback (now adds CASH instead of points)
+    const cashbackPercent = getCashbackPercent(sender.foxBank.tier);
+    const cashbackCash = Math.floor(amount * cashbackPercent);
 
-    if (!useBackup) {
-      const cashbackPercent = getCashbackPercent(sender.foxBank.tier);
-      cashbackPoints = Math.floor(amountPaidFromBalance * cashbackPercent);
-
-      sender.foxBank.rewards = Math.min(
-        sender.foxBank.rewards + cashbackPoints,
-        5000,
-      );
-    }
-
+    sender.cash += cashbackCash;
     sender.foxBank.updatedAt = Date.now();
 
     await updateUserRecord(sender);
     await updateUserRecord(receiverRecord);
 
-    // ⭐ Detailed invoice → billing channel
+    // Invoice → billing channel
     const invoice = foxbankembedTemplate({
       title: "🦊 Fox Bank Billing Invoice",
       description:
@@ -163,11 +112,10 @@ module.exports = {
         `${ARROW} **Sender:** <@${senderId}>\n` +
         `${ARROW} **Receiver:** <@${receiver.id}>\n` +
         `${ARROW} **Amount:** $${amount.toLocaleString()}\n\n` +
-        `${ARROW} **Paid From Balance:** $${amountPaidFromBalance.toLocaleString()}\n` +
-        `${ARROW} **Paid From Fox Points:** $${amountPaidFromPoints.toLocaleString()}\n\n` +
-        `${ARROW} **Cashback Earned:** ${cashbackPoints}\n` +
-        `${ARROW} **New Balance:** $${balance.toLocaleString()}\n` +
-        `${ARROW} **New Fox Points:** ${sender.foxBank.rewards.toLocaleString()}\n` +
+        `${ARROW} **Paid From Balance:** $${amount.toLocaleString()}\n` +
+        `${ARROW} **Cashback Earned:** $${cashbackCash.toLocaleString()}\n\n` +
+        `${ARROW} **New Balance:** $${sender.foxBank.balance.toLocaleString()}\n` +
+        `${ARROW} **New Cash:** $${sender.cash.toLocaleString()}\n` +
         `${ARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
       noLogo: false,
     });
@@ -178,14 +126,14 @@ module.exports = {
       invoiceChannel.send({ embeds: [invoice.embed], files: invoice.files });
     }
 
-    // ⭐ Simple confirmation → user
+    // Confirmation → user
     const { embed, files } = foxbankembedTemplate({
       title: "Payment Sent",
       description:
         `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()}.\n` +
-        `${ARROW} Cashback Earned: ${cashbackPoints}\n` +
-        `${ARROW} Remaining Fox Bank Balance: $${balance.toLocaleString()}\n` +
-        `${ARROW} Total Fox Points: ${sender.foxBank.rewards.toLocaleString()}`,
+        `${ARROW} Cashback Earned: $${cashbackCash.toLocaleString()}\n` +
+        `${ARROW} Remaining Fox Bank Balance: $${sender.foxBank.balance.toLocaleString()}\n` +
+        `${ARROW} New Cash: $${sender.cash.toLocaleString()}`,
       noLogo: false,
     });
 

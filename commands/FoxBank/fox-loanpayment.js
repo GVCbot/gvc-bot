@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
-const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
+const { FOXEMOJIS } = foxbankembedTemplate;
 const { FOXICON, ARROW } = FOXEMOJIS;
 
 const {
@@ -23,12 +23,6 @@ module.exports = {
         .setName("amount")
         .setDescription("Amount to pay (number or 'all').")
         .setRequired(true),
-    )
-    .addIntegerOption((opt) =>
-      opt
-        .setName("points")
-        .setDescription("How many Fox Points to use (optional).")
-        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -39,10 +33,8 @@ module.exports = {
     // No Fox Bank account
     if (!userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
-        title: "Account Deleted",
-        description:
-          `> ${ARROW} Your Fox Bank account was **deleted**.\n` +
-          `> ${ARROW} No further action was taken.`,
+        title: "No Fox Bank Account",
+        description: `> ${ARROW} You do not have a Fox Bank account.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -62,7 +54,6 @@ module.exports = {
 
     const loanIndex = interaction.options.getInteger("loan") - 1;
     const amountInput = interaction.options.getString("amount");
-    const pointsInput = interaction.options.getInteger("points") ?? 0;
 
     if (loanIndex < 0 || loanIndex >= loans.length) {
       const { embed, files } = foxbankembedTemplate({
@@ -74,9 +65,9 @@ module.exports = {
     }
 
     const loan = loans[loanIndex];
-    let amount;
 
-    // "all" = pay full remaining
+    // Determine payment amount
+    let amount;
     if (amountInput.toLowerCase() === "all") {
       amount = loan.remaining;
     } else {
@@ -92,41 +83,14 @@ module.exports = {
     }
 
     let balance = userRecord.foxBank.balance;
-    let points = userRecord.foxBank.rewards;
-
-    // Points validation
-    if (pointsInput < 0) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Invalid Points",
-        description: `> ${ARROW} Points must be **0 or higher**.`,
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
-    if (pointsInput > points) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Not Enough Points",
-        description:
-          `> ${ARROW} You only have **${points} Fox Points**.\n` +
-          `> ${ARROW} You cannot use **${pointsInput} points**.`,
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
-    const pointsValue = pointsInput * 1000;
-    const totalAvailable = balance + pointsValue;
 
     // Insufficient funds
-    if (totalAvailable < amount) {
+    if (balance < amount) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Funds",
         description:
           `> ${ARROW} You tried to pay **$${amount.toLocaleString()}**.\n\n` +
-          `> ${ARROW} Fox Bank Balance: $${balance.toLocaleString()}\n` +
-          `> ${ARROW} Points Used: ${pointsInput} (worth $${pointsValue.toLocaleString()})\n\n` +
-          `> ${ARROW} Total Available: $${totalAvailable.toLocaleString()}\n` +
+          `> ${ARROW} Fox Bank Balance: $${balance.toLocaleString()}\n\n` +
           `> ${ARROW} **This is not enough to cover the payment.**`,
         noLogo: true,
       });
@@ -134,26 +98,13 @@ module.exports = {
     }
 
     // ============================
-    // ⭐ Apply payment
+    // ⭐ Apply payment (cash only)
     // ============================
 
-    let amountPaidFromBalance = Math.min(balance, amount);
-    let remainingAfterBalance = amount - amountPaidFromBalance;
-
-    let amountPaidFromPoints = remainingAfterBalance;
-
-    // Deduct balance
-    balance -= amountPaidFromBalance;
-
-    // Deduct points
-    const pointsUsed = Math.ceil(amountPaidFromPoints / 1000);
-    points -= pointsUsed;
-
-    // Apply to loan
+    balance -= amount;
     loan.remaining -= amount;
 
     userRecord.foxBank.balance = balance;
-    userRecord.foxBank.rewards = points;
 
     userRecord.foxBank.lastLoanPayment = {
       amount,
@@ -185,16 +136,13 @@ module.exports = {
       description:
         `> ${ARROW} **Loan #${loanIndex + 1}**\n` +
         `> ${ARROW} **Total Payment:** $${amount.toLocaleString()}\n` +
-        `> ${ARROW} **Paid From Balance:** $${amountPaidFromBalance.toLocaleString()}\n` +
-        `> ${ARROW} **Paid From Points:** $${amountPaidFromPoints.toLocaleString()} (1 point = 1000)\n` +
         (refund > 0
           ? `> ${ARROW} **Refunded Extra:** $${refund.toLocaleString()}\n`
           : "") +
         `> ${ARROW} **Remaining Loan:** ${
           finished ? "0" : loan.remaining.toLocaleString()
         }\n\n` +
-        `> ${ARROW} **New Fox Bank Balance:** $${balance.toLocaleString()}\n` +
-        `> ${ARROW} **Remaining Fox Points:** ${points.toLocaleString()}`,
+        `> ${ARROW} **New Fox Bank Balance:** $${userRecord.foxBank.balance.toLocaleString()}`,
       noLogo: false,
     });
 

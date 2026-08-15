@@ -29,11 +29,9 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Account exists
     const acct = userRecord.foxBank;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
-    // Default card status if missing
     const cardStatus = acct.cardStatus || "Active";
 
     const { embed, files } = foxbankembedTemplate({
@@ -45,7 +43,6 @@ module.exports = {
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> ${ARROW} **Tier:** ${acct.tier}\n` +
-        `> ${ARROW} **Fox Points:** ${acct.rewards.toLocaleString()} points\n` +
         `> ${ARROW} **Created:** <t:${createdUnix}:F>`,
       noLogo: false,
     });

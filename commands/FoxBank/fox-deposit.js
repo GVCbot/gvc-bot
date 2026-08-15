@@ -11,9 +11,7 @@ const { FOXICON, ARROW } = FOXEMOJIS;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-deposit")
-    .setDescription(
-      "Deposit cash into your Fox Bank account to earn Fox Points.",
-    )
+    .setDescription("Deposit cash into your Fox Bank account.")
     .addStringOption((opt) =>
       opt
         .setName("amount")
@@ -49,7 +47,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Handle "all"
     let amount;
     if (amountInput.toLowerCase() === "all") {
       amount = userRecord.cash;
@@ -74,15 +71,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Earn points (1 per $1000)
-    const earnedPoints = Math.floor(amount / 1000);
-
-    userRecord.foxBank.rewards = Math.min(
-      userRecord.foxBank.rewards + earnedPoints,
-      5000,
-    );
-
-    // Apply deposit
     userRecord.cash -= amount;
     userRecord.foxBank.balance += amount;
 
@@ -94,10 +82,9 @@ module.exports = {
     const { embed, files } = foxbankembedTemplate({
       title: "Deposit Successful",
       description:
-        `> ${ARROW} **Deposited:** $${amount.toLocaleString()}\n` +
-        `> ${ARROW} **Fox Points Earned:** ${earnedPoints}\n\n` +
+        `> ${ARROW} **Deposited:** $${amount.toLocaleString()}\n\n` +
         `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
-        `> ${ARROW} **Total Fox Points:** ${userRecord.foxBank.rewards.toLocaleString()}`,
+        `> ${ARROW} **Fox Bank Balance:** $${userRecord.foxBank.balance.toLocaleString()}`,
       noLogo: false,
     });
 

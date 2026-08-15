@@ -8,7 +8,6 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
-// Tier cost table
 const TIER_COSTS = {
   standard: 0,
   silver: 5000,
@@ -17,15 +16,11 @@ const TIER_COSTS = {
   black: 50000,
 };
 
-// Secret Black Tier code
 const BLACK_TIER_CODE = "fox_TAMALESx3434";
 
-// Generate 16-digit card number
 function generateCardNumber() {
   let num = "";
-  for (let i = 0; i < 16; i++) {
-    num += Math.floor(Math.random() * 10);
-  }
+  for (let i = 0; i < 16; i++) num += Math.floor(Math.random() * 10);
   return num;
 }
 
@@ -64,7 +59,6 @@ module.exports = {
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);
 
-    // Prevent duplicate accounts
     if (userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "Account Already Exists",
@@ -86,7 +80,6 @@ module.exports = {
     let tierCost = TIER_COSTS[chosenTier];
     let invalidCode = false;
 
-    // Handle Black Tier code
     if (enteredCode) {
       if (enteredCode === BLACK_TIER_CODE) {
         finalTier = "black";
@@ -96,7 +89,6 @@ module.exports = {
       }
     }
 
-    // Check funds
     if (userRecord.cash < tierCost) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Funds",
@@ -109,10 +101,8 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Deduct tier cost
     userRecord.cash -= tierCost;
 
-    // Generate account ID + card number
     const accountId = `FB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const cardNumber = generateCardNumber();
 
@@ -123,13 +113,11 @@ module.exports = {
       cardStatus: "Active",
       balance: 0,
       tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
-      rewards: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
 
       lastDeposit: null,
       lastWithdrawal: null,
-
       cardReplacements: [],
     };
 
@@ -137,7 +125,6 @@ module.exports = {
 
     const createdUnix = Math.floor(Date.now() / 1000);
 
-    // Invalid code message
     if (invalidCode) {
       const { embed, files } = foxbankembedTemplate({
         title: "Invalid Code!",
@@ -155,7 +142,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Normal success message
     const { embed, files } = foxbankembedTemplate({
       title: "Fox Bank Account Created",
       description:

@@ -20,7 +20,6 @@ module.exports = {
 
     const foxStaffRole = "1537894455779270717"; // Fox Bank Staff
 
-    // Staff-only check
     if (!interaction.member.roles.cache.has(foxStaffRole)) {
       return interaction.editReply({
         content: "❌ Only Fox Bank staff can use this command.",
@@ -30,7 +29,6 @@ module.exports = {
     const target = interaction.options.getUser("user");
     const userRecord = await getUserRecord(target.id);
 
-    // No Fox Bank account
     if (!userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "No Fox Bank Account",
@@ -44,50 +42,37 @@ module.exports = {
 
     const fb = userRecord.foxBank;
 
-    // Basic fields
     const balance = fb.balance || 0;
     const loans = fb.loans || [];
     const pending = fb.loanRequests || [];
+
     const createdAt = fb.createdAt
       ? `<t:${Math.floor(fb.createdAt / 1000)}:F>`
       : "Unknown";
+
     const updatedAt = fb.updatedAt
       ? `<t:${Math.floor(fb.updatedAt / 1000)}:F>`
       : "Unknown";
 
-    // ============================
-    // 📘 Recent Deposit
-    // ============================
+    // Recent Deposit
     const depositSection = fb.lastDeposit
       ? `${ARROW} **Amount:** $${fb.lastDeposit.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(
-          fb.lastDeposit.timestamp / 1000,
-        )}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(fb.lastDeposit.timestamp / 1000)}:F>\n`
       : `${ARROW} No deposits recorded.\n`;
 
-    // ============================
-    // 📙 Recent Withdrawal
-    // ============================
+    // Recent Withdrawal
     const withdrawalSection = fb.lastWithdrawal
       ? `${ARROW} **Amount:** $${fb.lastWithdrawal.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(
-          fb.lastWithdrawal.timestamp / 1000,
-        )}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(fb.lastWithdrawal.timestamp / 1000)}:F>\n`
       : `${ARROW} No withdrawals recorded.\n`;
 
-    // ============================
-    // 📗 Recent Loan Payment
-    // ============================
+    // Recent Loan Payment
     const paymentSection = fb.lastLoanPayment
       ? `${ARROW} **Amount:** $${fb.lastLoanPayment.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(
-          fb.lastLoanPayment.timestamp / 1000,
-        )}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(fb.lastLoanPayment.timestamp / 1000)}:F>\n`
       : `${ARROW} No loan payments recorded.\n`;
 
-    // ============================
-    // 💳 Card Replacement History
-    // ============================
+    // Card Replacement History
     const cardHistory = fb.cardReplacements || [];
     let cardSection = "";
 
@@ -105,9 +90,7 @@ module.exports = {
       });
     }
 
-    // ============================
-    // 📘 Active Loans
-    // ============================
+    // Active Loans
     let loanSection = "";
     if (loans.length === 0) {
       loanSection = `${ARROW} No active loans.\n`;
@@ -123,9 +106,7 @@ module.exports = {
       });
     }
 
-    // ============================
-    // 📙 Pending Loan Requests
-    // ============================
+    // Pending Requests
     let pendingSection = "";
     if (pending.length === 0) {
       pendingSection = `${ARROW} No pending loan requests.\n`;
@@ -141,9 +122,6 @@ module.exports = {
       });
     }
 
-    // ============================
-    // 📦 Final Embed
-    // ============================
     const { embed, files } = foxbankembedTemplate({
       title: `Customer Lookup: ${target.username}`,
       description:
@@ -152,8 +130,7 @@ module.exports = {
         `${ARROW} **Account ID:** ${fb.accountId}\n` +
         `${ARROW} **Card Number:** ${fb.cardNumber}\n` +
         `${ARROW} **Card Status:** ${fb.cardStatus}\n` +
-        `${ARROW} **Tier:** ${fb.tier}\n` +
-        `${ARROW} **Fox Points:** ${fb.rewards.toLocaleString()} points\n\n` +
+        `${ARROW} **Tier:** ${fb.tier}\n\n` +
         `${ARROW} **Balance:** $${balance.toLocaleString()}\n` +
         `${ARROW} **Created:** ${createdAt}\n` +
         `${ARROW} **Last Updated:** ${updatedAt}\n\n` +
