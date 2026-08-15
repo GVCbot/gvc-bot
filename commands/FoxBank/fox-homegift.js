@@ -9,7 +9,7 @@ const {
 
 const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
-const { ARROW, FOXICON } = FOXEMOJIS;
+const { ARROW } = FOXEMOJIS;
 
 const FOX_STAFF = "1537894455779270717";
 
@@ -68,22 +68,45 @@ module.exports = {
 
     const price = priceTable[homeId];
 
-    if (price === undefined || price === null) {
+    // ⭐ Only Lakeville Home 1 is ungiftable
+    if (area === "lakeville" && homeId === 1) {
       const { embed, files } = foxbankembedTemplate({
-        title: "Invalid Home ID",
-        description: `> ${ARROW} Home ID **${homeId}** cannot be gifted.`,
+        title: "Bank Property",
+        description: `> ${ARROW} Lakeville Home 1 is **BANK PROPERTY** and cannot be gifted.`,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    if (price === undefined) {
+      const { embed, files } = foxbankembedTemplate({
+        title: "Invalid Home ID",
+        description: `> ${ARROW} Home ID ${homeId} does not exist.`,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // Check if home is already owned
     for (const u of allUsers) {
       if (u.homes?.[area]?.homeId === homeId) {
         const { embed, files } = foxbankembedTemplate({
           title: "Home Already Owned",
-          description: `> ${ARROW} Home **${homeId}** is already owned.`,
+          description: `> ${ARROW} Home ${homeId} is already owned.`,
         });
         return interaction.editReply({ embeds: [embed], files });
       }
+    }
+
+    // ⭐ Auto‑create Fox Bank account if missing
+    if (!userRecord.foxBank) {
+      userRecord.foxBank = {
+        accountName: `Fox Account #${Math.floor(Math.random() * 1000)}`,
+        tier: "Standard",
+        balance: 0,
+        createdAt: Date.now(),
+        cardStatus: "Active",
+        accountId: `FB-${target.id}`,
+        cardNumber: Math.floor(100000000000 + Math.random() * 900000000000),
+      };
     }
 
     // Save home to user
@@ -96,21 +119,20 @@ module.exports = {
         title: "You Received a Home!",
         description:
           `> ${ARROW} **A Fox Bank staff member has gifted you a home.**\n\n` +
-          `> ${ARROW} **Home:** ${area} #${homeId}\n` +
+          `> ${ARROW} **Home:** ${area} #${homeId}\n` +
           `> ${ARROW} **Value:** $${price.toLocaleString()}\n\n` +
-          `> ${ARROW} You can view your home using **/fox-viewaccount**.`,
+          `> ${ARROW} View your home using **/fox-viewaccount**.`,
       });
-
       await target.send({ embeds: [embed], files });
-    } catch (err) {
-      // User has DMs closed — ignore silently
+    } catch {
+      // Ignore if DMs closed
     }
 
-    // Staff confirmation embed
+    // Staff confirmation
     const { embed, files } = foxbankembedTemplate({
       title: "Home Gifted",
       description:
-        `> ${ARROW} **Home:** ${area} #${homeId}\n` +
+        `> ${ARROW} **Home:** ${area} #${homeId}\n` +
         `> ${ARROW} **Recipient:** ${target.tag}\n` +
         `> ${ARROW} Successfully gifted.\n\n` +
         `> ${ARROW} The user has been notified via DM (if enabled).`,
