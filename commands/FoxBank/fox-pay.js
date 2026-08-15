@@ -11,16 +11,16 @@ const {
 // Fox Bank invoice channel
 const invoiceChannelId = "1537770259677847612";
 
-// Cashback table (still works, but now adds CASH instead of points)
+// Cashback table (new tier system)
 function getCashbackPercent(tier) {
   switch ((tier || "").toLowerCase()) {
-    case "silver":
-      return 0.02;
     case "gold":
-      return 0.03;
+      return 0.02;
     case "platinum":
+      return 0.03;
+    case "diamond":
       return 0.04;
-    case "black":
+    case "elite":
       return 0.05;
     default:
       return 0.01; // Standard

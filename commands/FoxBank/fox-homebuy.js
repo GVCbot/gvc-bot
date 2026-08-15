@@ -4,16 +4,39 @@ const {
   getAllUserRecords,
   updateUserRecord,
   loadLakevillePrices,
+  loadSixhousentPrices,
 } = require("../../economy/economyutils");
 
 const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { ARROW } = FOXEMOJIS;
 
+// ⭐ Tier-based home discount system
+function getHomeDiscountPercent(tier) {
+  switch ((tier || "").toLowerCase()) {
+    case "gold":
+      return 0.02;
+    case "platinum":
+      return 0.04;
+    case "diamond":
+      return 0.06;
+    case "elite":
+      return 0.1;
+    default:
+      return 0.0; // Standard
+  }
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("fox-homebuylakeville")
-    .setDescription("Buy a Lakeville Gardens home.")
+    .setName("fox-homebuy")
+    .setDescription("Buy a home from any Fox Bank area.")
+    .addStringOption((opt) =>
+      opt
+        .setName("area")
+        .setDescription("lakeville or sixhousent")
+        .setRequired(true),
+    )
     .addIntegerOption((opt) =>
       opt.setName("homeid").setDescription("Home ID").setRequired(true),
     ),
@@ -21,8 +44,23 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const area = interaction.options.getString("area");
     const homeId = interaction.options.getInteger("homeid");
-    const prices = await loadLakevillePrices();
+
+    if (!["lakeville", "sixhousent"].includes(area)) {
+      const { embed, files } = foxbankembedTemplate({
+        title: "Invalid Area",
+        description: `> ${ARROW} Area must be **lakeville** or **sixhousent**.`,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // Load correct price table
+    const prices =
+      area === "lakeville"
+        ? await loadLakevillePrices()
+        : await loadSixhousentPrices();
+
     const price = prices[homeId];
 
     if (price === undefined) {
@@ -36,7 +74,7 @@ module.exports = {
     if (price === null) {
       const { embed, files } = foxbankembedTemplate({
         title: "Bank Property",
-        description: `> ${ARROW} Home **1** is **BANK PROPERTY** and cannot be purchased.`,
+        description: `> ${ARROW} Home **${homeId}** is **BANK PROPERTY** and cannot be purchased.`,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
@@ -53,45 +91,51 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    if (userRecord.homes.lakeville) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Already Own Home",
-        description: `> ${ARROW} You already own a **Lakeville home**.`,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
+    // Unlimited homes → no "already own" check
 
+    // Check if home is already owned by ANY user
     const allUsers = await getAllUserRecords();
     for (const u of allUsers) {
-      if (u.homes?.lakeville?.homeId === homeId) {
+      const homes = u.homes?.[area] || [];
+      if (homes.some((h) => h.homeId === homeId)) {
         const { embed, files } = foxbankembedTemplate({
           title: "Home Already Owned",
-          description: `> ${ARROW} Lakeville Home **${homeId}** is already owned.`,
+          description: `> ${ARROW} Home **${homeId}** is already owned.`,
         });
         return interaction.editReply({ embeds: [embed], files });
       }
     }
 
-    if (userRecord.foxBank.balance < price) {
+    // Apply tier discount
+    const discountPercent = getHomeDiscountPercent(userRecord.foxBank.tier);
+    const discountAmount = Math.floor(price * discountPercent);
+    const finalPrice = price - discountAmount;
+
+    if (userRecord.foxBank.balance < finalPrice) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Funds",
         description:
-          `> ${ARROW} You need **$${price.toLocaleString()}** to buy this home.\n` +
+          `> ${ARROW} You need **$${finalPrice.toLocaleString()}** to buy this home.\n` +
           `> ${ARROW} Your Fox Bank balance: **$${userRecord.foxBank.balance.toLocaleString()}**`,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    userRecord.foxBank.balance -= price;
-    userRecord.homes.lakeville = { homeId, price };
+    // Deduct balance
+    userRecord.foxBank.balance -= finalPrice;
+
+    // Add home to array
+    userRecord.homes[area].push({ homeId, price });
 
     await updateUserRecord(userRecord);
 
     const { embed, files } = foxbankembedTemplate({
       title: "Home Purchased",
       description:
-        `> ${ARROW} **Home:** Lakeville #${homeId}\n` +
-        `> ${ARROW} **Price Paid:** $${price.toLocaleString()}\n` +
+        `> ${ARROW} **Home:** ${area} #${homeId}\n` +
+        `> ${ARROW} **Original Price:** $${price.toLocaleString()}\n` +
+        `> ${ARROW} **Discount:** $${discountAmount.toLocaleString()}\n` +
+        `> ${ARROW} **Final Price Paid:** $${finalPrice.toLocaleString()}\n\n` +
         `> ${ARROW} **New Balance:** $${userRecord.foxBank.balance.toLocaleString()}`,
     });
 
