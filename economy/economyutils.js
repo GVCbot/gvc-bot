@@ -121,6 +121,9 @@ async function getUserRecord(userId) {
 
   let user = await collection.findOne({ userId });
 
+  // -----------------------------------------------------
+  // CREATE NEW USER RECORD IF NOT FOUND
+  // -----------------------------------------------------
   if (!user) {
     console.log(`🆕 Creating new user record for ${userId}`);
     user = {
@@ -132,9 +135,9 @@ async function getUserRecord(userId) {
 
       records: { citations: [], warrants: [], blackpoints: 0 },
       vehicles: [],
-      moatCastle: null,
 
       foxBank: null,
+      moatCastle: null,
 
       homes: {
         lakeville: [],
@@ -146,40 +149,74 @@ async function getUserRecord(userId) {
     return user;
   }
 
-  // ⭐ Ensure balances are numeric
+  // -----------------------------------------------------
+  // NORMALIZE BASIC FIELDS
+  // -----------------------------------------------------
   user.cash = Number(user.cash) || 0;
   user.moatBalance = Number(user.moatBalance) || 0;
 
-  // ⭐ Ensure foxBank exists
+  // -----------------------------------------------------
+  // FOX BANK — DO NOT AUTO-CREATE
+  // -----------------------------------------------------
   if (!user.foxBank) {
-    user.foxBank = {
-      accountName: `${userId}'s Account`,
-      accountId:
-        "FB-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
-      cardNumber: Array.from({ length: 16 }, () =>
-        Math.floor(Math.random() * 10),
-      ).join(""),
-      cardStatus: "Active",
-      balance: 0,
-      tier: "Standard",
-      createdAt: Date.now(),
-    };
+    user.foxBank = null;
   } else {
-    // ⭐ Ensure foxBank fields exist
     user.foxBank.balance = Number(user.foxBank.balance) || 0;
     user.foxBank.cardStatus = user.foxBank.cardStatus || "Active";
     user.foxBank.tier = user.foxBank.tier || "Standard";
+
     user.foxBank.accountId =
       user.foxBank.accountId ||
       "FB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
     user.foxBank.cardNumber =
       user.foxBank.cardNumber ||
       Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join("");
+
     user.foxBank.createdAt = user.foxBank.createdAt || Date.now();
+
+    // Optional fields
+    user.foxBank.cardReplacements = user.foxBank.cardReplacements || [];
+    user.foxBank.lastDeposit = user.foxBank.lastDeposit || null;
+    user.foxBank.lastWithdrawal = user.foxBank.lastWithdrawal || null;
   }
 
-  // ⭐ Ensure homes exist
+  // -----------------------------------------------------
+  // MOAT CASTLE — DO NOT AUTO-CREATE
+  // -----------------------------------------------------
+  if (!user.moatCastle) {
+    user.moatCastle = null;
+  } else {
+    user.moatCastle.balance = Number(user.moatCastle.balance) || 0;
+    user.moatCastle.cardStatus = user.moatCastle.cardStatus || "Active";
+    user.moatCastle.tier = user.moatCastle.tier || "Standard";
+
+    user.moatCastle.accountId =
+      user.moatCastle.accountId ||
+      "MC-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    user.moatCastle.cardNumber =
+      user.moatCastle.cardNumber ||
+      Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join("");
+
+    user.moatCastle.createdAt = user.moatCastle.createdAt || Date.now();
+    user.moatCastle.rewards = Number(user.moatCastle.rewards) || 0;
+
+    // NEW — ensure arrays exist
+    user.moatCastle.cardReplacements = user.moatCastle.cardReplacements || [];
+    user.moatCastle.loans = user.moatCastle.loans || [];
+    user.moatCastle.loanRequests = user.moatCastle.loanRequests || [];
+
+    user.moatCastle.lastDeposit = user.moatCastle.lastDeposit || null;
+    user.moatCastle.lastWithdrawal = user.moatCastle.lastWithdrawal || null;
+    user.moatCastle.lastLoanPayment = user.moatCastle.lastLoanPayment || null;
+  }
+
+  // -----------------------------------------------------
+  // HOMES — ALWAYS ENSURE STRUCTURE EXISTS
+  // -----------------------------------------------------
   user.homes = user.homes || { lakeville: [], sixhousent: [] };
+
   if (!Array.isArray(user.homes.lakeville)) user.homes.lakeville = [];
   if (!Array.isArray(user.homes.sixhousent)) user.homes.sixhousent = [];
 
