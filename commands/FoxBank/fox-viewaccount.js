@@ -5,7 +5,7 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
-// ⭐ Added discount table
+// ⭐ Discount table
 const FOX_DISCOUNTS = {
   standard: 0,
   gold: 0.05,
@@ -33,7 +33,6 @@ module.exports = {
           `> ${ARROW} Use **/fox-accountcreate name:** to open one.`,
         noLogo: true,
       });
-
       return interaction.editReply({ embeds: [embed], files });
     }
 
@@ -41,48 +40,12 @@ module.exports = {
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
     const cardStatus = acct.cardStatus || "Active";
 
-    // ⭐ Added discount calculation
+    // ⭐ Discount calculation
     const tier = acct.tier?.toLowerCase() || "standard";
     const discountPercent = FOX_DISCOUNTS[tier] * 100;
 
-    // ================================
-    // ⭐ INSURANCE DISPLAY (ALL FOX PLANS)
-    // ================================
-    const store = userRecord.store || {};
-
-    const foxPlans = {
-      home_basic: "Fox Basic Home Insurance",
-      home_all: "Fox All Home Insurance",
-      car_basic: "Fox Basic Car Insurance",
-      car_all: "Fox All Car Insurance",
-      life: "Fox Life Insurance",
-    };
-
-    let insuranceText = "";
-    let hasFoxInsurance = false;
-
-    for (const key of Object.keys(foxPlans)) {
-      const plan = store[key];
-      if (plan?.active) {
-        hasFoxInsurance = true;
-
-        const nextPaymentUnix = Math.floor(plan.nextPayment / 1000);
-
-        insuranceText +=
-          `> ${ARROW} **Insurance:** ${foxPlans[key]}\n` +
-          `> ${ARROW} **Next Payment:** <t:${nextPaymentUnix}:F>\n\n`;
-      }
-    }
-
-    if (!hasFoxInsurance) {
-      insuranceText += `> ${ARROW} **Insurance:** None\n\n`;
-    }
-
-    // ================================
-    // ⭐ OWNED HOMES DISPLAY (unchanged)
-    // ================================
+    // ⭐ Owned homes display
     let homesText = "";
-
     const lakevilleHomes = userRecord.homes?.lakeville || [];
     const sixhousentHomes = userRecord.homes?.sixhousent || [];
 
@@ -90,21 +53,16 @@ module.exports = {
       homesText += `> ${ARROW} **Owned Homes:** None\n\n`;
     } else {
       homesText += `> ${ARROW} **Owned Homes:**\n`;
-
       for (const home of lakevilleHomes) {
         homesText += `> ${ARROW} Lakeville Home #${home.homeId} — $${home.price.toLocaleString()}\n`;
       }
-
       for (const home of sixhousentHomes) {
         homesText += `> ${ARROW} Sixhousent Home #${home.homeId} — $${home.price.toLocaleString()}\n`;
       }
-
       homesText += `\n`;
     }
 
-    // ================================
-    // ⭐ FINAL EMBED (added discount line)
-    // ================================
+    // ⭐ Final embed
     const { embed, files } = foxbankembedTemplate({
       title: "Your Fox Bank Account",
       description:
@@ -114,10 +72,9 @@ module.exports = {
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> ${ARROW} **Tier:** ${acct.tier}\n` +
-        `> ${ARROW} **Tier Discount:** ${discountPercent}%\n` + // ⭐ Added
+        `> ${ARROW} **Tier Discount:** ${discountPercent}%\n` +
         `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
-        homesText +
-        insuranceText,
+        homesText,
       noLogo: false,
     });
 
