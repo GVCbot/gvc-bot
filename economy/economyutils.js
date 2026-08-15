@@ -133,9 +133,9 @@ async function getUserRecord(userId) {
       records: { citations: [], warrants: [], blackpoints: 0 },
       vehicles: [],
       moatCastle: null,
+
       foxBank: null,
 
-      // ⭐ Unlimited homes per area
       homes: {
         lakeville: [],
         sixhousent: [],
@@ -146,54 +146,72 @@ async function getUserRecord(userId) {
     return user;
   }
 
-  // Ensure missing fields exist
-  user.records = user.records || {
-    citations: [],
-    warrants: [],
-    blackpoints: 0,
-  };
-
-  user.vehicles = user.vehicles || [];
-  user.moatCastle = user.moatCastle || null;
-  user.foxBank = user.foxBank || null;
-
-  // ⭐ Ensure homes exist and are arrays
-  user.homes = user.homes || {
-    lakeville: [],
-    sixhousent: [],
-  };
-
-  if (!Array.isArray(user.homes.lakeville)) user.homes.lakeville = [];
-  if (!Array.isArray(user.homes.sixhousent)) user.homes.sixhousent = [];
-
   // ⭐ Ensure balances are numeric
   user.cash = Number(user.cash) || 0;
   user.moatBalance = Number(user.moatBalance) || 0;
 
-  if (user.foxBank && typeof user.foxBank.balance !== "number") {
+  // ⭐ Ensure foxBank exists
+  if (!user.foxBank) {
+    user.foxBank = {
+      accountName: `${userId}'s Account`,
+      accountId:
+        "FB-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+      cardNumber: Array.from({ length: 16 }, () =>
+        Math.floor(Math.random() * 10),
+      ).join(""),
+      cardStatus: "Active",
+      balance: 0,
+      tier: "Standard",
+      createdAt: Date.now(),
+    };
+  } else {
+    // ⭐ Ensure foxBank fields exist
     user.foxBank.balance = Number(user.foxBank.balance) || 0;
+    user.foxBank.cardStatus = user.foxBank.cardStatus || "Active";
+    user.foxBank.tier = user.foxBank.tier || "Standard";
+    user.foxBank.accountId =
+      user.foxBank.accountId ||
+      "FB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    user.foxBank.cardNumber =
+      user.foxBank.cardNumber ||
+      Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join("");
+    user.foxBank.createdAt = user.foxBank.createdAt || Date.now();
   }
+
+  // ⭐ Ensure homes exist
+  user.homes = user.homes || { lakeville: [], sixhousent: [] };
+  if (!Array.isArray(user.homes.lakeville)) user.homes.lakeville = [];
+  if (!Array.isArray(user.homes.sixhousent)) user.homes.sixhousent = [];
 
   return user;
 }
 
 // -----------------------------------------------------
-// UPDATE USER RECORD
+// SAFE UPDATE USER RECORD
 // -----------------------------------------------------
 async function updateUserRecord(user) {
   const db = await getDB();
   const collection = db.collection("users");
+
+  // ⭐ Ensure numeric before saving
+  user.cash = Number(user.cash) || 0;
+  user.moatBalance = Number(user.moatBalance) || 0;
+
+  if (user.foxBank) {
+    user.foxBank.balance = Number(user.foxBank.balance) || 0;
+  }
 
   await collection.updateOne(
     { userId: user.userId },
     { $set: user },
     { upsert: true },
   );
+
   console.log(`💾 Updated user record for ${user.userId}`);
 }
 
 // -----------------------------------------------------
-// GET ALL USER RECORDS
+// GET ALL USERS
 // -----------------------------------------------------
 async function getAllUserRecords() {
   const db = await getDB();
