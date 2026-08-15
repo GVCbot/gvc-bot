@@ -70,7 +70,7 @@ module.exports = {
     let homesText = "";
 
     const lakeville = userRecord.homes?.lakeville;
-    const sixhousnet = userRecord.homes?.sixhousnet;
+    const sixhousent = userRecord.homes?.sixhousent;
 
     if (!lakeville && !sixhousnet) {
       homesText += `> ${ARROW} **Owned Homes:** None\n\n`;
@@ -83,10 +83,10 @@ module.exports = {
           `$${lakeville.price.toLocaleString()}\n`;
       }
 
-      if (sixhousnet) {
+      if (sixhousent) {
         homesText +=
-          `> ${ARROW} Sixhousnet Home #${sixhousnet.homeId} — ` +
-          `$${sixhousnet.price.toLocaleString()}\n`;
+          `> ${ARROW} Sixhousent Home #${sixhousent.homeId} — ` +
+          `$${sixhousent.price.toLocaleString()}\n`;
       }
 
       homesText += `\n`;

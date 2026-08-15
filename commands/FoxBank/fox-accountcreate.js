@@ -8,16 +8,19 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
+// ⭐ Updated Tier Costs
 const TIER_COSTS = {
   standard: 0,
-  silver: 5000,
   gold: 10000,
   platinum: 25000,
-  black: 50000,
+  diamond: 50000,
+  elite: 50000, // formerly "black"
 };
 
-const BLACK_TIER_CODE = "fox_TAMALESx3434";
+// ⭐ Updated Elite Tier Code
+const ELITE_TIER_CODE = "fox_TAMALESx3434";
 
+// ⭐ Card Number Generator
 function generateCardNumber() {
   let num = "";
   for (let i = 0; i < 16; i++) num += Math.floor(Math.random() * 10);
@@ -40,16 +43,16 @@ module.exports = {
         .setDescription("Choose your starting tier")
         .addChoices(
           { name: "Standard (Free)", value: "standard" },
-          { name: "Silver ($5,000)", value: "silver" },
           { name: "Gold ($10,000)", value: "gold" },
           { name: "Platinum ($25,000)", value: "platinum" },
+          { name: "Diamond ($50,000)", value: "diamond" },
         )
         .setRequired(false),
     )
     .addStringOption((option) =>
       option
-        .setName("black_tier_code")
-        .setDescription("Enter your Black Tier invite code (optional)")
+        .setName("elite_tier_code")
+        .setDescription("Enter your Elite Tier invite code (optional)")
         .setRequired(false),
     ),
 
@@ -59,6 +62,7 @@ module.exports = {
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);
 
+    // Already has account
     if (userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "Account Already Exists",
@@ -73,22 +77,24 @@ module.exports = {
     const accountName = interaction.options.getString("name");
     const chosenTier = interaction.options.getString("tier") || "standard";
     const enteredCode = interaction.options
-      .getString("black_tier_code")
+      .getString("elite_tier_code")
       ?.trim();
 
     let finalTier = chosenTier;
     let tierCost = TIER_COSTS[chosenTier];
     let invalidCode = false;
 
+    // ⭐ Elite Tier Code Check
     if (enteredCode) {
-      if (enteredCode === BLACK_TIER_CODE) {
-        finalTier = "black";
-        tierCost = TIER_COSTS.black;
+      if (enteredCode === ELITE_TIER_CODE) {
+        finalTier = "elite";
+        tierCost = TIER_COSTS.elite;
       } else {
         invalidCode = true;
       }
     }
 
+    // Not enough money
     if (userRecord.cash < tierCost) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Funds",
@@ -101,6 +107,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Deduct tier cost
     userRecord.cash -= tierCost;
 
     const accountId = `FB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -125,6 +132,7 @@ module.exports = {
 
     const createdUnix = Math.floor(Date.now() / 1000);
 
+    // Invalid elite code
     if (invalidCode) {
       const { embed, files } = foxbankembedTemplate({
         title: "Invalid Code!",
@@ -142,6 +150,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Success embed
     const { embed, files } = foxbankembedTemplate({
       title: "Fox Bank Account Created",
       description:

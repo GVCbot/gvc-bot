@@ -8,20 +8,20 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
-// Tier cost table
+// ⭐ Updated Tier Costs
 const TIER_COSTS = {
   standard: 0,
-  silver: 5000,
   gold: 10000,
   platinum: 25000,
-  black: 50000,
+  diamond: 50000,
+  elite: 50000, // formerly black
 };
 
-// NEW Black Tier code
-const BLACK_TIER_CODE = "fox_TAMALESx3434";
+// ⭐ Updated Elite Tier Code
+const ELITE_TIER_CODE = "fox_TAMALESx3434";
 
-// Tier order for comparison
-const TIER_ORDER = ["standard", "silver", "gold", "platinum", "black"];
+// ⭐ Updated Tier Order
+const TIER_ORDER = ["standard", "gold", "platinum", "diamond", "elite"];
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -33,16 +33,15 @@ module.exports = {
         .setDescription("Choose a tier to upgrade to")
         .setRequired(true)
         .addChoices(
-          { name: "Silver ($5,000)", value: "silver" },
           { name: "Gold ($10,000)", value: "gold" },
           { name: "Platinum ($25,000)", value: "platinum" },
-          // Black Tier is hidden — code only
+          { name: "Diamond ($50,000)", value: "diamond" },
         ),
     )
     .addStringOption((option) =>
       option
-        .setName("black_tier_code")
-        .setDescription("Enter Black Tier invite code (optional)")
+        .setName("elite_tier_code")
+        .setDescription("Enter Elite Tier invite code (optional)")
         .setRequired(false),
     ),
 
@@ -66,15 +65,15 @@ module.exports = {
     const currentTier = userRecord.foxBank.tier.toLowerCase();
     const chosenTier = interaction.options.getString("tier");
     const enteredCode = interaction.options
-      .getString("black_tier_code")
+      .getString("elite_tier_code")
       ?.trim();
 
-    // Already Black Tier
-    if (currentTier === "black") {
+    // Already Elite Tier
+    if (currentTier === "elite") {
       const { embed, files } = foxbankembedTemplate({
-        title: "Already Black Tier",
+        title: "Already Elite Tier",
         description:
-          `> ${ARROW} You already have the **Black Tier**.\n` +
+          `> ${ARROW} You already have the **Elite Tier**.\n` +
           `> ${ARROW} No further upgrades available.`,
         noLogo: true,
       });
@@ -100,11 +99,11 @@ module.exports = {
     let tierCost = TIER_COSTS[chosenTier];
     let invalidCode = false;
 
-    // Handle Black Tier code
+    // Handle Elite Tier code
     if (enteredCode) {
-      if (enteredCode === BLACK_TIER_CODE) {
-        finalTier = "black";
-        tierCost = TIER_COSTS.black;
+      if (enteredCode === ELITE_TIER_CODE) {
+        finalTier = "elite";
+        tierCost = TIER_COSTS.elite;
       } else {
         invalidCode = true;
       }
@@ -138,7 +137,7 @@ module.exports = {
       const { embed, files } = foxbankembedTemplate({
         title: "Invalid Code!",
         description:
-          `> ${ARROW} The Black Tier code you entered is invalid.\n` +
+          `> ${ARROW} The Elite Tier code you entered is invalid.\n` +
           `> ${ARROW} You have been upgraded to **${userRecord.foxBank.tier} Tier** instead.\n\n` +
           `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}`,
         noLogo: false,

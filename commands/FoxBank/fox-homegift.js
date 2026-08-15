@@ -13,6 +13,12 @@ const { ARROW } = FOXEMOJIS;
 
 const FOX_STAFF = "1537894455779270717";
 
+function generateCardNumber() {
+  let num = "";
+  for (let i = 0; i < 16; i++) num += Math.floor(Math.random() * 10);
+  return num;
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-homegift")
@@ -23,7 +29,7 @@ module.exports = {
     .addStringOption((opt) =>
       opt
         .setName("area")
-        .setDescription("lakeville or sixhousnet")
+        .setDescription("lakeville or sixhousent")
         .setRequired(true),
     )
     .addIntegerOption((opt) =>
@@ -54,14 +60,14 @@ module.exports = {
     const priceTable =
       area === "lakeville"
         ? lakeville
-        : area === "sixhousnet"
+        : area === "sixhousent"
           ? sixhousnet
           : null;
 
     if (!priceTable) {
       const { embed, files } = foxbankembedTemplate({
         title: "Invalid Area",
-        description: `> ${ARROW} Area must be **lakeville** or **sixhousnet**.`,
+        description: `> ${ARROW} Area must be **lakeville** or **sixhousent**.`,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
@@ -105,7 +111,7 @@ module.exports = {
         createdAt: Date.now(),
         cardStatus: "Active",
         accountId: `FB-${target.id}`,
-        cardNumber: Math.floor(100000000000 + Math.random() * 900000000000),
+        cardNumber: generateCardNumber(),
       };
     }
 

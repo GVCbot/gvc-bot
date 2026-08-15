@@ -96,12 +96,12 @@ async function loadLakevillePrices() {
 }
 
 // -----------------------------------------------------
-// LOAD HOME PRICES — SIXHOUSNET
+// LOAD HOME PRICES — SIXHOUSENT
 // -----------------------------------------------------
-async function loadSixhousnetPrices() {
+async function loadSixhousentPrices() {
   const db = await getDB();
   const docs = await db
-    .collection("foxsixhousnethomeprices")
+    .collection("foxsixhousenthomeprices")
     .find({})
     .toArray();
 
@@ -198,5 +198,5 @@ module.exports = {
 
   // ⭐ Export home price loaders
   loadLakevillePrices,
-  loadSixhousnetPrices,
+  loadSixhousentPrices,
 };
