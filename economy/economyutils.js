@@ -138,7 +138,7 @@ async function getUserRecord(userId) {
       // ⭐ NEW — Home ownership system
       homes: {
         lakeville: null,
-        sixhousnet: null,
+        sixhousent: null,
       },
     };
 
@@ -161,7 +161,7 @@ async function getUserRecord(userId) {
   // ⭐ Ensure homes exist
   user.homes = user.homes || {
     lakeville: null,
-    sixhousnet: null,
+    sixhousent: null,
   };
 
   return user;

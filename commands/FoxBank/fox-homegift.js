@@ -4,7 +4,7 @@ const {
   getAllUserRecords,
   updateUserRecord,
   loadLakevillePrices,
-  loadSixhousnetPrices,
+  loadSixhousentPrices,
 } = require("../../economy/economyutils");
 
 const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
@@ -55,7 +55,7 @@ module.exports = {
     const allUsers = await getAllUserRecords();
 
     const lakeville = await loadLakevillePrices();
-    const sixhousnet = await loadSixhousnetPrices();
+    const sixhousent = await loadSixhousentPrices();
 
     const priceTable =
       area === "lakeville"
