@@ -15,10 +15,10 @@ const STORE_BANNER = path.join(
 
 // Updated prices
 const INSURANCE_PRICES = {
-  fox_basic: 800,
-  fox_all: 1200,
-  moat_basic: 600,
-  moat_all: 1000,
+  fox_basic: 600,
+  fox_all: 1000,
+  moat_basic: 450,
+  moat_all: 800,
 };
 
 module.exports = {

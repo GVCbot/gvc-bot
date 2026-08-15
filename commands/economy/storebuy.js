@@ -1,14 +1,17 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const { getUserRecord, updateUserRecord } = require("../../economy/economyutils");
+const {
+  getUserRecord,
+  updateUserRecord,
+} = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
 const INSURANCE_PRICES = {
-  fox_basic: 800,
-  fox_all: 1200,
-  moat_basic: 600,
+  fox_basic: 600,
+  fox_all: 1000,
+  moat_basic: 450,
   moat_all: 1000,
 };
 
@@ -49,7 +52,7 @@ module.exports = {
           { name: "Fox All Insured", value: "fox_all" },
           { name: "Moat Castle Basic Insured", value: "moat_basic" },
           { name: "Moat Castle All Insured", value: "moat_all" },
-        )
+        ),
     ),
 
   async execute(interaction) {
@@ -77,7 +80,7 @@ module.exports = {
 
     if ((userRecord.cash ?? 0) < cost) {
       return interaction.editReply(
-        `❌ You need **$${cost.toLocaleString()}** to purchase this item.`
+        `❌ You need **$${cost.toLocaleString()}** to purchase this item.`,
       );
     }
 

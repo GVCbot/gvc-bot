@@ -43,8 +43,6 @@ module.exports = {
     const fb = userRecord.foxBank;
 
     const balance = fb.balance || 0;
-    const loans = fb.loans || [];
-    const pending = fb.loanRequests || [];
 
     const createdAt = fb.createdAt
       ? `<t:${Math.floor(fb.createdAt / 1000)}:F>`
@@ -66,12 +64,6 @@ module.exports = {
         `${ARROW} **Date:** <t:${Math.floor(fb.lastWithdrawal.timestamp / 1000)}:F>\n`
       : `${ARROW} No withdrawals recorded.\n`;
 
-    // Recent Loan Payment
-    const paymentSection = fb.lastLoanPayment
-      ? `${ARROW} **Amount:** $${fb.lastLoanPayment.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(fb.lastLoanPayment.timestamp / 1000)}:F>\n`
-      : `${ARROW} No loan payments recorded.\n`;
-
     // Card Replacement History
     const cardHistory = fb.cardReplacements || [];
     let cardSection = "";
@@ -90,38 +82,6 @@ module.exports = {
       });
     }
 
-    // Active Loans
-    let loanSection = "";
-    if (loans.length === 0) {
-      loanSection = `${ARROW} No active loans.\n`;
-    } else {
-      loans.forEach((loan, i) => {
-        const createdUnix = Math.floor(loan.createdAt / 1000);
-        loanSection +=
-          `${ARROW} **Loan #${i + 1}**\n` +
-          `${ARROW} Amount: $${loan.amount.toLocaleString()}\n` +
-          `${ARROW} Remaining: $${loan.remaining.toLocaleString()}\n` +
-          `${ARROW} Reason: ${loan.reason}\n` +
-          `${ARROW} Created: <t:${createdUnix}:F>\n\n`;
-      });
-    }
-
-    // Pending Requests
-    let pendingSection = "";
-    if (pending.length === 0) {
-      pendingSection = `${ARROW} No pending loan requests.\n`;
-    } else {
-      pending.forEach((req, i) => {
-        const createdUnix = Math.floor(req.createdAt / 1000);
-        pendingSection +=
-          `${ARROW} **Request #${i + 1}**\n` +
-          `${ARROW} Amount: $${req.amount.toLocaleString()}\n` +
-          `${ARROW} Reason: ${req.reason}\n` +
-          `${ARROW} Created: <t:${createdUnix}:F>\n` +
-          `${ARROW} Status: Pending\n\n`;
-      });
-    }
-
     const { embed, files } = foxbankembedTemplate({
       title: `Customer Lookup: ${target.username}`,
       description:
@@ -136,10 +96,7 @@ module.exports = {
         `${ARROW} **Last Updated:** ${updatedAt}\n\n` +
         `**💳 Card Replacement History:**\n${cardSection}\n` +
         `**📘 Most Recent Deposit:**\n${depositSection}\n` +
-        `**📙 Most Recent Withdrawal:**\n${withdrawalSection}\n` +
-        `**📗 Most Recent Loan Payment:**\n${paymentSection}\n\n` +
-        `**📘 Active Loans:**\n${loanSection}\n` +
-        `**📙 Pending Requests:**\n${pendingSection}`,
+        `**📙 Most Recent Withdrawal:**\n${withdrawalSection}\n`,
       noLogo: false,
     });
 

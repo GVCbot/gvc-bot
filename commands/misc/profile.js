@@ -3,7 +3,6 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  StringSelectMenuBuilder,
 } = require("discord.js");
 
 const embedTemplate = require("../../utils/embedTemplate");
@@ -38,7 +37,6 @@ module.exports = {
     const workMessages = await loadWorkMessages();
 
     const cash = userRecord.cash ?? 0;
-    const banks = userRecord.banks ?? [];
     const lastCollect = userRecord.lastCollect ?? 0;
     const lastWork = userRecord.lastWork ?? 0;
 
