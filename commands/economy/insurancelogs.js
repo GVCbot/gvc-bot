@@ -9,6 +9,23 @@ const MOAT_AUDIT_ROLE = "1537063320631377940";
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
+// ⭐ Added discount tables (informational only)
+const FOX_DISCOUNTS = {
+  standard: 0,
+  gold: 0.05,
+  platinum: 0.1,
+  diamond: 0.15,
+  elite: 0.2,
+};
+
+const MOAT_DISCOUNTS = {
+  standard: 0,
+  silver: 0.05,
+  gold: 0.1,
+  platinum: 0.15,
+  black: 0.2,
+};
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("insurancelogs")
@@ -35,6 +52,7 @@ module.exports = {
     const isFoxAudit = memberRoles.has(FOX_AUDIT_ROLE);
     const isMoatAudit = memberRoles.has(MOAT_AUDIT_ROLE);
 
+    // Permission check (unchanged)
     if (!isHR) {
       if (type === "fox" && !isFoxAudit) {
         return interaction.editReply(
@@ -61,80 +79,134 @@ module.exports = {
         ? member.user.username
         : `Unknown (${userRecord.userId})`;
 
-      let bankType = null;
-
-      const ownedBanks = userRecord.banks || [];
-      const joinedBanks = userRecord.joinedBanks || [];
-
-      for (const b of ownedBanks) {
-        if (b.type === "Fox Bank") bankType = "fox";
-        if (b.type === "Moat Castle") bankType = "moat";
-      }
-
-      if (!bankType && joinedBanks.length > 0) {
-        for (const rec of allRecords) {
-          for (const b of rec.banks || []) {
-            if (joinedBanks.includes(b.id)) {
-              if (b.type === "Fox Bank") bankType = "fox";
-              if (b.type === "Moat Castle") bankType = "moat";
-            }
-          }
-        }
-      }
-
-      if (bankType !== type) continue;
-
       const store = userRecord.store;
 
+      // ⭐ Added discount tier detection
+      const foxTier = userRecord.foxBank?.tier?.toLowerCase() || "standard";
+      const moatTier = userRecord.moatCastle?.tier?.toLowerCase() || "standard";
+
+      const foxDiscount = FOX_DISCOUNTS[foxTier] * 100;
+      const moatDiscount = MOAT_DISCOUNTS[moatTier] * 100;
+
+      // -----------------------------
+      // FOX INSURANCE LOGS (unchanged + improved)
+      // -----------------------------
       if (type === "fox") {
-        if (store.fox_basic?.active) {
+        if (store.home_basic?.active) {
           logs.push({
             username,
             userId: userRecord.userId,
-            plan: "Fox Basic Insured",
-            nextPayment: store.fox_basic.nextPayment,
+            plan: "Fox Basic Home Insurance",
+            nextPayment: store.home_basic.nextPayment,
+            discount: foxDiscount,
           });
         }
-        if (store.fox_all?.active) {
+        if (store.home_all?.active) {
           logs.push({
             username,
             userId: userRecord.userId,
-            plan: "Fox All Insured",
-            nextPayment: store.fox_all.nextPayment,
+            plan: "Fox All Home Insurance",
+            nextPayment: store.home_all.nextPayment,
+            discount: foxDiscount,
+          });
+        }
+        if (store.car_basic?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Fox Basic Car Insurance",
+            nextPayment: store.car_basic.nextPayment,
+            discount: foxDiscount,
+          });
+        }
+        if (store.car_all?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Fox All Car Insurance",
+            nextPayment: store.car_all.nextPayment,
+            discount: foxDiscount,
+          });
+        }
+        if (store.life?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Fox Life Insurance",
+            nextPayment: store.life.nextPayment,
+            discount: foxDiscount,
           });
         }
       }
 
+      // -----------------------------
+      // MOAT INSURANCE LOGS (unchanged + improved)
+      // -----------------------------
       if (type === "moat") {
-        if (store.moat_basic?.active) {
+        if (store.vehicle_basic?.active) {
           logs.push({
             username,
             userId: userRecord.userId,
-            plan: "Moat Castle Basic Insured",
-            nextPayment: store.moat_basic.nextPayment,
+            plan: "Moat Basic Vehicle Insurance",
+            nextPayment: store.vehicle_basic.nextPayment,
+            discount: moatDiscount,
           });
         }
-        if (store.moat_all?.active) {
+        if (store.vehicle_all?.active) {
           logs.push({
             username,
             userId: userRecord.userId,
-            plan: "Moat Castle All Insured",
-            nextPayment: store.moat_all.nextPayment,
+            plan: "Moat All Vehicle Insurance",
+            nextPayment: store.vehicle_all.nextPayment,
+            discount: moatDiscount,
+          });
+        }
+        if (store.health?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Moat Health Insurance",
+            nextPayment: store.health.nextPayment,
+            discount: moatDiscount,
+          });
+        }
+        if (store.home_basic?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Moat Basic Home Insurance",
+            nextPayment: store.home_basic.nextPayment,
+            discount: moatDiscount,
+          });
+        }
+        if (store.home_all?.active) {
+          logs.push({
+            username,
+            userId: userRecord.userId,
+            plan: "Moat All Home Insurance",
+            nextPayment: store.home_all.nextPayment,
+            discount: moatDiscount,
           });
         }
       }
     }
 
+    // -----------------------------
+    // BUILD OUTPUT (unchanged + improved)
+    // -----------------------------
     let desc = "";
 
     if (logs.length === 0) {
       desc = "> No active insurances found for this bank type.";
     } else {
       for (const l of logs) {
+        const nextUnix = Math.floor(l.nextPayment / 1000);
+
         desc +=
           `> ${ARROW} **${l.username}** (<@${l.userId}>)\n` +
           `> • Plan: ${l.plan}\n` +
-          `> • Next Payment: <t:${Math.floor(l.nextPayment / 1000)}:F>\n\n`;
+          `> • Next Payment: <t:${nextUnix}:F>\n` +
+          `> • Tier Discount: ${l.discount}%\n\n`;
       }
     }
 

@@ -5,6 +5,15 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
+// ⭐ Added discount table
+const FOX_DISCOUNTS = {
+  standard: 0,
+  gold: 0.05,
+  platinum: 0.1,
+  diamond: 0.15,
+  elite: 0.2,
+};
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-viewaccount")
@@ -32,38 +41,45 @@ module.exports = {
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
     const cardStatus = acct.cardStatus || "Active";
 
+    // ⭐ Added discount calculation
+    const tier = acct.tier?.toLowerCase() || "standard";
+    const discountPercent = FOX_DISCOUNTS[tier] * 100;
+
     // ================================
-    // ⭐ INSURANCE DISPLAY
+    // ⭐ INSURANCE DISPLAY (ALL FOX PLANS)
     // ================================
     const store = userRecord.store || {};
 
-    const foxBasic = store.fox_basic?.active ? store.fox_basic : null;
-    const foxAll = store.fox_all?.active ? store.fox_all : null;
+    const foxPlans = {
+      home_basic: "Fox Basic Home Insurance",
+      home_all: "Fox All Home Insurance",
+      car_basic: "Fox Basic Car Insurance",
+      car_all: "Fox All Car Insurance",
+      life: "Fox Life Insurance",
+    };
 
     let insuranceText = "";
+    let hasFoxInsurance = false;
 
-    if (foxBasic) {
-      insuranceText +=
-        `> ${ARROW} **Insurance:** Fox Basic Insured\n` +
-        `> ${ARROW} **Next Payment:** <t:${Math.floor(
-          foxBasic.nextPayment / 1000,
-        )}:F>\n\n`;
+    for (const key of Object.keys(foxPlans)) {
+      const plan = store[key];
+      if (plan?.active) {
+        hasFoxInsurance = true;
+
+        const nextPaymentUnix = Math.floor(plan.nextPayment / 1000);
+
+        insuranceText +=
+          `> ${ARROW} **Insurance:** ${foxPlans[key]}\n` +
+          `> ${ARROW} **Next Payment:** <t:${nextPaymentUnix}:F>\n\n`;
+      }
     }
 
-    if (foxAll) {
-      insuranceText +=
-        `> ${ARROW} **Insurance:** Fox All Insured\n` +
-        `> ${ARROW} **Next Payment:** <t:${Math.floor(
-          foxAll.nextPayment / 1000,
-        )}:F>\n\n`;
-    }
-
-    if (!foxBasic && !foxAll) {
+    if (!hasFoxInsurance) {
       insuranceText += `> ${ARROW} **Insurance:** None\n\n`;
     }
 
     // ================================
-    // ⭐ OWNED HOMES DISPLAY (Unlimited)
+    // ⭐ OWNED HOMES DISPLAY (unchanged)
     // ================================
     let homesText = "";
 
@@ -76,22 +92,18 @@ module.exports = {
       homesText += `> ${ARROW} **Owned Homes:**\n`;
 
       for (const home of lakevilleHomes) {
-        homesText +=
-          `> ${ARROW} Lakeville Home #${home.homeId} — ` +
-          `$${home.price.toLocaleString()}\n`;
+        homesText += `> ${ARROW} Lakeville Home #${home.homeId} — $${home.price.toLocaleString()}\n`;
       }
 
       for (const home of sixhousentHomes) {
-        homesText +=
-          `> ${ARROW} Sixhousent Home #${home.homeId} — ` +
-          `$${home.price.toLocaleString()}\n`;
+        homesText += `> ${ARROW} Sixhousent Home #${home.homeId} — $${home.price.toLocaleString()}\n`;
       }
 
       homesText += `\n`;
     }
 
     // ================================
-    // ⭐ FINAL EMBED
+    // ⭐ FINAL EMBED (added discount line)
     // ================================
     const { embed, files } = foxbankembedTemplate({
       title: "Your Fox Bank Account",
@@ -102,6 +114,7 @@ module.exports = {
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> ${ARROW} **Tier:** ${acct.tier}\n` +
+        `> ${ARROW} **Tier Discount:** ${discountPercent}%\n` + // ⭐ Added
         `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
         homesText +
         insuranceText,

@@ -312,11 +312,89 @@ client.once(Events.ClientReady, () =>
 );
 
 // ===============================
-// 🔄 Automatic Insurance Billing
+// 🔄 Automatic Insurance Billing (UPDATED SYSTEM)
 // ===============================
 
-const BASIC_ROLE = "1537049129803448391";
-const ALL_ROLE = "1537048719805911060";
+const FOX_ROLES = {
+  home_basic: "1537049129803448391",
+  home_all: "1537048719805911060",
+  life: "1538200236269240400",
+  car_basic: "1538199302453858314",
+  car_all: "1538199121788145744",
+};
+
+const FOX_PRICES = {
+  home_basic: 3400,
+  home_all: 5500,
+  life: 30000,
+  car_basic: 600,
+  car_all: 1000,
+};
+
+const FOX_CYCLES = {
+  home_basic: 30,
+  home_all: 30,
+  car_basic: 30,
+  car_all: 30,
+  life: 60,
+};
+
+const FOX_DISCOUNTS = {
+  standard: 0,
+  gold: 0.05,
+  platinum: 0.1,
+  diamond: 0.15,
+  elite: 0.2,
+};
+
+const MOAT_ROLES = {
+  vehicle_basic: "1537066784279240724",
+  vehicle_all: "1537066846786949120",
+  health: "1538201686869287002",
+  home_basic: "1538201826799788123",
+  home_all: "1538201914569789550",
+};
+
+const MOAT_PRICES = {
+  vehicle_basic: 500,
+  vehicle_all: 850,
+  health: 25000,
+  home_basic: 3000,
+  home_all: 4800,
+};
+
+const MOAT_CYCLES = {
+  vehicle_basic: 30,
+  vehicle_all: 30,
+  home_basic: 30,
+  home_all: 30,
+  health: 60,
+};
+
+const MOAT_DISCOUNTS = {
+  standard: 0,
+  silver: 0.05,
+  gold: 0.1,
+  platinum: 0.15,
+  black: 0.2,
+};
+
+// ⭐ NEW — readable plan names
+const READABLE_NAMES = {
+  // FOX
+  home_basic: "Fox Basic Home Insurance",
+  home_all: "Fox All Home Insurance",
+  life: "Fox Life Insurance",
+  car_basic: "Fox Basic Car Insurance",
+  car_all: "Fox All Car Insurance",
+
+  // MOAT
+  vehicle_basic: "Moat Basic Vehicle Insurance",
+  vehicle_all: "Moat All Vehicle Insurance",
+  health: "Moat Health Insurance",
+  home_basic: "Moat Basic Home Insurance",
+  home_all: "Moat All Home Insurance",
+};
 
 async function runInsuranceBilling() {
   const allRecords = await getAllUserRecords();
@@ -326,72 +404,88 @@ async function runInsuranceBilling() {
   const now = Date.now();
 
   for (const userRecord of allRecords) {
-    if (!userRecord.store) continue;
+    userRecord.store = userRecord.store || {};
+    const member = guild.members.cache.get(userRecord.userId);
+    if (!member) continue;
 
-    // BASIC INSURANCE
-    if (userRecord.store.basicInsured?.active) {
-      if (now >= userRecord.store.basicInsured.nextPayment) {
-        const member = guild.members.cache.get(userRecord.userId);
-        const cost = 600;
+    for (const key of Object.keys(userRecord.store)) {
+      const insurance = userRecord.store[key];
+      if (!insurance?.active) continue;
 
-        if ((userRecord.cash ?? 0) >= cost) {
-          // Charge fee
-          userRecord.cash -= cost;
-          userRecord.store.basicInsured.nextPayment =
-            now + 30 * 24 * 60 * 60 * 1000;
-          await updateUserRecord(userRecord);
-        } else {
-          // Cancel insurance
-          userRecord.store.basicInsured.active = false;
-          userRecord.store.basicInsured.nextPayment = 0;
-          await updateUserRecord(userRecord);
+      const isFox = key in FOX_PRICES;
+      const isMoat = key in MOAT_PRICES;
 
-          if (member) {
-            await member.roles.remove(BASIC_ROLE).catch(() => {});
-            member
-              .send(
-                "⚠️ Your **Fox Basic Insured** plan has been cancelled due to insufficient funds.",
-              )
-              .catch(() => {});
-          }
-        }
+      let price = isFox ? FOX_PRICES[key] : MOAT_PRICES[key];
+      const cycleDays = isFox ? FOX_CYCLES[key] : MOAT_CYCLES[key];
+      const roleId = isFox ? FOX_ROLES[key] : MOAT_ROLES[key];
+
+      // ⭐ NEW — Apply tier discount
+      if (isFox) {
+        const tier = userRecord.foxBank?.tier?.toLowerCase() || "standard";
+        price = Math.floor(price * (1 - FOX_DISCOUNTS[tier]));
+      } else {
+        const tier = userRecord.moatCastle?.tier?.toLowerCase() || "standard";
+        price = Math.floor(price * (1 - MOAT_DISCOUNTS[tier]));
       }
-    }
 
-    // ALL INSURANCE
-    if (userRecord.store.allInsured?.active) {
-      if (now >= userRecord.store.allInsured.nextPayment) {
-        const member = guild.members.cache.get(userRecord.userId);
-        const cost = 1000;
+      // Only charge when nextPayment is reached
+      if (now >= insurance.nextPayment) {
+        // User can pay
+        if ((userRecord.cash ?? 0) >= price) {
+          userRecord.cash -= price;
+          insurance.nextPayment = now + cycleDays * 24 * 60 * 60 * 1000;
 
-        if ((userRecord.cash ?? 0) >= cost) {
-          // Charge fee
-          userRecord.cash -= cost;
-          userRecord.store.allInsured.nextPayment =
-            now + 30 * 24 * 60 * 60 * 1000;
-          await updateUserRecord(userRecord);
-        } else {
-          // Cancel insurance
-          userRecord.store.allInsured.active = false;
-          userRecord.store.allInsured.nextPayment = 0;
           await updateUserRecord(userRecord);
 
-          if (member) {
-            await member.roles.remove(ALL_ROLE).catch(() => {});
-            member
-              .send(
-                "⚠️ Your **Fox All Insured** plan has been cancelled due to insufficient funds.",
-              )
-              .catch(() => {});
+          const template = isFox ? foxbankembedTemplate : moatembedTemplate;
+          const readableName = READABLE_NAMES[key];
+
+          const { embed, files } = template({
+            title: "Insurance Payment Processed",
+            description:
+              `> ${ARROW} **Plan:** ${readableName}\n` +
+              `> ${ARROW} **Amount Charged:** $${price.toLocaleString()}\n` +
+              `> ${ARROW} **Next Payment:** <t:${Math.floor(
+                insurance.nextPayment / 1000,
+              )}:F>`,
+            noLogo: false,
+          });
+
+          member.send({ embeds: [embed], files }).catch(() => {});
+        }
+
+        // User cannot pay → cancel
+        else {
+          insurance.active = false;
+          insurance.nextPayment = 0;
+
+          await updateUserRecord(userRecord);
+
+          if (roleId) {
+            await member.roles.remove(roleId).catch(() => {});
           }
+
+          const template = isFox ? foxbankembedTemplate : moatembedTemplate;
+          const readableName = READABLE_NAMES[key];
+
+          const { embed, files } = template({
+            title: "Insurance Cancelled",
+            description:
+              `> ${ARROW} **Plan:** ${readableName}\n` +
+              `> ${ARROW} **Reason:** Insufficient funds\n` +
+              `> ${ARROW} You may re‑purchase this plan at any time.`,
+            noLogo: false,
+          });
+
+          member.send({ embeds: [embed], files }).catch(() => {});
         }
       }
     }
   }
 }
 
-// Run every 12 hours
-setInterval(runInsuranceBilling, 12 * 60 * 60 * 1000);
+// Run every WEEK (7 days)
+setInterval(runInsuranceBilling, 7 * 24 * 60 * 60 * 1000);
 
 //Interaction Handler
 client.on(Events.InteractionCreate, async (interaction) => {

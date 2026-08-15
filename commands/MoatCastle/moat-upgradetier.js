@@ -7,7 +7,7 @@ const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
-// Tier cost table
+// Tier cost table (unchanged)
 const TIER_COSTS = {
   standard: 0,
   silver: 5000,
@@ -16,11 +16,14 @@ const TIER_COSTS = {
   black: 50000,
 };
 
-// Secret Black Tier code
+// Secret Black Tier code (unchanged)
 const BLACK_TIER_CODE = "moat_HAMOODx1212";
 
-// Tier order for comparison
+// Tier order (unchanged)
 const TIER_ORDER = ["standard", "silver", "gold", "platinum", "black"];
+
+// ⭐ NEW — Discount Tier Compatibility
+const MOAT_DISCOUNT_TIERS = ["standard", "silver", "gold", "platinum", "black"];
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -35,7 +38,6 @@ module.exports = {
           { name: "Silver ($5,000)", value: "silver" },
           { name: "Gold ($10,000)", value: "gold" },
           { name: "Platinum ($25,000)", value: "platinum" },
-          // ❗ Black is NOT shown here
         ),
     )
     .addStringOption((option) =>
@@ -50,7 +52,6 @@ module.exports = {
 
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // No account
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
@@ -68,7 +69,11 @@ module.exports = {
       .getString("black_tier_code")
       ?.trim();
 
-    // If already Black Tier → no upgrades allowed
+    // ⭐ NEW — Validate tier exists in discount system
+    if (!MOAT_DISCOUNT_TIERS.includes(currentTier)) {
+      userRecord.moatCastle.tier = "standard"; // auto-fix old tiers
+    }
+
     if (currentTier === "black") {
       const { embed, files } = moatembedTemplate({
         title: "Already Black Tier",
@@ -80,7 +85,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Validate chosen tier is above current tier
     const currentIndex = TIER_ORDER.indexOf(currentTier);
     const chosenIndex = TIER_ORDER.indexOf(chosenTier);
 
@@ -99,7 +103,6 @@ module.exports = {
     let tierCost = TIER_COSTS[chosenTier];
     let invalidCode = false;
 
-    // Handle Black Tier code
     if (enteredCode) {
       if (enteredCode === BLACK_TIER_CODE) {
         finalTier = "black";
@@ -109,7 +112,6 @@ module.exports = {
       }
     }
 
-    // Check funds
     if (userRecord.cash < tierCost) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Funds",
@@ -121,16 +123,13 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Deduct cost
     userRecord.cash -= tierCost;
 
-    // Apply upgrade
     userRecord.moatCastle.tier =
       finalTier.charAt(0).toUpperCase() + finalTier.slice(1);
 
     await updateUserRecord(userRecord);
 
-    // Invalid code message
     if (invalidCode) {
       const { embed, files } = moatembedTemplate({
         title: "Invalid Code!",
@@ -143,7 +142,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Normal success message
     const { embed, files } = moatembedTemplate({
       title: "Tier Upgrade Successful",
       description:

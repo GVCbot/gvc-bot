@@ -8,20 +8,24 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
-// ⭐ Updated Tier Costs
+// ⭐ Updated Tier Costs (unchanged)
 const TIER_COSTS = {
   standard: 0,
   gold: 10000,
   platinum: 25000,
   diamond: 50000,
-  elite: 50000, // formerly black
+  elite: 50000,
 };
 
-// ⭐ Updated Elite Tier Code
+// ⭐ Updated Elite Tier Code (unchanged)
 const ELITE_TIER_CODE = "fox_TAMALESx3434";
 
-// ⭐ Updated Tier Order
+// ⭐ Updated Tier Order (unchanged)
 const TIER_ORDER = ["standard", "gold", "platinum", "diamond", "elite"];
+
+// ⭐ NEW — Discount Tier Compatibility
+// This ensures the tier names match the discount system
+const FOX_DISCOUNT_TIERS = ["standard", "gold", "platinum", "diamond", "elite"];
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -50,7 +54,6 @@ module.exports = {
 
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // No Fox Bank account
     if (!userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "No Fox Bank Account",
@@ -68,7 +71,11 @@ module.exports = {
       .getString("elite_tier_code")
       ?.trim();
 
-    // Already Elite Tier
+    // ⭐ NEW — Validate tier exists in discount system
+    if (!FOX_DISCOUNT_TIERS.includes(currentTier)) {
+      userRecord.foxBank.tier = "standard"; // auto-fix old tiers
+    }
+
     if (currentTier === "elite") {
       const { embed, files } = foxbankembedTemplate({
         title: "Already Elite Tier",
@@ -80,7 +87,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Validate tier upgrade direction
     const currentIndex = TIER_ORDER.indexOf(currentTier);
     const chosenIndex = TIER_ORDER.indexOf(chosenTier);
 
@@ -99,7 +105,6 @@ module.exports = {
     let tierCost = TIER_COSTS[chosenTier];
     let invalidCode = false;
 
-    // Handle Elite Tier code
     if (enteredCode) {
       if (enteredCode === ELITE_TIER_CODE) {
         finalTier = "elite";
@@ -109,7 +114,6 @@ module.exports = {
       }
     }
 
-    // Check funds
     if (userRecord.cash < tierCost) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Funds",
@@ -121,10 +125,8 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Deduct cost
     userRecord.cash -= tierCost;
 
-    // Apply upgrade
     userRecord.foxBank.tier =
       finalTier.charAt(0).toUpperCase() + finalTier.slice(1);
 
@@ -132,7 +134,6 @@ module.exports = {
 
     await updateUserRecord(userRecord);
 
-    // Invalid code message
     if (invalidCode) {
       const { embed, files } = foxbankembedTemplate({
         title: "Invalid Code!",
@@ -145,7 +146,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Normal success message
     const { embed, files } = foxbankembedTemplate({
       title: "Tier Upgrade Successful",
       description:
