@@ -31,7 +31,14 @@ module.exports = {
     }
 
     // Check for active homes
-    if (userRecord.homes.lakeville || userRecord.homes.sixhousnet) {
+    const hasLakevilleHomes =
+      Array.isArray(userRecord.homes?.lakeville) &&
+      userRecord.homes.lakeville.length > 0;
+    const hasSixhousentHomes =
+      Array.isArray(userRecord.homes?.sixhousent) &&
+      userRecord.homes.sixhousent.length > 0;
+
+    if (hasLakevilleHomes || hasSixhousentHomes) {
       const { embed, files } = foxbankembedTemplate({
         title: "Active Home Detected",
         description:
