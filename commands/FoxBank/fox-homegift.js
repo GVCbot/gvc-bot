@@ -93,12 +93,16 @@ module.exports = {
 
     // Check if home is already owned
     for (const u of allUsers) {
-      if (u.homes?.[area]?.homeId === homeId) {
-        const { embed, files } = foxbankembedTemplate({
-          title: "Home Already Owned",
-          description: `> ${ARROW} Home ${homeId} is already owned.`,
-        });
-        return interaction.editReply({ embeds: [embed], files });
+      const homes = u.homes?.[area] || [];
+
+      if (Array.isArray(homes)) {
+        if (homes.some((h) => h.homeId === homeId)) {
+          const { embed, files } = foxbankembedTemplate({
+            title: "Home Already Owned",
+            description: `> ${ARROW} Home ${homeId} is already owned.`,
+          });
+          return interaction.editReply({ embeds: [embed], files });
+        }
       }
     }
 
