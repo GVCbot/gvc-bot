@@ -64,7 +64,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const senderHomes = senderRecord.homes?.[area] || [];
+    // ⭐ Ensure homes structure exists for both users
+    if (!senderRecord.homes) {
+      senderRecord.homes = { lakeville: [], sixhousent: [] };
+    }
+    if (!receiverRecord.homes) {
+      receiverRecord.homes = { lakeville: [], sixhousent: [] };
+    }
+
+    if (!Array.isArray(senderRecord.homes[area])) {
+      senderRecord.homes[area] = [];
+    }
+    if (!Array.isArray(receiverRecord.homes[area])) {
+      receiverRecord.homes[area] = [];
+    }
+
+    const senderHomes = senderRecord.homes[area];
     const index = senderHomes.findIndex((h) => h.homeId === homeId);
 
     if (index === -1) {

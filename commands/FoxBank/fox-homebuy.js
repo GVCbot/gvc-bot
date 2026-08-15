@@ -91,7 +91,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Unlimited homes → no "already own" check
+    // ⭐ Ensure balance is numeric
+    if (typeof userRecord.foxBank.balance !== "number") {
+      userRecord.foxBank.balance = 0;
+    }
+
+    // ⭐ Ensure homes structure exists
+    if (!userRecord.homes) {
+      userRecord.homes = {
+        lakeville: [],
+        sixhousent: [],
+      };
+    }
+
+    if (!Array.isArray(userRecord.homes[area])) {
+      userRecord.homes[area] = [];
+    }
 
     // Check if home is already owned by ANY user
     const allUsers = await getAllUserRecords();

@@ -119,7 +119,19 @@ module.exports = {
       };
     }
 
-    // Save home to user
+    // ⭐ Ensure homes structure exists
+    if (!userRecord.homes) {
+      userRecord.homes = {
+        lakeville: [],
+        sixhousent: [],
+      };
+    }
+
+    if (!Array.isArray(userRecord.homes[area])) {
+      userRecord.homes[area] = [];
+    }
+
+    // ⭐ Save home to user
     userRecord.homes[area].push({ homeId, price });
     await updateUserRecord(userRecord);
 

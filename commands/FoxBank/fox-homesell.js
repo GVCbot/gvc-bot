@@ -46,16 +46,15 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const homes = userRecord.homes?.[area] || [];
-
-    if (!Array.isArray(homes) || homes.length === 0) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "No Homes Owned",
-        description: `> ${ARROW} You do not own any homes in **${area}**.`,
-      });
-      return interaction.editReply({ embeds: [embed], files });
+    // ⭐ Ensure homes structure exists
+    if (!userRecord.homes) {
+      userRecord.homes = { lakeville: [], sixhousent: [] };
+    }
+    if (!Array.isArray(userRecord.homes[area])) {
+      userRecord.homes[area] = [];
     }
 
+    const homes = userRecord.homes[area];
     const index = homes.findIndex((h) => h.homeId === homeId);
 
     if (index === -1) {
@@ -67,9 +66,19 @@ module.exports = {
     }
 
     const home = homes[index];
-    const refund = Math.floor((home.price || 0) * 0.75);
+
+    // ⭐ Ensure price is numeric
+    const price = typeof home.price === "number" ? home.price : 0;
+    const refund = Math.floor(price * 0.75);
+
+    // ⭐ Ensure balance is numeric
+    if (typeof userRecord.foxBank.balance !== "number") {
+      userRecord.foxBank.balance = 0;
+    }
 
     userRecord.foxBank.balance += refund;
+
+    // Remove home
     homes.splice(index, 1);
 
     await updateUserRecord(userRecord);
