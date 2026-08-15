@@ -18,7 +18,7 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
-    const foxStaffRole = "1537894455779270717"; // Fox Bank Staff
+    const foxStaffRole = "1537894455779270717";
 
     if (!interaction.member.roles.cache.has(foxStaffRole)) {
       return interaction.editReply({
@@ -53,28 +53,28 @@ module.exports = {
       : "Unknown";
 
     // ================================
-    // ⭐ OWNED HOMES DISPLAY
+    // ⭐ OWNED HOMES DISPLAY (Unlimited)
     // ================================
     let homesText = "";
 
-    const lakeville = userRecord.homes?.lakeville;
-    const sixhousnet = userRecord.homes?.sixhousnet;
+    const lakevilleHomes = userRecord.homes?.lakeville || [];
+    const sixhousentHomes = userRecord.homes?.sixhousent || [];
 
-    if (!lakeville && !sixhousnet) {
+    if (lakevilleHomes.length === 0 && sixhousentHomes.length === 0) {
       homesText += `${ARROW} **Owned Homes:** None\n\n`;
     } else {
       homesText += `${ARROW} **Owned Homes:**\n`;
 
-      if (lakeville) {
+      for (const home of lakevilleHomes) {
         homesText +=
-          `${ARROW} Lakeville Home #${lakeville.homeId} — ` +
-          `$${lakeville.price.toLocaleString()}\n`;
+          `${ARROW} Lakeville Home #${home.homeId} — ` +
+          `$${home.price.toLocaleString()}\n`;
       }
 
-      if (sixhousnet) {
+      for (const home of sixhousentHomes) {
         homesText +=
-          `${ARROW} Sixhousnet Home #${sixhousnet.homeId} — ` +
-          `$${sixhousnet.price.toLocaleString()}\n`;
+          `${ARROW} Sixhousent Home #${home.homeId} — ` +
+          `$${home.price.toLocaleString()}\n`;
       }
 
       homesText += `\n`;

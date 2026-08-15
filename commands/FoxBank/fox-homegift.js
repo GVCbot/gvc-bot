@@ -116,7 +116,7 @@ module.exports = {
     }
 
     // Save home to user
-    userRecord.homes[area] = { homeId, price };
+    userRecord.homes[area].push({ homeId, price });
     await updateUserRecord(userRecord);
 
     // DM the recipient

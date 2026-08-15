@@ -90,7 +90,7 @@ async function loadLakevillePrices() {
 
   const prices = {};
   for (const d of docs) {
-    prices[d.homeId] = d.price; // price OR null
+    prices[d.homeId] = d.price;
   }
   return prices;
 }
@@ -135,10 +135,10 @@ async function getUserRecord(userId) {
       moatCastle: null,
       foxBank: null,
 
-      // ⭐ NEW — Home ownership system
+      // ⭐ Unlimited homes per area
       homes: {
-        lakeville: null,
-        sixhousent: null,
+        lakeville: [],
+        sixhousent: [],
       },
     };
 
@@ -154,15 +154,17 @@ async function getUserRecord(userId) {
   };
 
   user.vehicles = user.vehicles || [];
-
   user.moatCastle = user.moatCastle || null;
   user.foxBank = user.foxBank || null;
 
-  // ⭐ Ensure homes exist
+  // ⭐ Ensure homes exist and are arrays
   user.homes = user.homes || {
-    lakeville: null,
-    sixhousent: null,
+    lakeville: [],
+    sixhousent: [],
   };
+
+  if (!Array.isArray(user.homes.lakeville)) user.homes.lakeville = [];
+  if (!Array.isArray(user.homes.sixhousent)) user.homes.sixhousent = [];
 
   return user;
 }
@@ -196,7 +198,6 @@ module.exports = {
   getAllUserRecords,
   getDB,
 
-  // ⭐ Export home price loaders
   loadLakevillePrices,
   loadSixhousentPrices,
 };

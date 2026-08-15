@@ -16,7 +16,6 @@ module.exports = {
     const userId = interaction.user.id;
     const userRecord = await getUserRecord(userId);
 
-    // If no Fox Bank account exists
     if (!userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "Fox Bank Account Required",
@@ -31,7 +30,6 @@ module.exports = {
 
     const acct = userRecord.foxBank;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
-
     const cardStatus = acct.cardStatus || "Active";
 
     // ================================
@@ -65,28 +63,28 @@ module.exports = {
     }
 
     // ================================
-    // ⭐ OWNED HOMES DISPLAY
+    // ⭐ OWNED HOMES DISPLAY (Unlimited)
     // ================================
     let homesText = "";
 
-    const lakeville = userRecord.homes?.lakeville;
-    const sixhousent = userRecord.homes?.sixhousent;
+    const lakevilleHomes = userRecord.homes?.lakeville || [];
+    const sixhousentHomes = userRecord.homes?.sixhousent || [];
 
-    if (!lakeville && !sixhousnet) {
+    if (lakevilleHomes.length === 0 && sixhousentHomes.length === 0) {
       homesText += `> ${ARROW} **Owned Homes:** None\n\n`;
     } else {
       homesText += `> ${ARROW} **Owned Homes:**\n`;
 
-      if (lakeville) {
+      for (const home of lakevilleHomes) {
         homesText +=
-          `> ${ARROW} Lakeville Home #${lakeville.homeId} — ` +
-          `$${lakeville.price.toLocaleString()}\n`;
+          `> ${ARROW} Lakeville Home #${home.homeId} — ` +
+          `$${home.price.toLocaleString()}\n`;
       }
 
-      if (sixhousent) {
+      for (const home of sixhousentHomes) {
         homesText +=
-          `> ${ARROW} Sixhousent Home #${sixhousent.homeId} — ` +
-          `$${sixhousent.price.toLocaleString()}\n`;
+          `> ${ARROW} Sixhousent Home #${home.homeId} — ` +
+          `$${home.price.toLocaleString()}\n`;
       }
 
       homesText += `\n`;
