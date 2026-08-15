@@ -61,7 +61,7 @@ module.exports = {
       area === "lakeville"
         ? lakeville
         : area === "sixhousent"
-          ? sixhousnet
+          ? sixhousent
           : null;
 
     if (!priceTable) {
