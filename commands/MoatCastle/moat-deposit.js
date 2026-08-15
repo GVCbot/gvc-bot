@@ -3,7 +3,6 @@ const {
   getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
-
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
@@ -14,17 +13,17 @@ module.exports = {
     .setDescription(
       "Deposit cash into your Moat Castle account to earn Castle Points.",
     )
-    .addIntegerOption((opt) =>
+    .addStringOption((opt) =>
       opt
         .setName("amount")
-        .setDescription("Amount of cash to deposit")
+        .setDescription("Amount of cash to deposit (number or 'all')")
         .setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
-    const amount = interaction.options.getInteger("amount");
+    const amountInput = interaction.options.getString("amount");
     const userRecord = await getUserRecord(interaction.user.id);
 
     if (!userRecord.moatCastle) {
@@ -33,15 +32,6 @@ module.exports = {
         description:
           `> ${ARROW} You must create an account first.\n` +
           `> ${ARROW} Use **/moat-accountcreate**.`,
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
-    if (amount <= 0) {
-      const { embed, files } = moatembedTemplate({
-        title: "Invalid Amount",
-        description: "> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -58,6 +48,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Handle "all"
+    let amount;
+    if (amountInput.toLowerCase() === "all") {
+      amount = userRecord.cash;
+    } else {
+      amount = parseInt(amountInput, 10);
+      if (isNaN(amount) || amount <= 0) {
+        const { embed, files } = moatembedTemplate({
+          title: "Invalid Amount",
+          description: "> Amount must be a positive number or 'all'.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
+      }
+    }
+
     if (userRecord.cash < amount) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Cash",
@@ -67,10 +73,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // ============================
-    // ⭐ SIMPLE POINT SYSTEM (NO MULTIPLIER)
-    // ============================
-
+    // Earn points (1 per 1000)
     const earnedPoints = Math.floor(amount / 1000);
 
     userRecord.moatCastle.rewards = Math.min(
@@ -78,18 +81,11 @@ module.exports = {
       5000,
     );
 
-    // ============================
-    // ⭐ Update balances + history
-    // ============================
-
+    // Apply deposit
     userRecord.cash -= amount;
     userRecord.moatCastle.balance += amount;
 
-    userRecord.moatCastle.lastDeposit = {
-      amount,
-      timestamp: Date.now(),
-    };
-
+    userRecord.moatCastle.lastDeposit = { amount, timestamp: Date.now() };
     userRecord.moatCastle.updatedAt = Date.now();
 
     await updateUserRecord(userRecord);

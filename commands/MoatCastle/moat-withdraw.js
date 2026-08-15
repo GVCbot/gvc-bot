@@ -13,38 +13,25 @@ module.exports = {
     .setDescription(
       "Withdraw money from your Moat Castle account to your cash balance.",
     )
-    .addIntegerOption((opt) =>
+    .addStringOption((opt) =>
       opt
         .setName("amount")
-        .setDescription(
-          "Amount of money to withdraw from your Moat Castle account",
-        )
+        .setDescription("Amount to withdraw (number or 'all')")
         .setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
-    const amount = interaction.options.getInteger("amount");
+    const amountInput = interaction.options.getString("amount");
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // Check if account exists
     if (!userRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
         title: "No Moat Castle Account",
         description:
           `> ${ARROW} You do not have a Moat Castle account.\n` +
           `> ${ARROW} Use **/moat-accountcreate** to open one.`,
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
-    // Validate amount
-    if (amount <= 0) {
-      const { embed, files } = moatembedTemplate({
-        title: "Invalid Amount",
-        description: "> Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -63,7 +50,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Check if account has enough balance
+    // Handle "all"
+    let amount;
+    if (amountInput.toLowerCase() === "all") {
+      amount = acct.balance;
+    } else {
+      amount = parseInt(amountInput, 10);
+      if (isNaN(amount) || amount <= 0) {
+        const { embed, files } = moatembedTemplate({
+          title: "Invalid Amount",
+          description: "> Amount must be a positive number or 'all'.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
+      }
+    }
+
     if (acct.balance < amount) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Account Balance",
@@ -73,16 +75,12 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Withdraw: move money from Moat Castle → user cash
+    // Apply withdrawal
     acct.balance -= amount;
     userRecord.cash += amount;
 
-    userRecord.moatCastle.lastWithdrawal = {
-      amount,
-      timestamp: Date.now(),
-    };
-
-    userRecord.moatCastle.updatedAt = Date.now();
+    acct.lastWithdrawal = { amount, timestamp: Date.now() };
+    acct.updatedAt = Date.now();
 
     await updateUserRecord(userRecord);
 

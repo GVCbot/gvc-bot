@@ -14,22 +14,19 @@ module.exports = {
     .setDescription(
       "Withdraw money from your Fox Bank account to your cash balance.",
     )
-    .addIntegerOption((opt) =>
+    .addStringOption((opt) =>
       opt
         .setName("amount")
-        .setDescription(
-          "Amount of money to withdraw from your Fox Bank account",
-        )
+        .setDescription("Amount to withdraw (number or 'all')")
         .setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
-    const amount = interaction.options.getInteger("amount");
+    const amountInput = interaction.options.getString("amount");
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // No Fox Bank account
     if (!userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "No Fox Bank Account",
@@ -41,19 +38,8 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Invalid amount
-    if (amount <= 0) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Invalid Amount",
-        description: "> Amount must be greater than 0.",
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
     const acct = userRecord.foxBank;
 
-    // Card frozen
     if (acct.cardStatus === "Frozen") {
       const { embed, files } = foxbankembedTemplate({
         title: "Card Frozen",
@@ -65,7 +51,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Insufficient Fox Bank balance
+    // Handle "all"
+    let amount;
+    if (amountInput.toLowerCase() === "all") {
+      amount = acct.balance;
+    } else {
+      amount = parseInt(amountInput, 10);
+      if (isNaN(amount) || amount <= 0) {
+        const { embed, files } = foxbankembedTemplate({
+          title: "Invalid Amount",
+          description: "> Amount must be a positive number or 'all'.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
+      }
+    }
+
     if (acct.balance < amount) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Account Balance",
@@ -75,16 +76,12 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Withdraw: Fox Bank → cash
+    // Apply withdrawal
     acct.balance -= amount;
     userRecord.cash += amount;
 
-    userRecord.foxBank.lastWithdrawal = {
-      amount,
-      timestamp: Date.now(),
-    };
-
-    userRecord.foxBank.updatedAt = Date.now();
+    acct.lastWithdrawal = { amount, timestamp: Date.now() };
+    acct.updatedAt = Date.now();
 
     await updateUserRecord(userRecord);
 

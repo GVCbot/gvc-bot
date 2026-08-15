@@ -14,20 +14,19 @@ module.exports = {
     .setDescription(
       "Deposit cash into your Fox Bank account to earn Fox Points.",
     )
-    .addIntegerOption((opt) =>
+    .addStringOption((opt) =>
       opt
         .setName("amount")
-        .setDescription("Amount of cash to deposit")
+        .setDescription("Amount of cash to deposit (number or 'all')")
         .setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
-    const amount = interaction.options.getInteger("amount");
+    const amountInput = interaction.options.getString("amount");
     const userRecord = await getUserRecord(interaction.user.id);
 
-    // No Fox Bank account
     if (!userRecord.foxBank) {
       const { embed, files } = foxbankembedTemplate({
         title: "No Fox Bank Account",
@@ -39,17 +38,6 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Invalid amount
-    if (amount <= 0) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Invalid Amount",
-        description: "> Amount must be greater than 0.",
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
-    // Card frozen
     if (userRecord.foxBank.cardStatus === "Frozen") {
       const { embed, files } = foxbankembedTemplate({
         title: "Card Frozen",
@@ -61,7 +49,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Insufficient cash
+    // Handle "all"
+    let amount;
+    if (amountInput.toLowerCase() === "all") {
+      amount = userRecord.cash;
+    } else {
+      amount = parseInt(amountInput, 10);
+      if (isNaN(amount) || amount <= 0) {
+        const { embed, files } = foxbankembedTemplate({
+          title: "Invalid Amount",
+          description: "> Amount must be a positive number or 'all'.",
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
+      }
+    }
+
     if (userRecord.cash < amount) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Cash",
@@ -71,29 +74,19 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // ============================
-    // ⭐ SIMPLE POINT SYSTEM (1 point per $1000)
-    // ============================
-
+    // Earn points (1 per $1000)
     const earnedPoints = Math.floor(amount / 1000);
 
     userRecord.foxBank.rewards = Math.min(
       userRecord.foxBank.rewards + earnedPoints,
-      5000, // same cap as Moat Castle unless you want different
+      5000,
     );
 
-    // ============================
-    // ⭐ Update balances + history
-    // ============================
-
+    // Apply deposit
     userRecord.cash -= amount;
     userRecord.foxBank.balance += amount;
 
-    userRecord.foxBank.lastDeposit = {
-      amount,
-      timestamp: Date.now(),
-    };
-
+    userRecord.foxBank.lastDeposit = { amount, timestamp: Date.now() };
     userRecord.foxBank.updatedAt = Date.now();
 
     await updateUserRecord(userRecord);
