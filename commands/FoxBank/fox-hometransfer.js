@@ -11,15 +11,38 @@ const { ARROW } = FOXEMOJIS;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-hometransfer")
-    .setDescription("Transfer your home to another user.")
+    .setDescription("Transfer one of your homes to another user.")
     .addUserOption((opt) =>
       opt.setName("user").setDescription("Recipient").setRequired(true),
+    )
+    .addStringOption((opt) =>
+      opt
+        .setName("area")
+        .setDescription("lakeville or sixhousent")
+        .setRequired(true),
+    )
+    .addIntegerOption((opt) =>
+      opt
+        .setName("homeid")
+        .setDescription("Home ID to transfer")
+        .setRequired(true),
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
     const target = interaction.options.getUser("user");
+    const area = interaction.options.getString("area");
+    const homeId = interaction.options.getInteger("homeid");
+
+    if (!["lakeville", "sixhousent"].includes(area)) {
+      const { embed, files } = foxbankembedTemplate({
+        title: "Invalid Area",
+        description: `> ${ARROW} Area must be **lakeville** or **sixhousent**.`,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
     const senderRecord = await getUserRecord(interaction.user.id);
     const receiverRecord = await getUserRecord(target.id);
 
@@ -41,38 +64,22 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const home = senderRecord.homes.lakeville || senderRecord.homes.sixhousnet;
+    const senderHomes = senderRecord.homes?.[area] || [];
+    const index = senderHomes.findIndex((h) => h.homeId === homeId);
 
-    if (!home) {
+    if (index === -1) {
       const { embed, files } = foxbankembedTemplate({
-        title: "No Home Owned",
-        description: `> ${ARROW} You do not own a home.`,
+        title: "Home Not Found",
+        description: `> ${ARROW} You do not own **Home #${homeId}** in **${area}**.`,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    if (receiverRecord.homes.lakeville || receiverRecord.homes.sixhousnet) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Recipient Already Owns Home",
-        description: `> ${ARROW} The recipient already owns a home.`,
-      });
-      return interaction.editReply({ embeds: [embed], files });
-    }
+    const home = senderHomes[index];
 
     // Transfer home
-    let transferredArea = null;
-
-    if (senderRecord.homes.lakeville) {
-      receiverRecord.homes.lakeville = senderRecord.homes.lakeville;
-      senderRecord.homes.lakeville = null;
-      transferredArea = "Lakeville";
-    }
-
-    if (senderRecord.homes.sixhousnet) {
-      receiverRecord.homes.sixhousnet = senderRecord.homes.sixhousnet;
-      senderRecord.homes.sixhousnet = null;
-      transferredArea = "Sixhousnet";
-    }
+    senderHomes.splice(index, 1);
+    receiverRecord.homes[area].push(home);
 
     await updateUserRecord(senderRecord);
     await updateUserRecord(receiverRecord);
@@ -83,24 +90,21 @@ module.exports = {
         title: "You Received a Home!",
         description:
           `> ${ARROW} **A Fox Bank user has transferred a home to you.**\n\n` +
-          `> ${ARROW} **Home:** ${transferredArea} #${home.homeId}\n` +
+          `> ${ARROW} **Home:** ${area} #${home.homeId}\n` +
           `> ${ARROW} **Value:** $${home.price.toLocaleString()}\n\n` +
-          `> ${ARROW} You can view your home using **/fox-viewaccount**.`,
+          `> ${ARROW} View your home using **/fox-viewaccount**.`,
       });
 
       await target.send({ embeds: [embed], files });
-    } catch (err) {
-      // User has DMs closed — ignore silently
-    }
+    } catch {}
 
     // Confirmation to sender
     const { embed, files } = foxbankembedTemplate({
       title: "Home Transferred",
       description:
         `> ${ARROW} **Home transferred to:** ${target.tag}\n` +
-        `> ${ARROW} **Home:** ${transferredArea} #${home.homeId}\n` +
-        `> ${ARROW} Transfer successful.\n\n` +
-        `> ${ARROW} The recipient has been notified via DM (if enabled).`,
+        `> ${ARROW} **Home:** ${area} #${home.homeId}\n` +
+        `> ${ARROW} Transfer successful.`,
     });
 
     return interaction.editReply({ embeds: [embed], files });

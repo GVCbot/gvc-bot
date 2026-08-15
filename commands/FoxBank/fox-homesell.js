@@ -11,10 +11,30 @@ const { ARROW } = FOXEMOJIS;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-homesell")
-    .setDescription("Sell your home for 75% refund."),
+    .setDescription("Sell one of your homes for a 75% refund.")
+    .addStringOption((opt) =>
+      opt
+        .setName("area")
+        .setDescription("lakeville or sixhousent")
+        .setRequired(true),
+    )
+    .addIntegerOption((opt) =>
+      opt.setName("homeid").setDescription("Home ID to sell").setRequired(true),
+    ),
 
   async execute(interaction) {
     await interaction.deferReply();
+
+    const area = interaction.options.getString("area");
+    const homeId = interaction.options.getInteger("homeid");
+
+    if (!["lakeville", "sixhousent"].includes(area)) {
+      const { embed, files } = foxbankembedTemplate({
+        title: "Invalid Area",
+        description: `> ${ARROW} Area must be **lakeville** or **sixhousent**.`,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
 
     const userRecord = await getUserRecord(interaction.user.id);
 
@@ -26,28 +46,39 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const home = userRecord.homes.lakeville || userRecord.homes.sixhousnet;
+    const homes = userRecord.homes?.[area] || [];
 
-    if (!home) {
+    if (!Array.isArray(homes) || homes.length === 0) {
       const { embed, files } = foxbankembedTemplate({
-        title: "No Home Owned",
-        description: `> ${ARROW} You do not own a home.`,
+        title: "No Homes Owned",
+        description: `> ${ARROW} You do not own any homes in **${area}**.`,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const refund = Math.floor(home.price * 0.75);
+    const index = homes.findIndex((h) => h.homeId === homeId);
+
+    if (index === -1) {
+      const { embed, files } = foxbankembedTemplate({
+        title: "Home Not Found",
+        description: `> ${ARROW} You do not own **Home #${homeId}** in **${area}**.`,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    const home = homes[index];
+    const refund = Math.floor((home.price || 0) * 0.75);
 
     userRecord.foxBank.balance += refund;
-
-    if (userRecord.homes.lakeville) userRecord.homes.lakeville = null;
-    if (userRecord.homes.sixhousnet) userRecord.homes.sixhousnet = null;
+    homes.splice(index, 1);
 
     await updateUserRecord(userRecord);
 
     const { embed, files } = foxbankembedTemplate({
       title: "Home Sold",
       description:
+        `> ${ARROW} **Area:** ${area}\n` +
+        `> ${ARROW} **Home ID:** ${homeId}\n` +
         `> ${ARROW} **Refund:** $${refund.toLocaleString()}\n` +
         `> ${ARROW} **New Balance:** $${userRecord.foxBank.balance.toLocaleString()}`,
     });
