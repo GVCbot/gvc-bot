@@ -35,6 +35,7 @@ module.exports = {
       };
     }
 
+    // Find active plans
     const activePlans = Object.keys(userRecord.store).filter(
       (key) => userRecord.store[key]?.active,
     );
@@ -52,10 +53,11 @@ module.exports = {
 
     for (const key of activePlans) {
       const insurance = userRecord.store[key];
+
       insurance.active = false;
       insurance.nextPayment = 0;
 
-      // Remove role
+      // Remove role if user has it
       const roleId = ROLES[key];
       if (roleId) {
         await interaction.member.roles.remove(roleId).catch(() => {});
@@ -66,6 +68,7 @@ module.exports = {
 
     await updateUserRecord(userRecord);
 
+    // Build readable list
     let desc = `${SUN} **Insurance Cancelled** ${SUN}\n\n`;
 
     for (const key of cancelledList) {

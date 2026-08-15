@@ -34,6 +34,39 @@ module.exports = {
 
     const cardStatus = acct.cardStatus || "Active";
 
+    // ================================
+    // ⭐ INSURANCE DISPLAY
+    // ================================
+    const store = userRecord.store || {};
+
+    const foxBasic = store.fox_basic?.active ? store.fox_basic : null;
+    const foxAll = store.fox_all?.active ? store.fox_all : null;
+
+    let insuranceText = "";
+
+    if (foxBasic) {
+      insuranceText +=
+        `> ${ARROW} **Insurance:** Fox Basic Insured\n` +
+        `> ${ARROW} **Next Payment:** <t:${Math.floor(
+          foxBasic.nextPayment / 1000,
+        )}:F>\n\n`;
+    }
+
+    if (foxAll) {
+      insuranceText +=
+        `> ${ARROW} **Insurance:** Fox All Insured\n` +
+        `> ${ARROW} **Next Payment:** <t:${Math.floor(
+          foxAll.nextPayment / 1000,
+        )}:F>\n\n`;
+    }
+
+    if (!foxBasic && !foxAll) {
+      insuranceText += `> ${ARROW} **Insurance:** None\n\n`;
+    }
+
+    // ================================
+    // ⭐ FINAL EMBED
+    // ================================
     const { embed, files } = foxbankembedTemplate({
       title: "Your Fox Bank Account",
       description:
@@ -43,7 +76,8 @@ module.exports = {
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> ${ARROW} **Tier:** ${acct.tier}\n` +
-        `> ${ARROW} **Created:** <t:${createdUnix}:F>`,
+        `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
+        insuranceText,
       noLogo: false,
     });
 

@@ -28,13 +28,44 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Account exists
     const acct = userRecord.moatCastle;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
-    // Accurate card status
-    const cardStatus = acct.cardStatus ? acct.cardStatus : "Active";
+    const cardStatus = acct.cardStatus || "Active";
 
+    // ================================
+    // ⭐ INSURANCE DISPLAY
+    // ================================
+    const store = userRecord.store || {};
+
+    const moatBasic = store.moat_basic?.active ? store.moat_basic : null;
+    const moatAll = store.moat_all?.active ? store.moat_all : null;
+
+    let insuranceText = "";
+
+    if (moatBasic) {
+      insuranceText +=
+        `> ${ARROW} **Insurance:** Moat Castle Basic Insured\n` +
+        `> ${ARROW} **Next Payment:** <t:${Math.floor(
+          moatBasic.nextPayment / 1000,
+        )}:F>\n\n`;
+    }
+
+    if (moatAll) {
+      insuranceText +=
+        `> ${ARROW} **Insurance:** Moat Castle All Insured\n` +
+        `> ${ARROW} **Next Payment:** <t:${Math.floor(
+          moatAll.nextPayment / 1000,
+        )}:F>\n\n`;
+    }
+
+    if (!moatBasic && !moatAll) {
+      insuranceText += `> ${ARROW} **Insurance:** None\n\n`;
+    }
+
+    // ================================
+    // ⭐ FINAL EMBED
+    // ================================
     const { embed, files } = moatembedTemplate({
       title: "Your Moat Castle Account",
       description:
@@ -45,7 +76,8 @@ module.exports = {
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
         `> ${ARROW} **Tier:** ${acct.tier}\n` +
         `> ${ARROW} **Rewards:** ${acct.rewards.toLocaleString()} / 5000\n` +
-        `> ${ARROW} **Created:** <t:${createdUnix}:F>`,
+        `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
+        insuranceText,
       noLogo: false,
     });
 

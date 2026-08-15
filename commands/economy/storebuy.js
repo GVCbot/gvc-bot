@@ -1,16 +1,13 @@
 const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
-const {
-  getUserRecord,
-  updateUserRecord,
-} = require("../../economy/economyutils");
+const { getUserRecord, updateUserRecord } = require("../../economy/economyutils");
 
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
 const INSURANCE_PRICES = {
-  fox_basic: 600,
-  fox_all: 1000,
+  fox_basic: 800,
+  fox_all: 1200,
   moat_basic: 600,
   moat_all: 1000,
 };
@@ -52,7 +49,7 @@ module.exports = {
           { name: "Fox All Insured", value: "fox_all" },
           { name: "Moat Castle Basic Insured", value: "moat_basic" },
           { name: "Moat Castle All Insured", value: "moat_all" },
-        ),
+        )
     ),
 
   async execute(interaction) {
@@ -61,6 +58,7 @@ module.exports = {
     const purchaseItem = interaction.options.getString("item");
     const userRecord = await getUserRecord(interaction.user.id);
 
+    // Ensure store exists
     if (!userRecord.store) {
       userRecord.store = {
         fox_basic: { active: false, nextPayment: 0 },
@@ -71,33 +69,40 @@ module.exports = {
     }
 
     const item = ITEMS.find((i) => i.id === purchaseItem);
-    if (!item) return interaction.editReply("❌ Invalid item.");
+    if (!item) {
+      return interaction.editReply("❌ Invalid item.");
+    }
 
     const cost = INSURANCE_PRICES[purchaseItem];
 
     if ((userRecord.cash ?? 0) < cost) {
       return interaction.editReply(
-        `❌ You need **$${cost}** to purchase this item.`,
+        `❌ You need **$${cost.toLocaleString()}** to purchase this item.`
       );
     }
 
+    // Deduct cost
     userRecord.cash -= cost;
 
+    // Set next payment date (30 days)
     const nextPayment = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
+    // Activate insurance
     userRecord.store[purchaseItem] = {
       active: true,
       nextPayment,
     };
 
+    // Add role
     await interaction.member.roles.add(item.roleId).catch(() => {});
+
     await updateUserRecord(userRecord);
 
     const { embed } = embedTemplate({
       title: `${SUN} Purchase Successful ${SUN}`,
       description:
         `${ARROW} **Item:** ${item.name}\n` +
-        `${ARROW} **Cost:** $${cost}\n` +
+        `${ARROW} **Cost:** $${cost.toLocaleString()}\n` +
         `${ARROW} **Next Payment:** <t:${Math.floor(nextPayment / 1000)}:F>\n`,
       noLogo: true,
     });

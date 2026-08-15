@@ -14,9 +14,10 @@ const ROLES = {
   moat_all: "1537066846786949120",
 };
 
+// Updated prices
 const INSURANCE_PRICES = {
-  fox_basic: 600,
-  fox_all: 1000,
+  fox_basic: 800,
+  fox_all: 1200,
   moat_basic: 600,
   moat_all: 1000,
 };
@@ -45,7 +46,15 @@ module.exports = {
     const now = Date.now();
 
     for (const userRecord of allRecords) {
-      if (!userRecord.store) continue;
+      // Ensure store exists
+      if (!userRecord.store) {
+        userRecord.store = {
+          fox_basic: { active: false, nextPayment: 0 },
+          fox_all: { active: false, nextPayment: 0 },
+          moat_basic: { active: false, nextPayment: 0 },
+          moat_all: { active: false, nextPayment: 0 },
+        };
+      }
 
       const member = guild.members.cache.get(userRecord.userId);
 
@@ -55,11 +64,15 @@ module.exports = {
 
         const cost = INSURANCE_PRICES[key];
 
+        // User can pay
         if ((userRecord.cash ?? 0) >= cost) {
           userRecord.cash -= cost;
           insurance.nextPayment = now + 30 * 24 * 60 * 60 * 1000;
           charged++;
-        } else {
+        }
+
+        // User cannot pay → cancel insurance
+        else {
           insurance.active = false;
           insurance.nextPayment = 0;
           cancelled++;

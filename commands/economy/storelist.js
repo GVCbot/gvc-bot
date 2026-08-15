@@ -13,9 +13,10 @@ const STORE_BANNER = path.join(
   "gvcstore.png",
 );
 
+// Updated prices
 const INSURANCE_PRICES = {
-  fox_basic: 600,
-  fox_all: 1000,
+  fox_basic: 800,
+  fox_all: 1200,
   moat_basic: 600,
   moat_all: 1000,
 };
@@ -32,19 +33,19 @@ module.exports = {
 
     desc +=
       `**Fox Basic Insured** — $${INSURANCE_PRICES.fox_basic}/month\n` +
-      `> ${ARROW} Coverage for your **Fox Banks**.\n\n`;
+      `> ${ARROW} Coverage for your **Fox Bank** account.\n\n`;
 
     desc +=
       `**Fox All Insured** — $${INSURANCE_PRICES.fox_all}/month\n` +
-      `> ${ARROW} Full coverage for your **Fox Banks**.\n\n`;
+      `> ${ARROW} Full coverage for your **Fox Bank** account.\n\n`;
 
     desc +=
       `**Moat Castle Basic Insured** — $${INSURANCE_PRICES.moat_basic}/month\n` +
-      `> ${ARROW} Coverage for your **Moat Castle Banks**.\n\n`;
+      `> ${ARROW} Coverage for your **Moat Castle** account.\n\n`;
 
     desc +=
       `**Moat Castle All Insured** — $${INSURANCE_PRICES.moat_all}/month\n` +
-      `> ${ARROW} Full coverage for your **Moat Castle Banks**.\n\n`;
+      `> ${ARROW} Full coverage for your **Moat Castle** account.\n\n`;
 
     const { embed, files } = embedTemplate({
       title: `${SUN} Store Items ${SUN}`,
