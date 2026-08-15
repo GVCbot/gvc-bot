@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { getUserRecord, updateUserRecord } = require("../../economy/economyutils");
+const { getUserRecord } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
@@ -28,66 +28,24 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Account exists
     const acct = userRecord.moatCastle;
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
 
-    const cardStatus = acct.cardStatus || "Active";
-    const balance = acct.balance || 0;
-    const points = acct.rewards || 0;
-    const tier = acct.tier;
+    // Accurate card status
+    const cardStatus = acct.cardStatus ? acct.cardStatus : "Active";
 
-    // -----------------------------------------
-    // ELITE STATUS CHECK (5000 points)
-    // -----------------------------------------
-    let eliteStatus = false;
-    let eliteBonusText = "";
-
-    if (points >= 5000) {
-      eliteStatus = true;
-
-      const now = Date.now();
-      const lastBonus = acct.lastEliteBonus || 0;
-      const twoHours = 2 * 60 * 60 * 1000;
-
-      if (now - lastBonus >= twoHours) {
-        // Give bonus
-        userRecord.cash = (userRecord.cash || 0) + 100;
-
-        // Update timestamp
-        acct.lastEliteBonus = now;
-
-        eliteBonusText =
-          `\n\n**💛 Elite Bonus Applied**\n` +
-          `> ${ARROW} You received **+$100 cash** for being an Elite Member.`;
-      }
-    }
-
-    // Save updates (if bonus applied)
-    await updateUserRecord(userRecord);
-
-    // -----------------------------------------
-    // BUILD EMBED
-    // -----------------------------------------
     const { embed, files } = moatembedTemplate({
-      title: eliteStatus ? "🌟 Your Moat Castle Elite Profile" : "Your Moat Castle Account",
+      title: "Your Moat Castle Account",
       description:
         `> ${ARROW} **Account Name:** ${acct.accountName}\n` +
         `> ${ARROW} **Account ID:** ${acct.accountId}\n` +
         `> ${ARROW} **Card Number:** ${acct.cardNumber}\n` +
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
-        `> ${ARROW} **Balance:** $${balance.toLocaleString()}\n` +
-        `> ${ARROW} **Tier:** ${tier}\n` +
-        `> ${ARROW} **Rewards:** ${points.toLocaleString()} / 5000\n` +
-        `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
-
-        (eliteStatus
-          ? `**🌟 Elite Status Unlocked**\n` +
-            `> ${ARROW} You have reached **maximum Moat Points**.\n` +
-            `> ${ARROW} Your profile has been upgraded.\n` +
-            `> ${ARROW} You now earn **$100 every 2 hours**.\n` +
-            eliteBonusText
-          : "")
-      ,
+        `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
+        `> ${ARROW} **Tier:** ${acct.tier}\n` +
+        `> ${ARROW} **Rewards:** ${acct.rewards.toLocaleString()} / 5000\n` +
+        `> ${ARROW} **Created:** <t:${createdUnix}:F>`,
       noLogo: false,
     });
 
