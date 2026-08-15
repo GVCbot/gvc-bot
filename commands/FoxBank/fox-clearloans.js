@@ -4,19 +4,15 @@ const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { FOXICON, ARROW } = FOXEMOJIS;
 
 const {
-  getUserRecord,
+  getAllUserRecords,
   updateUserRecord,
 } = require("../../economy/economyutils");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-clearloans")
-    .setDescription("Clear all Fox Bank loans for a user.")
-    .addUserOption((opt) =>
-      opt
-        .setName("user")
-        .setDescription("User to clear loans for.")
-        .setRequired(true),
+    .setDescription(
+      "Fox Bank Staff ONLY — Clear ALL Fox Bank loans for ALL users.",
     ),
 
   async execute(interaction) {
@@ -30,29 +26,36 @@ module.exports = {
       });
     }
 
-    const target = interaction.options.getUser("user");
-    const userRecord = await getUserRecord(target.id);
+    await interaction.deferReply({ ephemeral: false });
 
-    // No Fox Bank account
-    if (!userRecord.foxBank) {
-      return interaction.reply({
-        content: "❌ User has no Fox Bank account.",
-        ephemeral: true,
-      });
+    const allRecords = await getAllUserRecords();
+    let clearedCount = 0;
+
+    for (const userRecord of allRecords) {
+      if (!userRecord.foxBank) continue;
+
+      // If user has any loan data, wipe it
+      if (
+        userRecord.foxBank.loans?.length ||
+        userRecord.foxBank.loanRequests?.length
+      ) {
+        userRecord.foxBank.loans = [];
+        userRecord.foxBank.loanRequests = [];
+        userRecord.foxBank.updatedAt = Date.now();
+
+        await updateUserRecord(userRecord);
+        clearedCount++;
+      }
     }
-
-    // Clear loans
-    userRecord.foxBank.loans = [];
-    userRecord.foxBank.updatedAt = Date.now();
-
-    await updateUserRecord(userRecord);
 
     const { embed, files } = foxbankembedTemplate({
       title: "Fox Bank Loans Cleared",
-      description: `> ${ARROW} Cleared all Fox Bank loans for **${target.tag}**.`,
+      description:
+        `> ${ARROW} Cleared **all Fox Bank loans** for **${clearedCount} users**.\n` +
+        `> ${ARROW} All loan requests and active loans have been fully removed.`,
       noLogo: false,
     });
 
-    return interaction.reply({ embeds: [embed], files });
+    return interaction.editReply({ embeds: [embed], files });
   },
 };

@@ -71,6 +71,7 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // Apply deposit
     userRecord.cash -= amount;
     userRecord.foxBank.balance += amount;
 

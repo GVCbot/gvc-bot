@@ -90,8 +90,7 @@ module.exports = {
       description:
         `> ${ARROW} **Withdrawn:** $${amount.toLocaleString()}\n\n` +
         `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n` +
-        `> ${ARROW} **Remaining Fox Bank Balance:** $${acct.balance.toLocaleString()}\n` +
-        `> ${ARROW} **Fox Points:** ${acct.rewards.toLocaleString()}`,
+        `> ${ARROW} **Remaining Fox Bank Balance:** $${acct.balance.toLocaleString()}`,
       noLogo: false,
     });
 
