@@ -23,6 +23,7 @@ module.exports = {
 
     let business;
     let ownerId;
+    let businessBalance;
 
     if (businessId) {
       const ownerDoc = await findBusinessOwnerRecord(businessId);
@@ -35,6 +36,7 @@ module.exports = {
 
       business = ownerDoc.moatCastle.business;
       ownerId = ownerDoc.userId;
+      businessBalance = Number(ownerDoc.moatCastle.balance) || 0;
     } else {
       const record = await getUserRecord(interaction.user.id);
 
@@ -47,6 +49,7 @@ module.exports = {
 
       business = record.moatCastle.business;
       ownerId = interaction.user.id;
+      businessBalance = Number(record.moatCastle.balance) || 0;
     }
 
     const { embed, files } = moatembedTemplate({
@@ -56,6 +59,7 @@ module.exports = {
         `> Name: **${business.name}**\n` +
         `> Description: ${business.description}\n` +
         `> ID: **${business.id}**\n` +
+        `> Balance: $${businessBalance.toLocaleString()}\n` +
         `> Daily Income: $${(business.income || 0).toLocaleString()}\n` +
         `> Created: <t:${Math.floor(business.createdAt / 1000)}:D>`,
       noLogo: false,
