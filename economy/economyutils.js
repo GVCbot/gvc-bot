@@ -154,6 +154,12 @@ async function getUserRecord(userId) {
   // -----------------------------------------------------
   user.cash = Number(user.cash) || 0;
   user.moatBalance = Number(user.moatBalance) || 0;
+  if (user.userId === "MOAT_OFFICIAL_BANK") {
+    user.moatCastleOfficialBank = user.moatCastleOfficialBank || {
+      balance: 0,
+      lastUpdated: Date.now(),
+    };
+  }
 
   // -----------------------------------------------------
   // FOX BANK — DO NOT AUTO-CREATE
@@ -279,10 +285,6 @@ function generateBusinessRequestId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
 }
 
-// Finds the raw user document that owns a given business id.
-// Returns the raw Mongo document (NOT run through getUserRecord's
-// normalization) — callers that plan to updateUserRecord() it should
-// be fine since updateUserRecord() only touches a few numeric fields.
 async function findBusinessOwnerRecord(businessId) {
   const db = await getDB();
   const doc = await db

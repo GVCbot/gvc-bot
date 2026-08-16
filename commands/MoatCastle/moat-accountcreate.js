@@ -111,6 +111,12 @@ module.exports = {
     // Deduct tier cost
     userRecord.cash -= tierCost;
 
+    // Deposit tier cost into official bank
+    const bankRecord = await getUserRecord("MOAT_OFFICIAL_BANK");
+    bankRecord.moatCastleOfficialBank.balance += tierCost;
+    bankRecord.moatCastleOfficialBank.lastUpdated = Date.now();
+    await updateUserRecord(bankRecord);
+
     // Generate account ID + card number
     const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const cardNumber = generateCardNumber();
