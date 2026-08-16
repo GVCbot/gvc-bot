@@ -31,11 +31,22 @@ module.exports = {
         .setDescription("Business description")
         .setRequired(true)
         .setMaxLength(300),
+    )
+    .addStringOption((opt) =>
+      opt
+        .setName("type")
+        .setDescription("Business type")
+        .setRequired(true)
+        .addChoices(
+          { name: "Custom", value: "custom" },
+          { name: "Auctioned", value: "auctioned" },
+        ),
     ),
 
   async execute(interaction) {
     const name = interaction.options.getString("name");
     const description = interaction.options.getString("description");
+    const type = interaction.options.getString("type");
 
     await interaction.deferReply({ ephemeral: true });
 
@@ -68,6 +79,7 @@ module.exports = {
       id: requestId,
       name,
       description,
+      type, // ⭐ NEW — store business type
       requestedAt: Date.now(),
     };
 
@@ -79,6 +91,7 @@ module.exports = {
       description:
         `> Requester: <@${interaction.user.id}>\n` +
         `> Business Name: **${name}**\n` +
+        `> Type: **${type.charAt(0).toUpperCase() + type.slice(1)}**\n` +
         `> Description: ${description}\n\n` +
         `> Moat staff, please accept or deny this request below.`,
       noLogo: false,
