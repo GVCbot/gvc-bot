@@ -123,10 +123,10 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    userRecord.cash -= upgradeCost;
+    userRecord.cash -= tierCost;
 
     const bankRecord = await getUserRecord("MOAT_OFFICIAL_BANK");
-    bankRecord.moatCastleOfficialBank.balance += upgradeCost;
+    bankRecord.moatCastleOfficialBank.balance += tierCost;
     bankRecord.moatCastleOfficialBank.lastUpdated = Date.now();
     await updateUserRecord(bankRecord);
 
