@@ -14,8 +14,11 @@ const MEMBERSHIP_COSTS = {
   gold: 1200,
   platinum: 2000,
   diamond: 4500,
-  express: 6000,
+  express: 6000, // invite-only
 };
+
+// ⭐ Express Invite Code
+const EXPRESS_CODE = "fox_TAMALESx3434";
 
 // ⭐ Card Number Generator
 function generateCardNumber() {
@@ -43,9 +46,14 @@ module.exports = {
           { name: "Gold ($1,200/month)", value: "gold" },
           { name: "Platinum ($2,000/month)", value: "platinum" },
           { name: "Diamond ($4,500/month)", value: "diamond" },
-          { name: "Express ($6,000/month)", value: "express" },
         )
         .setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("express_code")
+        .setDescription("Enter Express invite code (optional)")
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -68,14 +76,28 @@ module.exports = {
 
     const accountName = interaction.options.getString("name");
     const chosenMembership = interaction.options.getString("membership");
-    const membershipCost = MEMBERSHIP_COSTS[chosenMembership];
+    const enteredCode = interaction.options.getString("express_code")?.trim();
+
+    let finalMembership = chosenMembership;
+    let membershipCost = MEMBERSHIP_COSTS[chosenMembership];
+    let invalidCode = false;
+
+    // ⭐ Express Unlock Logic
+    if (enteredCode) {
+      if (enteredCode === EXPRESS_CODE) {
+        finalMembership = "express";
+        membershipCost = MEMBERSHIP_COSTS.express;
+      } else {
+        invalidCode = true;
+      }
+    }
 
     // Not enough money
     if (userRecord.cash < membershipCost) {
       const { embed, files } = foxbankembedTemplate({
         title: "Insufficient Funds",
         description:
-          `> ${ARROW} **Membership:** ${chosenMembership.toUpperCase()}\n` +
+          `> ${ARROW} **Membership:** ${finalMembership.toUpperCase()}\n` +
           `> ${ARROW} **Cost:** $${membershipCost.toLocaleString()}\n\n` +
           `> You only have **$${userRecord.cash.toLocaleString()}**.`,
         noLogo: true,
@@ -96,7 +118,7 @@ module.exports = {
       cardStatus: "Active",
       balance: 0,
       membership:
-        chosenMembership.charAt(0).toUpperCase() + chosenMembership.slice(1),
+        finalMembership.charAt(0).toUpperCase() + finalMembership.slice(1),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       lastDeposit: null,
@@ -109,8 +131,12 @@ module.exports = {
     const createdUnix = Math.floor(Date.now() / 1000);
 
     const { embed, files } = foxbankembedTemplate({
-      title: "Fox Bank Account Created",
+      title: invalidCode ? "Invalid Express Code" : "Fox Bank Account Created",
       description:
+        (invalidCode
+          ? `> ${ARROW} The Express code you entered is invalid.\n` +
+            `> ${ARROW} You have been assigned **${userRecord.foxBank.membership}** instead.\n\n`
+          : "") +
         `> ${ARROW} **Account Name:** ${accountName}\n` +
         `> ${ARROW} **Account ID:** ${accountId}\n` +
         `> ${ARROW} **Card Number:** ${cardNumber}\n` +

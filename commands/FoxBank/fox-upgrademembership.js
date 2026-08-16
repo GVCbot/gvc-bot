@@ -20,6 +20,9 @@ const MEMBERSHIP_COSTS = {
 // ⭐ Membership Order (lowest → highest)
 const MEMBERSHIP_ORDER = ["benefits", "gold", "platinum", "diamond", "express"];
 
+// ⭐ Express Invite Code
+const EXPRESS_CODE = "fox_TAMALESx3434";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("fox-upgrademembership")
@@ -33,8 +36,13 @@ module.exports = {
           { name: "Gold ($1,200)", value: "gold" },
           { name: "Platinum ($2,000)", value: "platinum" },
           { name: "Diamond ($4,500)", value: "diamond" },
-          { name: "Express ($6,000)", value: "express" },
         ),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("express_code")
+        .setDescription("Enter Express invite code (optional)")
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -56,6 +64,11 @@ module.exports = {
     const currentMembership =
       userRecord.foxBank.membership?.toLowerCase() || "benefits";
     const chosenMembership = interaction.options.getString("membership");
+    const enteredCode = interaction.options.getString("express_code")?.trim();
+
+    let finalMembership = chosenMembership;
+    let upgradeCost = MEMBERSHIP_COSTS[chosenMembership];
+    let invalidCode = false;
 
     const currentIndex = MEMBERSHIP_ORDER.indexOf(currentMembership);
     const chosenIndex = MEMBERSHIP_ORDER.indexOf(chosenMembership);
@@ -72,7 +85,15 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const upgradeCost = MEMBERSHIP_COSTS[chosenMembership];
+    // ⭐ Express Unlock Logic
+    if (enteredCode) {
+      if (enteredCode === EXPRESS_CODE) {
+        finalMembership = "express";
+        upgradeCost = MEMBERSHIP_COSTS.express;
+      } else {
+        invalidCode = true;
+      }
+    }
 
     // ❌ Not enough money
     if (userRecord.cash < upgradeCost) {
@@ -91,7 +112,7 @@ module.exports = {
 
     // Apply upgrade
     userRecord.foxBank.membership =
-      chosenMembership.charAt(0).toUpperCase() + chosenMembership.slice(1);
+      finalMembership.charAt(0).toUpperCase() + finalMembership.slice(1);
 
     userRecord.foxBank.updatedAt = Date.now();
 
@@ -99,8 +120,14 @@ module.exports = {
 
     // Success embed
     const { embed, files } = foxbankembedTemplate({
-      title: "Membership Upgrade Successful",
+      title: invalidCode
+        ? "Invalid Express Code"
+        : "Membership Upgrade Successful",
       description:
+        (invalidCode
+          ? `> ${ARROW} The Express code you entered is invalid.\n` +
+            `> ${ARROW} You have been upgraded to **${userRecord.foxBank.membership}** instead.\n\n`
+          : "") +
         `> ${ARROW} **New Membership:** ${userRecord.foxBank.membership}\n` +
         `> ${ARROW} **Upgrade Cost:** $${upgradeCost.toLocaleString()}\n` +
         `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}`,

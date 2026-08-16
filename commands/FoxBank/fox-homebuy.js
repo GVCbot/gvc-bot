@@ -11,19 +11,21 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
 const { ARROW } = FOXEMOJIS;
 
-// ⭐ Tier-based home discount system
-function getHomeDiscountPercent(tier) {
-  switch ((tier || "").toLowerCase()) {
+// ⭐ Membership-based home discount system
+function getHomeDiscountPercent(membership) {
+  switch ((membership || "").toLowerCase()) {
+    case "benefits":
+      return 0.03;
     case "gold":
-      return 0.02;
-    case "platinum":
-      return 0.04;
-    case "diamond":
       return 0.06;
-    case "elite":
+    case "platinum":
       return 0.1;
+    case "diamond":
+      return 0.15;
+    case "express":
+      return 0.2;
     default:
-      return 0.0; // Standard
+      return 0.0;
   }
 }
 
@@ -91,12 +93,12 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // ⭐ Ensure balance is numeric
+    // Ensure balance is numeric
     if (typeof userRecord.foxBank.balance !== "number") {
       userRecord.foxBank.balance = 0;
     }
 
-    // ⭐ Ensure homes structure exists
+    // Ensure homes structure exists
     if (!userRecord.homes) {
       userRecord.homes = {
         lakeville: [],
@@ -121,8 +123,10 @@ module.exports = {
       }
     }
 
-    // Apply tier discount
-    const discountPercent = getHomeDiscountPercent(userRecord.foxBank.tier);
+    // ⭐ Apply membership discount
+    const membership =
+      userRecord.foxBank.membership?.toLowerCase() || "benefits";
+    const discountPercent = getHomeDiscountPercent(membership);
     const discountAmount = Math.floor(price * discountPercent);
     const finalPrice = price - discountAmount;
 

@@ -14,7 +14,7 @@ module.exports = {
     const memberships = [
       {
         name: "Fox Benefit’s Card",
-        discount: "3% OFF at purchases",
+        discount: "3% OFF purchases & home buying",
         perks: [
           "Card discounts on partnered services",
           "Free Fox Bank public lawyer service",
@@ -24,53 +24,46 @@ module.exports = {
       },
       {
         name: "Fox Gold Card",
-        discount: "6% OFF at purchases",
+        discount: "6% OFF purchases & home buying",
         perks: [
           "Higher priority in services & loans",
           "Card discounts on partnered services",
           "Free weekly gardening services",
           "Free Fox Bank public lawyer service",
-          "Free basic car insurance",
         ],
         cost: 1200,
       },
       {
         name: "Fox Platinum Card",
-        discount: "10% OFF at purchases",
+        discount: "10% OFF purchases & home buying",
         perks: [
           "Higher priority in services & loans",
           "Card discounts on partnered services",
           "Free weekly gardening services",
           "Free Fox Bank public lawyer service",
-          "Free basic car insurance",
-          "Exclusive offers for insurance",
         ],
         cost: 2000,
       },
       {
         name: "Fox Diamond Card",
-        discount: "15% OFF at purchases",
+        discount: "15% OFF purchases & home buying",
         perks: [
           "Higher priority in services & loans",
           "Card discounts on partnered services",
           "Free weekly gardening services",
           "Free Fox Bank private lawyer service",
-          "Free basic car insurance",
-          "Exclusive offers for insurance",
           "Exclusive access to a private lounge",
         ],
         cost: 4500,
       },
       {
-        name: "Fox Express Card",
-        discount: "20% OFF at purchases",
+        name: "Fox Express Card (Invite Only)",
+        discount: "20% OFF purchases & home buying",
         perks: [
-          "Higher priority in services & loans",
+          "Highest priority in services & loans",
           "Card discounts on partnered services",
           "Free weekly gardening services",
           "Free Fox Bank private lawyer service",
-          "Free basic car insurance",
-          "Exclusive offers for insurance",
           "Exclusive access to a private lounge",
         ],
         cost: 6000,
