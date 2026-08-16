@@ -490,17 +490,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ===============================
-    // 🔵 Moat Castle Loan Accept / Deny Handler
+    // 🏢 Moat Castle Business Accept / Deny Handler
     // ===============================
     if (
       interaction.isButton() &&
-      interaction.customId.startsWith("moat_loan_")
+      interaction.customId.startsWith("moat_business_")
     ) {
       const moatStaffRole = "1537722114176581724"; // Moat Castle Staff
+      const businessOwnerRole = "1470101925662953704"; // Business Owner role
 
       if (!interaction.member.roles.cache.has(moatStaffRole)) {
         return interaction.reply({
-          content: "❌ Only Moat Castle staff can manage loans.",
+          content: "❌ Only Moat Castle staff can manage business requests.",
           ephemeral: true,
         });
       }
@@ -518,68 +519,93 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const { embed } = moatembedTemplate({
           title: "Account Deleted",
           description:
-            `> ${ARROW} The requester’s Moat Castle account was **deleted**.\n` +
+            `> ${ARROW} The requester's Moat Castle account was **deleted**.\n` +
             `> ${ARROW} No further action was taken.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed] });
       }
 
-      const loanRequests = requesterRecord.moatCastle.loanRequests || [];
-      const request = loanRequests.find((r) => r.id === requestId);
+      const businessRequests =
+        requesterRecord.moatCastle.businessRequests || [];
+      const request = businessRequests.find((r) => r.id === requestId);
 
       if (!request) {
-        return interaction.editReply({ content: "❌ Loan request not found." });
+        return interaction.editReply({
+          content: "❌ Business request not found.",
+        });
       }
 
       const requesterUser = await interaction.client.users.fetch(requesterId);
 
-      // Initialize loans array if missing
-      if (!requesterRecord.moatCastle.loans) {
-        requesterRecord.moatCastle.loans = [];
-      }
-
-      // Remove request from pending list
-      requesterRecord.moatCastle.loanRequests =
-        requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
+      // Remove request from pending list either way
+      requesterRecord.moatCastle.businessRequests =
+        requesterRecord.moatCastle.businessRequests.filter(
+          (r) => r !== request,
+        );
 
       let channelEmbed;
 
       // ===============================
-      // ✔ ACCEPT LOAN
+      // ✔ ACCEPT BUSINESS
       // ===============================
       if (action === "accept") {
-        requesterRecord.moatCastle.loans.push({
-          amount: request.amount,
-          remaining: request.amount,
-          reason: request.reason,
+        // Guard: in case they somehow already have a business by the time
+        // staff click Accept (e.g. two pending requests slipped through)
+        if (requesterRecord.moatCastle.business) {
+          await updateUserRecord(requesterRecord);
+
+          channelEmbed = moatembedTemplate({
+            title: "❌ Business Already Exists",
+            description: `> ${ARROW} <@${requesterId}> already owns a business. Request skipped.`,
+            noLogo: true,
+          }).embed;
+
+          await interaction.message.reply({ embeds: [channelEmbed] });
+          return interaction.editReply({
+            content: "That user already owns a business.",
+          });
+        }
+
+        requesterRecord.moatCastle.business = {
+          id: "BIZ-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+          name: request.name,
+          description: request.description,
+          income: 0,
+          ownerId: requesterId,
           createdAt: Date.now(),
-        });
-
-        requesterRecord.moatCastle.balance += request.amount;
-
-        // ⭐ NEW: Update last modified timestamp
-        requesterRecord.moatCastle.updatedAt = Date.now();
+          lastIncomeCollected: Date.now(),
+        };
 
         await updateUserRecord(requesterRecord);
 
+        // Assign business owner role
+        try {
+          const guildMember =
+            await interaction.guild.members.fetch(requesterId);
+          await guildMember.roles.add(businessOwnerRole);
+        } catch (err) {
+          console.error("❌ Failed to assign business owner role:", err);
+        }
+
         channelEmbed = moatembedTemplate({
-          title: "✅ Loan Accepted",
+          title: "✅ Business Approved",
           description:
-            `> ${ARROW} **Requester:** <@${requesterId}>\n` +
-            `> ${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
-            `> ${ARROW} Loan has been **approved** and added to their Moat Castle balance.`,
+            `> ${ARROW} **Owner:** <@${requesterId}>\n` +
+            `> ${ARROW} **Business:** ${request.name}\n` +
+            `> ${ARROW} **ID:** ${requesterRecord.moatCastle.business.id}\n` +
+            `> ${ARROW} Business has been **approved** and created.`,
           noLogo: false,
         }).embed;
 
         // DM requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
-            title: "🏦 Moat Castle Loan Approved",
+            title: "🏢 Moat Castle Business Approved",
             description:
-              `> ${ARROW} Your loan for **$${request.amount.toLocaleString()}** has been **approved**.\n` +
-              `> ${ARROW} Funds have been added to your Moat Castle balance.\n\n` +
-              `> ${ARROW} You can review your loan using **/moat-loanreview**.`,
+              `> ${ARROW} Your business **${request.name}** has been **approved**.\n` +
+              `> ${ARROW} Business ID: **${requesterRecord.moatCastle.business.id}**\n\n` +
+              `> ${ARROW} You can review it using **/moat-viewbusiness**.`,
             noLogo: false,
           });
           await requesterUser.send({ embeds: [dmEmbed] });
@@ -587,32 +613,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       // ===============================
-      // ❌ DENY LOAN
+      // ❌ DENY BUSINESS
       // ===============================
       if (action === "deny") {
-        requesterRecord.moatCastle.loans = [];
-
-        // ⭐ NEW: Update last modified timestamp
-        requesterRecord.moatCastle.updatedAt = Date.now();
-
         await updateUserRecord(requesterRecord);
 
         channelEmbed = moatembedTemplate({
-          title: "❌ Loan Denied",
+          title: "❌ Business Denied",
           description:
             `> ${ARROW} **Requester:** <@${requesterId}>\n` +
-            `> ${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
-            `> ${ARROW} Loan request has been **denied**.`,
+            `> ${ARROW} **Business:** ${request.name}\n` +
+            `> ${ARROW} Business request has been **denied**.`,
           noLogo: false,
         }).embed;
 
         // DM requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
-            title: "🏦 Moat Castle Loan Denied",
+            title: "🏢 Moat Castle Business Denied",
             description:
-              `> ${ARROW} Your loan request for **$${request.amount.toLocaleString()}** has been **denied**.\n` +
-              `> ${ARROW} You may submit another request using **/moat-loanrequest** if needed.`,
+              `> ${ARROW} Your business request for **${request.name}** has been **denied**.\n` +
+              `> ${ARROW} You may submit another request using **/moat-businesscreate** if needed.`,
             noLogo: false,
           });
           await requesterUser.send({ embeds: [dmEmbed] });
@@ -624,7 +645,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       // Staff confirmation
       return interaction.editReply({
-        content: `Loan ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
+        content: `Business ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
       });
     }
 

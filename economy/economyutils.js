@@ -166,7 +166,6 @@ async function getUserRecord(userId) {
     user.foxBank.tier = user.foxBank.tier || "Standard";
     user.foxBank.membership = user.foxBank.membership || "None";
 
-
     user.foxBank.accountId =
       user.foxBank.accountId ||
       "FB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -204,10 +203,15 @@ async function getUserRecord(userId) {
     user.moatCastle.createdAt = user.moatCastle.createdAt || Date.now();
     user.moatCastle.rewards = Number(user.moatCastle.rewards) || 0;
 
-    // NEW — ensure arrays exist
+    // Arrays
     user.moatCastle.cardReplacements = user.moatCastle.cardReplacements || [];
     user.moatCastle.loans = user.moatCastle.loans || [];
     user.moatCastle.loanRequests = user.moatCastle.loanRequests || [];
+
+    // NEW — business fields (moved here so we never touch
+    // user.moatCastle.business before confirming moatCastle exists)
+    user.moatCastle.business = user.moatCastle.business || null;
+    user.moatCastle.businessRequests = user.moatCastle.businessRequests || [];
 
     user.moatCastle.lastDeposit = user.moatCastle.lastDeposit || null;
     user.moatCastle.lastWithdrawal = user.moatCastle.lastWithdrawal || null;
@@ -240,6 +244,10 @@ async function updateUserRecord(user) {
     user.foxBank.balance = Number(user.foxBank.balance) || 0;
   }
 
+  if (user.moatCastle) {
+    user.moatCastle.balance = Number(user.moatCastle.balance) || 0;
+  }
+
   await collection.updateOne(
     { userId: user.userId },
     { $set: user },
@@ -257,6 +265,40 @@ async function getAllUserRecords() {
   return await db.collection("users").find({}).toArray();
 }
 
+// -----------------------------------------------------
+// BUSINESSES
+// -----------------------------------------------------
+
+// Generates a short unique-ish business id, e.g. "BIZ-4F9K2A"
+function generateBusinessId() {
+  return "BIZ-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// Generates a short unique-ish request id for business creation requests
+function generateBusinessRequestId() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+}
+
+// Finds the raw user document that owns a given business id.
+// Returns the raw Mongo document (NOT run through getUserRecord's
+// normalization) — callers that plan to updateUserRecord() it should
+// be fine since updateUserRecord() only touches a few numeric fields.
+async function findBusinessOwnerRecord(businessId) {
+  const db = await getDB();
+  const doc = await db
+    .collection("users")
+    .findOne({ "moatCastle.business.id": businessId });
+  return doc || null;
+}
+
+// Returns every business currently open, each tagged with its ownerId
+async function getAllBusinesses() {
+  const allUsers = await getAllUserRecords();
+  return allUsers
+    .filter((u) => u.moatCastle && u.moatCastle.business)
+    .map((u) => ({ ownerId: u.userId, ...u.moatCastle.business }));
+}
+
 module.exports = {
   loadEconomy,
   loadRoleIncome,
@@ -267,4 +309,8 @@ module.exports = {
   getDB,
   loadLakevillePrices,
   loadSixhousentPrices,
+  generateBusinessId,
+  generateBusinessRequestId,
+  findBusinessOwnerRecord,
+  getAllBusinesses,
 };

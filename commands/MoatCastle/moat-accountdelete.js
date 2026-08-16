@@ -28,6 +28,18 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
+    // ⭐ Block deletion while a business is still open
+    if (userRecord.moatCastle.business) {
+      const { embed, files } = moatembedTemplate({
+        title: "Business Still Open",
+        description:
+          `> ${ARROW} You still own a business (**${userRecord.moatCastle.business.name}**, ID: ${userRecord.moatCastle.business.id}).\n` +
+          `> ${ARROW} Delete it first using **/moat-deletebusiness** before closing your account.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
     // ⭐ Refund balance
     const refundedCash = userRecord.moatCastle.balance || 0;
     userRecord.cash += refundedCash;
