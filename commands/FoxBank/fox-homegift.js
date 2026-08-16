@@ -74,7 +74,6 @@ module.exports = {
 
     const price = priceTable[homeId];
 
-    // ⭐ Only Lakeville Home 1 is ungiftable
     if (area === "lakeville" && homeId === 1) {
       const { embed, files } = foxbankembedTemplate({
         title: "Bank Property",
@@ -94,28 +93,29 @@ module.exports = {
     // Check if home is already owned
     for (const u of allUsers) {
       const homes = u.homes?.[area] || [];
-
-      if (Array.isArray(homes)) {
-        if (homes.some((h) => h.homeId === homeId)) {
-          const { embed, files } = foxbankembedTemplate({
-            title: "Home Already Owned",
-            description: `> ${ARROW} Home ${homeId} is already owned.`,
-          });
-          return interaction.editReply({ embeds: [embed], files });
-        }
+      if (homes.some((h) => h.homeId === homeId)) {
+        const { embed, files } = foxbankembedTemplate({
+          title: "Home Already Owned",
+          description: `> ${ARROW} Home ${homeId} is already owned.`,
+        });
+        return interaction.editReply({ embeds: [embed], files });
       }
     }
 
-    // ⭐ Auto‑create Fox Bank account if missing
+    // ⭐ Auto‑create Fox Bank account if missing (Membership system)
     if (!userRecord.foxBank) {
       userRecord.foxBank = {
         accountName: `Fox Account #${Math.floor(Math.random() * 1000)}`,
-        tier: "Standard",
+        membership: "Benefits",
         balance: 0,
         createdAt: Date.now(),
+        updatedAt: Date.now(),
         cardStatus: "Active",
         accountId: `FB-${target.id}`,
         cardNumber: generateCardNumber(),
+        lastDeposit: null,
+        lastWithdrawal: null,
+        cardReplacements: [],
       };
     }
 
@@ -146,9 +146,7 @@ module.exports = {
           `> ${ARROW} View your home using **/fox-viewaccount**.`,
       });
       await target.send({ embeds: [embed], files });
-    } catch {
-      // Ignore if DMs closed
-    }
+    } catch {}
 
     // Staff confirmation
     const { embed, files } = foxbankembedTemplate({

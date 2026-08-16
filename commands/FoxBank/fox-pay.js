@@ -11,19 +11,21 @@ const {
 // Fox Bank invoice channel
 const invoiceChannelId = "1537770259677847612";
 
-// Cashback table (new tier system)
-function getCashbackPercent(tier) {
-  switch ((tier || "").toLowerCase()) {
-    case "gold":
-      return 0.02;
-    case "platinum":
+// ⭐ Cashback table based on membership
+function getCashbackPercent(membership) {
+  switch ((membership || "").toLowerCase()) {
+    case "benefits":
       return 0.03;
+    case "gold":
+      return 0.06;
+    case "platinum":
+      return 0.1;
     case "diamond":
-      return 0.04;
-    case "elite":
-      return 0.05;
+      return 0.15;
+    case "express":
+      return 0.2;
     default:
-      return 0.01; // Standard
+      return 0.0;
   }
 }
 
@@ -94,8 +96,9 @@ module.exports = {
     sender.foxBank.balance -= amount;
     receiverRecord.cash += amount;
 
-    // Cashback (now adds CASH instead of points)
-    const cashbackPercent = getCashbackPercent(sender.foxBank.tier);
+    // ⭐ Cashback based on membership
+    const membership = sender.foxBank.membership?.toLowerCase() || "benefits";
+    const cashbackPercent = getCashbackPercent(membership);
     const cashbackCash = Math.floor(amount * cashbackPercent);
 
     sender.cash += cashbackCash;
@@ -113,7 +116,8 @@ module.exports = {
         `${ARROW} **Receiver:** <@${receiver.id}>\n` +
         `${ARROW} **Amount:** $${amount.toLocaleString()}\n\n` +
         `${ARROW} **Paid From Balance:** $${amount.toLocaleString()}\n` +
-        `${ARROW} **Cashback Earned:** $${cashbackCash.toLocaleString()}\n\n` +
+        `${ARROW} **Cashback Earned:** $${cashbackCash.toLocaleString()}\n` +
+        `${ARROW} **Membership:** ${sender.foxBank.membership}\n\n` +
         `${ARROW} **New Balance:** $${sender.foxBank.balance.toLocaleString()}\n` +
         `${ARROW} **New Cash:** $${sender.cash.toLocaleString()}\n` +
         `${ARROW} **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
@@ -132,6 +136,7 @@ module.exports = {
       description:
         `${ARROW} You paid <@${receiver.id}> $${amount.toLocaleString()}.\n` +
         `${ARROW} Cashback Earned: $${cashbackCash.toLocaleString()}\n` +
+        `${ARROW} Membership: ${sender.foxBank.membership}\n` +
         `${ARROW} Remaining Fox Bank Balance: $${sender.foxBank.balance.toLocaleString()}\n` +
         `${ARROW} New Cash: $${sender.cash.toLocaleString()}`,
       noLogo: false,

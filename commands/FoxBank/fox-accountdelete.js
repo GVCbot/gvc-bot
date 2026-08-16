@@ -6,7 +6,16 @@ const {
 
 const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
-const { FOXICON, ARROW } = FOXEMOJIS;
+const { ARROW } = FOXEMOJIS;
+
+// Membership cost table
+const MEMBERSHIP_COSTS = {
+  benefits: 500,
+  gold: 1200,
+  platinum: 2000,
+  diamond: 4500,
+  express: 6000,
+};
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -51,8 +60,17 @@ module.exports = {
     }
 
     // Refund Fox Bank balance
-    const refundedCash = userRecord.foxBank.balance || 0;
-    userRecord.cash += refundedCash;
+    const refundedBalance = userRecord.foxBank.balance || 0;
+    userRecord.cash += refundedBalance;
+
+    // Membership refund (75%)
+    const membership = userRecord.foxBank.membership?.toLowerCase() || "none";
+    let membershipRefund = 0;
+
+    if (membership !== "none" && MEMBERSHIP_COSTS[membership]) {
+      membershipRefund = Math.floor(MEMBERSHIP_COSTS[membership] * 0.75);
+      userRecord.cash += membershipRefund;
+    }
 
     // Delete Fox Bank account
     userRecord.foxBank = null;
@@ -62,8 +80,9 @@ module.exports = {
     const { embed, files } = foxbankembedTemplate({
       title: "Fox Bank Account Deleted",
       description:
-        `> ${ARROW} Your Fox Bank account has been permanently deleted.\n` +
-        `> ${ARROW} **Refunded:** $${refundedCash.toLocaleString()}\n` +
+        `> ${ARROW} Your Fox Bank account has been permanently deleted.\n\n` +
+        `> ${ARROW} **Balance Refunded:** $${refundedBalance.toLocaleString()}\n` +
+        `> ${ARROW} **Membership Refund (75%):** $${membershipRefund.toLocaleString()}\n\n` +
         `> ${ARROW} **New Cash Balance:** $${userRecord.cash.toLocaleString()}\n\n` +
         `> ${ARROW} You may create a new account anytime using **/fox-accountcreate**.`,
       noLogo: false,

@@ -3,16 +3,7 @@ const { getUserRecord } = require("../../economy/economyutils");
 
 const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = require("../../utils/foxbankembedTemplate");
-const { FOXICON, ARROW } = FOXEMOJIS;
-
-// ⭐ Discount table
-const FOX_DISCOUNTS = {
-  standard: 0,
-  gold: 0.05,
-  platinum: 0.1,
-  diamond: 0.15,
-  elite: 0.2,
-};
+const { ARROW } = FOXEMOJIS;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -30,7 +21,7 @@ module.exports = {
         title: "Fox Bank Account Required",
         description:
           `> ${ARROW} You do not have a Fox Bank account yet.\n` +
-          `> ${ARROW} Use **/fox-accountcreate name:** to open one.`,
+          `> ${ARROW} Use **/fox-accountcreate** to open one.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
@@ -40,9 +31,8 @@ module.exports = {
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
     const cardStatus = acct.cardStatus || "Active";
 
-    // ⭐ Discount calculation
-    const tier = acct.tier?.toLowerCase() || "standard";
-    const discountPercent = FOX_DISCOUNTS[tier] * 100;
+    // ⭐ Membership
+    const membership = acct.membership || "None";
 
     // ⭐ Owned homes display
     let homesText = "";
@@ -71,8 +61,7 @@ module.exports = {
         `> ${ARROW} **Card Number:** ${acct.cardNumber}\n` +
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
-        `> ${ARROW} **Tier:** ${acct.tier}\n` +
-        `> ${ARROW} **Tier Discount:** ${discountPercent}%\n` +
+        `> ${ARROW} **Membership:** ${membership}\n` +
         `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
         homesText,
       noLogo: false,

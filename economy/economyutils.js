@@ -164,6 +164,8 @@ async function getUserRecord(userId) {
     user.foxBank.balance = Number(user.foxBank.balance) || 0;
     user.foxBank.cardStatus = user.foxBank.cardStatus || "Active";
     user.foxBank.tier = user.foxBank.tier || "Standard";
+    user.foxBank.membership = user.foxBank.membership || "None";
+
 
     user.foxBank.accountId =
       user.foxBank.accountId ||
