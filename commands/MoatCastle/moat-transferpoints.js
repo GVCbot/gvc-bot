@@ -45,11 +45,21 @@ module.exports = {
     const sender = await getUserRecord(senderId);
     const receiverRecord = await getUserRecord(receiver.id);
 
-    // Ensure sender has a Moat Castle account
-    if (!sender.moatCastle) {
+    // Ensure receiver has a Moat Castle account
+    if (!receiverRecord.moatCastle) {
       const { embed, files } = moatembedTemplate({
-        title: "No Moat Castle Account",
-        description: `${ARROW} You must create a Moat Castle account first.`,
+        title: "Receiver Has No Account",
+        description: `${ARROW} That user does not have a Moat Castle account.`,
+        noLogo: true,
+      });
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // Receiver already has max points
+    if ((receiverRecord.moatCastle.rewards || 0) >= 5000) {
+      const { embed, files } = moatembedTemplate({
+        title: "Cannot Transfer Points",
+        description: `${ARROW} That user already has **5000 points**.\n${ARROW} You cannot transfer any more points to them.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
