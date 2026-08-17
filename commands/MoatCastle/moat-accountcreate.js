@@ -4,20 +4,20 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
-const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = moatembedTemplate;
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
-// Tier cost table
-const TIER_COSTS = {
+// Membership cost table
+const MEMBERSHIP_COSTS = {
   standard: 0,
-  silver: 5000,
-  gold: 10000,
-  platinum: 25000,
-  black: 50000,
+  silver: 250,
+  gold: 500,
+  platinum: 900,
+  black: 0, // Invite-only, no cost but requires code
 };
 
-// Secret Black Tier code
-const BLACK_TIER_CODE = "moat_HAMOODx1212";
+// Secret Black Membership code
+const BLACK_CODE = "moat_HAMOODx1212";
 
 // Generate 16-digit card number
 function generateCardNumber() {
@@ -40,20 +40,20 @@ module.exports = {
     )
     .addStringOption((option) =>
       option
-        .setName("tier")
-        .setDescription("Choose your starting tier")
+        .setName("membership")
+        .setDescription("Choose your starting membership")
         .addChoices(
           { name: "Standard (Free)", value: "standard" },
-          { name: "Silver ($5,000)", value: "silver" },
-          { name: "Gold ($10,000)", value: "gold" },
-          { name: "Platinum ($25,000)", value: "platinum" },
+          { name: "Silver ($250)", value: "silver" },
+          { name: "Gold ($500)", value: "gold" },
+          { name: "Platinum ($900)", value: "platinum" },
         )
         .setRequired(false),
     )
     .addStringOption((option) =>
       option
-        .setName("black_tier_code")
-        .setDescription("Enter your Black Tier invite code (optional)")
+        .setName("black_code")
+        .setDescription("Enter your Black Membership invite code (optional)")
         .setRequired(false),
     ),
 
@@ -76,46 +76,47 @@ module.exports = {
     }
 
     const accountName = interaction.options.getString("name");
-    const chosenTier = interaction.options.getString("tier") || "standard";
-    const enteredCode = interaction.options
-      .getString("black_tier_code")
-      ?.trim();
+    const chosenMembership =
+      interaction.options.getString("membership") || "standard";
+    const enteredCode = interaction.options.getString("black_code")?.trim();
 
-    let finalTier = chosenTier;
-    let tierCost = TIER_COSTS[chosenTier];
+    let finalMembership = chosenMembership;
+    let membershipCost = MEMBERSHIP_COSTS[chosenMembership];
     let invalidCode = false;
 
-    // Handle Black Tier code
+    // Handle Black Membership code
     if (enteredCode) {
-      if (enteredCode === BLACK_TIER_CODE) {
-        finalTier = "black";
-        tierCost = TIER_COSTS.black;
+      if (enteredCode === BLACK_CODE) {
+        finalMembership = "black";
+        membershipCost = MEMBERSHIP_COSTS.black;
       } else {
         invalidCode = true;
       }
     }
 
-    // Check funds
-    if (userRecord.cash < tierCost) {
+    // Check funds (skip if Black Membership)
+    if (finalMembership !== "black" && userRecord.cash < membershipCost) {
       const { embed, files } = moatembedTemplate({
         title: "Insufficient Funds",
         description:
-          `> ${ARROW} **Tier:** ${finalTier.toUpperCase()}\n` +
-          `> ${ARROW} **Cost:** $${tierCost.toLocaleString()}\n\n` +
+          `> ${ARROW} **Membership:** ${finalMembership.toUpperCase()}\n` +
+          `> ${ARROW} **Cost:** $${membershipCost.toLocaleString()}\n\n` +
           `> You only have **$${userRecord.cash.toLocaleString()}**.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Deduct tier cost
-    userRecord.cash -= tierCost;
+    // Deduct cost (skip if Black Membership)
+    if (finalMembership !== "black") {
+      userRecord.cash -= membershipCost;
 
-    // Deposit tier cost into official bank
-    const bankRecord = await getUserRecord("MOAT_OFFICIAL_BANK");
-    bankRecord.moatCastleOfficialBank.balance += tierCost;
-    bankRecord.moatCastleOfficialBank.lastUpdated = Date.now();
-    await updateUserRecord(bankRecord);
+      // Deposit membership cost into official bank
+      const bankRecord = await getUserRecord("MOAT_OFFICIAL_BANK");
+      bankRecord.moatCastleOfficialBank.balance += membershipCost;
+      bankRecord.moatCastleOfficialBank.lastUpdated = Date.now();
+      await updateUserRecord(bankRecord);
+    }
 
     // Generate account ID + card number
     const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -127,18 +128,15 @@ module.exports = {
       cardNumber,
       cardStatus: "Active",
       balance: 0,
-      tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
+      membership:
+        finalMembership.charAt(0).toUpperCase() + finalMembership.slice(1),
       createdAt: Date.now(),
       updatedAt: Date.now(),
 
-      // NEW
       lastDeposit: null,
       lastWithdrawal: null,
       lastLoanPayment: null,
-
-      // NEW — card replacement history
       cardReplacements: [],
-
       loans: [],
       loanRequests: [],
     };
@@ -153,11 +151,11 @@ module.exports = {
         title: "Invalid Code!",
         description:
           `> ${ARROW} The code you entered is invalid.\n` +
-          `> ${ARROW} You have been assigned the **${userRecord.moatCastle.tier} Tier** instead.\n\n` +
+          `> ${ARROW} You have been assigned the **${userRecord.moatCastle.membership} Membership** instead.\n\n` +
           `> ${ARROW} **Account Name:** ${accountName}\n` +
           `> ${ARROW} **Account ID:** ${accountId}\n` +
           `> ${ARROW} **Card Number:** ${cardNumber}\n` +
-          `> ${ARROW} **Tier Cost:** $${tierCost.toLocaleString()}\n` +
+          `> ${ARROW} **Membership Cost:** $${membershipCost.toLocaleString()}\n` +
           `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
           `> ${ARROW} **Created:** <t:${createdUnix}:F>`,
         noLogo: false,
@@ -172,8 +170,8 @@ module.exports = {
         `> ${ARROW} **Account Name:** ${accountName}\n` +
         `> ${ARROW} **Account ID:** ${accountId}\n` +
         `> ${ARROW} **Card Number:** ${cardNumber}\n` +
-        `> ${ARROW} **Tier:** ${userRecord.moatCastle.tier}\n` +
-        `> ${ARROW} **Tier Cost:** $${tierCost.toLocaleString()}\n` +
+        `> ${ARROW} **Membership:** ${userRecord.moatCastle.membership}\n` +
+        `> ${ARROW} **Membership Cost:** $${membershipCost.toLocaleString()}\n` +
         `> ${ARROW} **Remaining Cash:** $${userRecord.cash.toLocaleString()}\n` +
         `> ${ARROW} **Created:** <t:${createdUnix}:F>\n\n` +
         `> ${ARROW} Use **/moat-viewaccount** to view your new account.`,
