@@ -11,7 +11,7 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-deposit")
-    .setDescription("Deposit cash into your Moat Castle account."),
+    .setDescription("Deposit all your cash into your Moat Castle account."),
 
   async execute(interaction) {
     await interaction.deferReply();
@@ -41,41 +41,20 @@ module.exports = {
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    // Calculate points earned (example: 1 point per $1,000)
-    let pointsEarned = Math.floor(depositAmount / 1000);
-
-    // Current points and cap
-    const currentPoints = user.moatCastle.rewards || 0;
-    const maxPoints = 5000;
-    const potentialTotal = currentPoints + pointsEarned;
-
-    // Cap logic
-    if (currentPoints >= maxPoints) {
-      pointsEarned = 0;
-    } else if (potentialTotal > maxPoints) {
-      pointsEarned = maxPoints - currentPoints;
-    }
-
-    // Apply deposit and points
+    // Apply deposit
     user.moatCastle.balance = (user.moatCastle.balance || 0) + depositAmount;
+
     user.cash = 0;
-    user.moatCastle.rewards = currentPoints + pointsEarned;
 
     await updateUserRecord(user);
 
     // Embed message
-    const pointsMessage =
-      pointsEarned === 0
-        ? `${ARROW} Cannot earn more points — already at max (5,000).`
-        : `${ARROW} Points Earned: ${pointsEarned.toLocaleString()}`;
-
     const { embed, files } = moatembedTemplate({
       title: "Deposit Successful",
       description:
-        `${ARROW} Deposited: $${depositAmount.toLocaleString()}\n` +
-        `${pointsMessage}\n\n` +
+        `${ARROW} Deposited: $${depositAmount.toLocaleString()}\n\n` +
         `${ARROW} New Cash Balance: $${user.cash.toLocaleString()}\n` +
-        `${ARROW} Total Castle Points: ${user.moatCastle.rewards.toLocaleString()} / 5,000`,
+        `${ARROW} New Moat Castle Balance: $${user.moatCastle.balance.toLocaleString()}`,
       noLogo: false,
     });
 
