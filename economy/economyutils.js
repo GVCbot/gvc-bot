@@ -196,7 +196,7 @@ async function getUserRecord(userId) {
   } else {
     user.moatCastle.balance = Number(user.moatCastle.balance) || 0;
     user.moatCastle.cardStatus = user.moatCastle.cardStatus || "Active";
-    user.moatCastle.tier = user.moatCastle.tier || "Standard";
+    user.moatCastle.membership = user.moatCastle.membership || "Standard";
 
     user.moatCastle.accountId =
       user.moatCastle.accountId ||

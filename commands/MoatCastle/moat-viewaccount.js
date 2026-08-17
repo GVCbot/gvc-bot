@@ -1,16 +1,16 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { getUserRecord } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
-const { MOATEMOJIS } = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = moatembedTemplate;
 const { MOATCASTLE, ARROW } = MOATEMOJIS;
 
-// ⭐ Discount table
-const MOAT_DISCOUNTS = {
+// ⭐ Membership income boost table
+const MEMBERSHIP_BOOSTS = {
   standard: 0,
-  silver: 0.05,
-  gold: 0.1,
-  platinum: 0.15,
-  black: 0.2,
+  silver: 0.02,
+  gold: 0.04,
+  platinum: 0.06,
+  black: 0.1,
 };
 
 module.exports = {
@@ -39,11 +39,10 @@ module.exports = {
     const createdUnix = Math.floor((acct.createdAt || Date.now()) / 1000);
     const cardStatus = acct.cardStatus || "Active";
 
-    // ⭐ Discount calculation
-    const tier = acct.tier?.toLowerCase() || "standard";
-    const discountPercent = MOAT_DISCOUNTS[tier] * 100;
+    // ⭐ Membership + boost
+    const membership = acct.membership?.toLowerCase() || "standard";
+    const boostPercent = MEMBERSHIP_BOOSTS[membership] * 100;
 
-    // ⭐ Final embed
     const { embed, files } = moatembedTemplate({
       title: "Your Moat Castle Account",
       description:
@@ -52,9 +51,8 @@ module.exports = {
         `> ${ARROW} **Card Number:** ${acct.cardNumber}\n` +
         `> ${ARROW} **Card Status:** ${cardStatus}\n\n` +
         `> ${ARROW} **Balance:** $${acct.balance.toLocaleString()}\n` +
-        `> ${ARROW} **Tier:** ${acct.tier}\n` +
-        `> ${ARROW} **Tier Discount:** ${discountPercent}%\n` +
-        `> ${ARROW} **Rewards:** ${acct.rewards.toLocaleString()} / 5000\n` +
+        `> ${ARROW} **Membership:** ${acct.membership}\n` +
+        `> ${ARROW} **Income Boost:** ${boostPercent}%\n` +
         `> ${ARROW} **Created:** <t:${createdUnix}:F>\n`,
       noLogo: false,
     });
