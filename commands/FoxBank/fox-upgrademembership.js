@@ -73,16 +73,19 @@ module.exports = {
     const currentIndex = MEMBERSHIP_ORDER.indexOf(currentMembership);
     const chosenIndex = MEMBERSHIP_ORDER.indexOf(chosenMembership);
 
-    // ❌ Cannot downgrade or re-select same membership
+    // ❌ Cannot downgrade or re-select same membership — unless Express code is valid
     if (chosenIndex <= currentIndex) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "Invalid Upgrade",
-        description:
-          `> ${ARROW} You cannot downgrade or re-select your current membership.\n` +
-          `> ${ARROW} Your current membership: **${userRecord.foxBank.membership}**.`,
-        noLogo: true,
-      });
-      return interaction.editReply({ embeds: [embed], files });
+      const enteredCode = interaction.options.getString("express_code")?.trim();
+      if (enteredCode !== EXPRESS_CODE) {
+        const { embed, files } = foxbankembedTemplate({
+          title: "Invalid Upgrade",
+          description:
+            `> ${ARROW} You cannot downgrade or re-select your current membership.\n` +
+            `> ${ARROW} Your current membership: **${userRecord.foxBank.membership}**.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
+      }
     }
 
     // ⭐ Express Unlock Logic
