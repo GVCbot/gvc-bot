@@ -207,7 +207,6 @@ async function getUserRecord(userId) {
       Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join("");
 
     user.moatCastle.createdAt = user.moatCastle.createdAt || Date.now();
-    user.moatCastle.rewards = Number(user.moatCastle.rewards) || 0;
 
     // Arrays
     user.moatCastle.cardReplacements = user.moatCastle.cardReplacements || [];

@@ -128,7 +128,6 @@ module.exports = {
       cardStatus: "Active",
       balance: 0,
       tier: finalTier.charAt(0).toUpperCase() + finalTier.slice(1),
-      rewards: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
 
