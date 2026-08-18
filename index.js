@@ -311,9 +311,10 @@ for (const folder of fs.readdirSync(foldersPath)) {
   }
 }
 
-client.once(Events.ClientReady, () =>
-  console.log(`🟢 Bot is online as ${client.user.tag}`),
-);
+client.once(Events.ClientReady, () => {
+  console.log("Render cache bust v2");
+  console.log(`🟢 Bot is online as ${client.user.tag}`);
+});
 
 //Interaction Handler
 client.on(Events.InteractionCreate, async (interaction) => {
