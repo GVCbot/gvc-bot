@@ -349,6 +349,238 @@ client.on(Events.InteractionCreate, async (interaction) => {
         logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
     }
 
+    // ===============================
+    // 🆘 Support Menu Handler
+    // ===============================
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId === "support_select"
+    ) {
+      await interaction.deferReply({ ephemeral: true });
+
+      const selection = interaction.values[0];
+      const user = interaction.user;
+      const guild = interaction.guild;
+
+      const CATEGORY_ID = "1539173722743906344";
+      const STAFF_ROLE = "1350897509752373341";
+      const PARTNERSHIP_ROLE = "1497520864135086090";
+      const HR_ROLE = "1350582607217430650";
+
+      const roleMap = {
+        general: STAFF_ROLE,
+        partnership: PARTNERSHIP_ROLE,
+        staff: HR_ROLE,
+        user: STAFF_ROLE,
+      };
+
+      const roleId = roleMap[selection];
+      const channelName = `${selection}-${user.username.toLowerCase()}`;
+      const category = guild.channels.cache.get(CATEGORY_ID);
+
+      // Create channel
+      const channel = await guild.channels.create({
+        name: channelName,
+        type: 0,
+        parent: category.id,
+        topic: "UNCLAIMED",
+        permissionOverwrites: [
+          { id: guild.roles.everyone, deny: ["ViewChannel"] },
+          { id: roleId, allow: ["ViewChannel", "SendMessages"] },
+          { id: user.id, allow: ["ViewChannel", "SendMessages"] },
+        ],
+      });
+
+      // Ticket embed
+      const { embed, files } = embedTemplate({
+        title: `${SUN} Support Ticket Created ${SUN}`,
+        description:
+          `${ARROW} **Opened By:** ${user}\n` +
+          `${ARROW} **Type:** ${selection.charAt(0).toUpperCase() + selection.slice(1)} Support\n\n` +
+          `${ARROW} Please describe your issue below.`,
+        noLogo: false,
+      });
+
+      const {
+        ActionRowBuilder,
+        ButtonBuilder,
+        ButtonStyle,
+      } = require("discord.js");
+
+      const buttons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`claim_${channel.id}`)
+          .setLabel("Claim Ticket")
+          .setStyle(ButtonStyle.Success),
+
+        new ButtonBuilder()
+          .setCustomId(`close_${channel.id}`)
+          .setLabel("Close Ticket")
+          .setStyle(ButtonStyle.Secondary),
+      );
+
+      await channel.send({
+        content: `<@${user.id}> <@&${roleId}>`,
+        embeds: [embed],
+        files,
+        components: [buttons],
+      });
+
+      return interaction.editReply(
+        `✅ Your support ticket has been created: ${channel}`,
+      );
+    }
+
+    // ===============================
+    // 🎟️ Support Ticket Claim / Unclaim
+    // ===============================
+    if (interaction.isButton() && interaction.customId.startsWith("claim_")) {
+      const channelId = interaction.customId.split("_")[1];
+      const channel = interaction.guild.channels.cache.get(channelId);
+
+      if (!channel) {
+        return interaction.reply({
+          content: "❌ Channel not found.",
+          ephemeral: true,
+        });
+      }
+
+      const topic = channel.topic || "UNCLAIMED";
+      const claimedMatch = topic.match(/CLAIMED:(\d+)/);
+      const claimedBy = claimedMatch ? claimedMatch[1] : null;
+
+      // Already claimed by someone else
+      if (claimedBy && claimedBy !== interaction.user.id) {
+        return interaction.reply({
+          content: `❌ This ticket is already claimed by <@${claimedBy}>.`,
+          ephemeral: true,
+        });
+      }
+
+      // Unclaim
+      if (claimedBy && claimedBy === interaction.user.id) {
+        await channel.setTopic("UNCLAIMED");
+
+        const { embed } = embedTemplate({
+          title: `${SUN} Ticket Unclaimed ${SUN}`,
+          description: `${ARROW} **${interaction.user}** has unclaimed this ticket.`,
+          noLogo: false,
+        });
+
+        await channel.send({ embeds: [embed] });
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`claim_${channel.id}`)
+            .setLabel("Claim Ticket")
+            .setStyle(ButtonStyle.Success),
+
+          new ButtonBuilder()
+            .setCustomId(`close_${channel.id}`)
+            .setLabel("Close Ticket")
+            .setStyle(ButtonStyle.Secondary),
+        );
+
+        return interaction.update({ components: [row] });
+      }
+
+      // Claim
+      await channel.setTopic(`CLAIMED:${interaction.user.id}`);
+
+      const { embed } = embedTemplate({
+        title: `${SUN} Ticket Claimed ${SUN}`,
+        description: `${ARROW} **${interaction.user}** has claimed this ticket.`,
+        noLogo: false,
+      });
+
+      await channel.send({ embeds: [embed] });
+
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`claim_${channel.id}`)
+          .setLabel("Claimed")
+          .setStyle(ButtonStyle.Danger),
+
+        new ButtonBuilder()
+          .setCustomId(`close_${channel.id}`)
+          .setLabel("Close Ticket")
+          .setStyle(ButtonStyle.Secondary),
+      );
+
+      return interaction.update({ components: [row] });
+    }
+
+    // ===============================
+    // 🔒 Close Ticket Handler
+    // ===============================
+    if (interaction.isButton() && interaction.customId.startsWith("close_")) {
+      const channelId = interaction.customId.split("_")[1];
+      const channel = interaction.guild.channels.cache.get(channelId);
+
+      if (!channel) {
+        return interaction.reply({
+          content: "❌ Channel not found.",
+          ephemeral: true,
+        });
+      }
+
+      const topic = channel.topic || "UNCLAIMED";
+      const claimedMatch = topic.match(/CLAIMED:(\d+)/);
+      const claimedBy = claimedMatch ? claimedMatch[1] : null;
+
+      // Only claimer can close
+      if (!claimedBy || claimedBy !== interaction.user.id) {
+        return interaction.reply({
+          content:
+            "❌ Only the staff member who claimed this ticket can close it.",
+          ephemeral: true,
+        });
+      }
+
+      await interaction.deferReply({ ephemeral: true });
+
+      // Fetch messages
+      const messages = await channel.messages.fetch({ limit: 100 });
+      const transcriptChannel = interaction.guild.channels.cache.get(
+        "1539176056651784242",
+      );
+
+      let transcriptText = `Transcript for ticket ${channel.name}\n\n`;
+
+      messages.reverse().forEach((msg) => {
+        transcriptText += `[${msg.createdAt.toLocaleString()}] ${msg.author.tag}: ${msg.content}\n`;
+      });
+
+      // Send transcript
+      await transcriptChannel.send({
+        content: `${SUN} **Transcript for:** ${channel.name}\n${ARROW} Closed by: <@${interaction.user.id}>`,
+        files: [
+          {
+            attachment: Buffer.from(transcriptText, "utf-8"),
+            name: `${channel.name}-transcript.txt`,
+          },
+        ],
+      });
+
+      // Notify channel
+      const { embed } = embedTemplate({
+        title: `${SUN} Ticket Closed ${SUN}`,
+        description:
+          `${ARROW} Closed by: ${interaction.user}\n` +
+          `${ARROW} Transcript has been saved.`,
+        noLogo: false,
+      });
+
+      await channel.send({ embeds: [embed] });
+
+      // Delete channel after 5 seconds
+      setTimeout(() => {
+        channel.delete().catch(() => {});
+      }, 5000);
+
+      return interaction.editReply("✅ Ticket closed and transcript saved.");
+    }
+
     //Chat Input Commands
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
