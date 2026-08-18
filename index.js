@@ -750,8 +750,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       interaction.isButton() &&
       interaction.customId.startsWith("moat_business_")
     ) {
-      const moatStaffRole = "1537722114176581724"; // Moat Castle Staff
-      const businessOwnerRole = "1470101925662953704"; // Business Owner role
+      const moatStaffRole = "1537722114176581724";
+      const businessOwnerRole = "1470101925662953704";
 
       if (!interaction.member.roles.cache.has(moatStaffRole)) {
         return interaction.reply({
@@ -780,9 +780,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.editReply({ embeds: [embed] });
       }
 
-      const businessRequests =
+      requesterRecord.moatCastle.businesses =
+        requesterRecord.moatCastle.businesses || [];
+      requesterRecord.moatCastle.businessRequests =
         requesterRecord.moatCastle.businessRequests || [];
-      const request = businessRequests.find((r) => r.id === requestId);
+
+      const request = requesterRecord.moatCastle.businessRequests.find(
+        (r) => r.id === requestId,
+      );
 
       if (!request) {
         return interaction.editReply({
@@ -792,43 +797,50 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const requesterUser = await interaction.client.users.fetch(requesterId);
 
+      // Remove request from pending list
       requesterRecord.moatCastle.businessRequests =
         requesterRecord.moatCastle.businessRequests.filter(
-          (r) => r !== request,
+          (r) => r.id !== request,
         );
 
       let channelEmbed;
 
+      // ===============================
+      // ✔ ACCEPT BUSINESS REQUEST
+      // ===============================
       if (action === "accept") {
-        // Guard: staff may have two pending requests slip through and
-        // both get accepted before the record updates
-        if (requesterRecord.moatCastle.business) {
-          await updateUserRecord(requesterRecord);
-
+        // Prevent exceeding business limit
+        if (requesterRecord.moatCastle.businesses.length >= 3) {
           channelEmbed = moatembedTemplate({
-            title: "❌ Business Already Exists",
-            description: `> ${ARROW} <@${requesterId}> already owns a business. Request skipped.`,
+            title: "❌ Business Limit Reached",
+            description:
+              `> ${ARROW} <@${requesterId}> already owns **3 businesses**.\n` +
+              `> ${ARROW} Request skipped.`,
             noLogo: true,
           }).embed;
 
           await interaction.message.reply({ embeds: [channelEmbed] });
           return interaction.editReply({
-            content: "That user already owns a business.",
+            content: "User already owns the maximum number of businesses.",
           });
         }
 
-        requesterRecord.moatCastle.business = {
+        // Create new business
+        const newBusiness = {
           id: "BIZ-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
           name: request.name,
           description: request.description,
+          type: request.type,
           income: 0,
           ownerId: requesterId,
           createdAt: Date.now(),
           lastIncomeCollected: Date.now(),
         };
 
+        requesterRecord.moatCastle.businesses.push(newBusiness);
         await updateUserRecord(requesterRecord);
 
+        // Assign business owner role (only if they didn't have it)
         try {
           const guildMember =
             await interaction.guild.members.fetch(requesterId);
@@ -842,24 +854,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
           description:
             `> ${ARROW} **Owner:** <@${requesterId}>\n` +
             `> ${ARROW} **Business:** ${request.name}\n` +
-            `> ${ARROW} **ID:** ${requesterRecord.moatCastle.business.id}\n` +
+            `> ${ARROW} **ID:** ${newBusiness.id}\n` +
             `> ${ARROW} Business has been **approved** and created.`,
           noLogo: false,
         }).embed;
 
+        // DM requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏢 Moat Castle Business Approved",
             description:
               `> ${ARROW} Your business **${request.name}** has been **approved**.\n` +
-              `> ${ARROW} Business ID: **${requesterRecord.moatCastle.business.id}**\n\n` +
-              `> ${ARROW} You can review it using **/moat-viewbusiness**.`,
+              `> ${ARROW} Business ID: **${newBusiness.id}**\n\n` +
+              `> ${ARROW} You can review it using **/moat-business view**.`,
             noLogo: false,
           });
           await requesterUser.send({ embeds: [dmEmbed] });
         } catch {}
       }
 
+      // ===============================
+      // ❌ DENY BUSINESS REQUEST
+      // ===============================
       if (action === "deny") {
         await updateUserRecord(requesterRecord);
 
@@ -877,7 +893,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             title: "🏢 Moat Castle Business Denied",
             description:
               `> ${ARROW} Your business request for **${request.name}** has been **denied**.\n` +
-              `> ${ARROW} You may submit another request using **/moat-businesscreate** if needed.`,
+              `> ${ARROW} You may submit another request using **/moat-business create**.`,
             noLogo: false,
           });
           await requesterUser.send({ embeds: [dmEmbed] });

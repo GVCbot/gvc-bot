@@ -213,10 +213,15 @@ async function getUserRecord(userId) {
     user.moatCastle.loans = user.moatCastle.loans || [];
     user.moatCastle.loanRequests = user.moatCastle.loanRequests || [];
 
-    // NEW — business fields (moved here so we never touch
-    // user.moatCastle.business before confirming moatCastle exists)
-    user.moatCastle.business = user.moatCastle.business || null;
+    // ⭐ UPDATED — multi-business support
+    user.moatCastle.businesses = user.moatCastle.businesses || [];
     user.moatCastle.businessRequests = user.moatCastle.businessRequests || [];
+
+    // ⭐ MIGRATION: move old single business → new array format
+    if (user.moatCastle.business && !user.moatCastle.businesses.length) {
+      user.moatCastle.businesses = [user.moatCastle.business];
+      user.moatCastle.business = null;
+    }
 
     user.moatCastle.lastDeposit = user.moatCastle.lastDeposit || null;
     user.moatCastle.lastWithdrawal = user.moatCastle.lastWithdrawal || null;
@@ -286,18 +291,29 @@ function generateBusinessRequestId() {
 
 async function findBusinessOwnerRecord(businessId) {
   const db = await getDB();
-  const doc = await db
-    .collection("users")
-    .findOne({ "moatCastle.business.id": businessId });
+  const doc = await db.collection("users").findOne({
+    "moatCastle.businesses.id": businessId,
+  });
   return doc || null;
 }
 
 // Returns every business currently open, each tagged with its ownerId
 async function getAllBusinesses() {
   const allUsers = await getAllUserRecords();
-  return allUsers
-    .filter((u) => u.moatCastle && u.moatCastle.business)
-    .map((u) => ({ ownerId: u.userId, ...u.moatCastle.business }));
+  const businesses = [];
+
+  for (const user of allUsers) {
+    if (!user.moatCastle || !user.moatCastle.businesses) continue;
+
+    for (const biz of user.moatCastle.businesses) {
+      businesses.push({
+        ownerId: user.userId,
+        ...biz,
+      });
+    }
+  }
+
+  return businesses;
 }
 
 module.exports = {
