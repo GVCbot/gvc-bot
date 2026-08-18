@@ -24,11 +24,11 @@ module.exports = {
       });
     }
 
-    // Banner embed — no title, no logo, but with a short invisible space so Discord doesn’t auto‑fill defaults
+    // Banner embed — no title, no logo, compact spacing
     const bannerPath = path.join(__dirname, "../../graphics/gvcsupport.png");
     const { embed: bannerEmbed, files: bannerFiles } = embedTemplate({
-      title: "‎", // invisible character prevents “GVC Bot” fallback
-      description: "‎", // invisible character prevents “No description provided”
+      title: "\u200B", // zero-width space prevents fallback text
+      description: "\u200B", // keeps embed height minimal
       banner: bannerPath,
       noLogo: true,
     });
@@ -37,7 +37,7 @@ module.exports = {
     const { embed: mainEmbed } = embedTemplate({
       title: `${SUN} Support Options ${SUN}`,
       description:
-        `${ARROW} Please select the type of support you need below.\n\n` +
+        `${ARROW} Please select the type of support you need below.\n` +
         `${ARROW} **General Support** — For general inquiries.\n` +
         `${ARROW} **Partnership Support** — For partnership questions.\n` +
         `${ARROW} **Staff Report** — Report a staff member.\n` +
@@ -65,7 +65,7 @@ module.exports = {
       components: [row],
     });
 
-    // Acknowledge the command silently so it doesn’t show “used this command”
+    // Silently acknowledge command
     await interaction.deferReply({ ephemeral: true });
     await interaction.deleteReply().catch(() => {});
   },

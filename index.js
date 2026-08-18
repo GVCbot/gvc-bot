@@ -356,9 +356,38 @@ client.on(Events.InteractionCreate, async (interaction) => {
       interaction.isStringSelectMenu() &&
       interaction.customId === "support_select"
     ) {
+      const selection = interaction.values[0];
+      const user = interaction.user;
+
+      // Modal form
+      const modal = new ModalBuilder()
+        .setCustomId(`support_modal_${selection}`)
+        .setTitle(`${SUN} Support Request ${SUN}`);
+
+      const reasonInput = new TextInputBuilder()
+        .setCustomId("support_reason")
+        .setLabel("Describe why you’re opening this ticket:")
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setPlaceholder("Briefly explain your issue or concern...");
+
+      const row = new ActionRowBuilder().addComponents(reasonInput);
+      modal.addComponents(row);
+
+      return interaction.showModal(modal);
+    }
+
+    // ===============================
+    // 📝 Modal Submission Handler
+    // ===============================
+    if (
+      interaction.isModalSubmit() &&
+      interaction.customId.startsWith("support_modal_")
+    ) {
       await interaction.deferReply({ ephemeral: true });
 
-      const selection = interaction.values[0];
+      const selection = interaction.customId.split("_")[2];
+      const reason = interaction.fields.getTextInputValue("support_reason");
       const user = interaction.user;
       const guild = interaction.guild;
 
@@ -378,7 +407,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const channelName = `${selection}-${user.username.toLowerCase()}`;
       const category = guild.channels.cache.get(CATEGORY_ID);
 
-      // Create channel
       const channel = await guild.channels.create({
         name: channelName,
         type: 0,
@@ -391,13 +419,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ],
       });
 
-      // Ticket embed
       const { embed, files } = embedTemplate({
         title: `${SUN} Support Ticket Created ${SUN}`,
         description:
           `${ARROW} **Opened By:** ${user}\n` +
           `${ARROW} **Type:** ${selection.charAt(0).toUpperCase() + selection.slice(1)} Support\n` +
-          `${ARROW} Please describe your issue below.`,
+          `${ARROW} **Description:** ${reason}`,
         noLogo: false,
       });
 
@@ -428,13 +455,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // 🎟️ Support Ticket Claim / Unclaim
     // ===============================
     if (interaction.isButton() && interaction.customId.startsWith("claim_")) {
-      await interaction.deferUpdate();
-
       const channelId = interaction.customId.split("_")[1];
       const channel = interaction.guild.channels.cache.get(channelId);
 
       if (!channel) {
-        return interaction.followUp({
+        return interaction.reply({
           content: "❌ Channel not found.",
           ephemeral: true,
         });
@@ -446,7 +471,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       // Already claimed by someone else
       if (claimedBy && claimedBy !== interaction.user.id) {
-        return interaction.followUp({
+        return interaction.reply({
           content: `❌ This ticket is already claimed by <@${claimedBy}>.`,
           ephemeral: true,
         });
@@ -475,7 +500,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setStyle(ButtonStyle.Secondary),
         );
 
-        return interaction.message.edit({ components: [row] });
+        return interaction.update({ components: [row] });
       }
 
       // Claim
@@ -500,7 +525,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setStyle(ButtonStyle.Secondary),
       );
 
-      return interaction.message.edit({ components: [row] });
+      return interaction.update({ components: [row] });
     }
 
     // ===============================
@@ -521,7 +546,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const claimedMatch = topic.match(/CLAIMED:(\d+)/);
       const claimedBy = claimedMatch ? claimedMatch[1] : null;
 
-      // Only claimer can close
       if (!claimedBy || claimedBy !== interaction.user.id) {
         return interaction.reply({
           content:
@@ -532,19 +556,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await interaction.deferReply({ ephemeral: true });
 
-      // Fetch messages
       const messages = await channel.messages.fetch({ limit: 100 });
       const transcriptChannel = interaction.guild.channels.cache.get(
         "1539176056651784242",
       );
 
       let transcriptText = `Transcript for ticket ${channel.name}\n\n`;
-
       messages.reverse().forEach((msg) => {
         transcriptText += `[${msg.createdAt.toLocaleString()}] ${msg.author.tag}: ${msg.content}\n`;
       });
 
-      // Send transcript
       await transcriptChannel.send({
         content: `${SUN} **Transcript for:** ${channel.name}\n${ARROW} Closed by: <@${interaction.user.id}>`,
         files: [
@@ -555,7 +576,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ],
       });
 
-      // Notify channel
       const { embed } = embedTemplate({
         title: `${SUN} Ticket Closed ${SUN}`,
         description:
@@ -566,7 +586,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await channel.send({ embeds: [embed] });
 
-      // Delete channel after 5 seconds
       setTimeout(() => {
         channel.delete().catch(() => {});
       }, 5000);
