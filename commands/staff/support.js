@@ -24,31 +24,25 @@ module.exports = {
       });
     }
 
-    // Banner embed — no title, no logo, compact spacing
+    // Banner path
     const bannerPath = path.join(__dirname, "../../graphics/gvcsupport.png");
-    const { embed: bannerEmbed, files: bannerFiles } = embedTemplate({
-      title: "\u200B", // zero-width space prevents fallback text
-      description: "\u200B", // keeps embed height minimal
-      banner: bannerPath,
-      noLogo: true,
-    });
 
-    // Main embed
-    const { embed: mainEmbed } = embedTemplate({
-      title: `${SUN} Support Options ${SUN}`,
+    // Single embed — compact, clean, announcement-style
+    const { embed, files } = embedTemplate({
+      title: `${SUN} Greenville Community Server Support ${SUN}`,
       description:
-        `${ARROW} Please select the type of support you need below.\n` +
-        `${ARROW} **General Support** — For general inquiries.\n` +
-        `${ARROW} **Partnership Support** — For partnership questions.\n` +
-        `${ARROW} **Staff Report** — Report a staff member.\n` +
-        `${ARROW} **User Report** — Report a user.`,
+        `${ARROW} Welcome to the Greenville Community Server Support channel.\n` +
+        `${ARROW} In this channel, you can open several different types of tickets — from general assistance to member reports.\n` +
+        `${ARROW} Ensure that you have picked the correct ticket type for your need.\n` +
+        `${ARROW} Any troll or spam tickets will be punished.`,
+      banner: bannerPath,
       noLogo: false,
     });
 
-    // Selection menu
+    // Dropdown menu
     const menu = new StringSelectMenuBuilder()
       .setCustomId("support_select")
-      .setPlaceholder("Select a support type")
+      .setPlaceholder("Select an option to open a ticket")
       .addOptions([
         { label: "General Support", value: "general" },
         { label: "Partnership Support", value: "partnership" },
@@ -60,8 +54,8 @@ module.exports = {
 
     // Send publicly (not ephemeral)
     await interaction.channel.send({
-      embeds: [bannerEmbed, mainEmbed],
-      files: bannerFiles,
+      embeds: [embed],
+      files,
       components: [row],
     });
 
