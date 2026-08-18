@@ -15,7 +15,11 @@ const {
   ButtonBuilder,
   ButtonStyle,
   StringSelectMenuBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } = require("discord.js");
+
 const fs = require("node:fs");
 const path = require("node:path");
 const embedTemplate = require("./utils/embedTemplate");
@@ -384,7 +388,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       interaction.isModalSubmit() &&
       interaction.customId.startsWith("support_modal_")
     ) {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 });
 
       const selection = interaction.customId.split("_")[2];
       const reason = interaction.fields.getTextInputValue("support_reason");
@@ -461,7 +465,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!channel) {
         return interaction.reply({
           content: "❌ Channel not found.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -473,7 +477,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (claimedBy && claimedBy !== interaction.user.id) {
         return interaction.reply({
           content: `❌ This ticket is already claimed by <@${claimedBy}>.`,
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -538,7 +542,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!channel) {
         return interaction.reply({
           content: "❌ Channel not found.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -550,11 +554,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({
           content:
             "❌ Only the staff member who claimed this ticket can close it.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 });
 
       const messages = await channel.messages.fetch({ limit: 100 });
       const transcriptChannel = interaction.guild.channels.cache.get(
@@ -746,11 +750,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!interaction.member.roles.cache.has(moatStaffRole)) {
         return interaction.reply({
           content: "❌ Only Moat Castle staff can manage business requests.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 });
 
       const parts = interaction.customId.split("_");
       const action = parts[2]; // accept or deny

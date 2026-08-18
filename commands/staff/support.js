@@ -20,7 +20,7 @@ module.exports = {
     if (!interaction.member.roles.cache.has(HR_ROLE)) {
       return interaction.reply({
         content: "❌ You do not have permission to use this command.",
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -29,7 +29,7 @@ module.exports = {
 
     // Single embed — compact, clean, announcement-style
     const { embed, files } = embedTemplate({
-      title: `${SUN} Greenville Community Server Support ${SUN}`,
+      title: `${SUN} Server Support ${SUN}`,
       description:
         `${ARROW} Welcome to the Greenville Community Server Support channel.\n` +
         `${ARROW} In this channel, you can open several different types of tickets — from general assistance to member reports.\n` +
@@ -60,7 +60,7 @@ module.exports = {
     });
 
     // Silently acknowledge command
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
     await interaction.deleteReply().catch(() => {});
   },
 };
