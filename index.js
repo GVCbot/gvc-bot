@@ -744,16 +744,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ===============================
-    // 📜 Modlogs Handler
-    // ===============================
-    if (interaction.isButton() && interaction.customId.startsWith("modlogs_")) {
-      const cmd = client.commands.get("modlogs");
-      if (cmd && cmd.handleButton) {
-        return cmd.handleButton(interaction);
-      }
-    }
-
-    // ===============================
     // 🏢 Moat Castle Business Accept / Deny Handler
     // ===============================
     if (
@@ -898,6 +888,140 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       return interaction.editReply({
         content: `Business ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
+      });
+    }
+
+    // ===============================
+    // 🏦 Moat Castle Loan Accept / Deny Handler
+    // ===============================
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("moat_loan_")
+    ) {
+      const moatStaffRole = "1537722114176581724"; // Moat Castle Staff
+
+      if (!interaction.member.roles.cache.has(moatStaffRole)) {
+        return interaction.reply({
+          content: "❌ Only Moat Castle staff can manage loan requests.",
+          flags: 64,
+        });
+      }
+
+      await interaction.deferReply({ flags: 64 });
+
+      const parts = interaction.customId.split("_");
+      const action = parts[2]; // accept or deny
+      const requesterId = parts[3];
+      const requestId = parts[4];
+
+      const requesterRecord = await getUserRecord(requesterId);
+
+      if (!requesterRecord.moatCastle) {
+        const { embed } = moatembedTemplate({
+          title: "Account Deleted",
+          description:
+            `${ARROW} The requester's Moat Castle account was **deleted**.\n` +
+            `${ARROW} No further action was taken.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      const loanRequests = requesterRecord.moatCastle.loanRequests || [];
+      const request = loanRequests.find((r) => r.id === requestId);
+
+      if (!request) {
+        return interaction.editReply({
+          content: "❌ Loan request not found.",
+        });
+      }
+
+      // Remove request from pending list
+      requesterRecord.moatCastle.loanRequests =
+        requesterRecord.moatCastle.loanRequests.filter((r) => r !== request);
+
+      let channelEmbed;
+      const requesterUser = await interaction.client.users.fetch(requesterId);
+
+      // ===============================
+      // ✔ ACCEPT LOAN
+      // ===============================
+      if (action === "accept") {
+        // Add loan to record
+        requesterRecord.moatCastle.loans.push({
+          amount: request.amount,
+          remaining: request.amount,
+          reason: request.reason,
+          createdAt: Date.now(),
+        });
+
+        // Add funds to balance
+        requesterRecord.moatCastle.balance += request.amount;
+        requesterRecord.moatCastle.updatedAt = Date.now();
+        await updateUserRecord(requesterRecord);
+
+        // Channel log
+        channelEmbed = moatembedTemplate({
+          title: "✅ Loan Approved",
+          description:
+            `${ARROW} **Requester:** <@${requesterId}>\n` +
+            `${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `${ARROW} Loan has been **approved** and added to their balance.`,
+          noLogo: false,
+        }).embed;
+
+        // DM to requester
+        try {
+          const { embed: dmEmbed } = moatembedTemplate({
+            title: "🏦 Moat Castle Loan Approved",
+            description:
+              `${ARROW} Your loan for **$${request.amount.toLocaleString()}** has been **approved**.\n` +
+              `${ARROW} The funds have been added to your Moat Castle balance.\n` +
+              `${ARROW} You can review it using **/moat-loan review**.`,
+            noLogo: false,
+          });
+          await requesterUser.send({ embeds: [dmEmbed] });
+        } catch {
+          console.error("⚠️ Failed to DM requester about loan approval.");
+        }
+      }
+
+      // ===============================
+      // ❌ DENY LOAN
+      // ===============================
+      if (action === "deny") {
+        requesterRecord.moatCastle.updatedAt = Date.now();
+        await updateUserRecord(requesterRecord);
+
+        channelEmbed = moatembedTemplate({
+          title: "❌ Loan Denied",
+          description:
+            `${ARROW} **Requester:** <@${requesterId}>\n` +
+            `${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `${ARROW} Loan request has been **denied**.`,
+          noLogo: false,
+        }).embed;
+
+        // DM to requester
+        try {
+          const { embed: dmEmbed } = moatembedTemplate({
+            title: "🏦 Moat Castle Loan Denied",
+            description:
+              `${ARROW} Your loan request for **$${request.amount.toLocaleString()}** has been **denied**.\n` +
+              `${ARROW} You may submit another request later using **/moat-loan request**.`,
+            noLogo: false,
+          });
+          await requesterUser.send({ embeds: [dmEmbed] });
+        } catch {
+          console.error("⚠️ Failed to DM requester about loan denial.");
+        }
+      }
+
+      // Reply in staff channel
+      await interaction.message.reply({ embeds: [channelEmbed] });
+
+      return interaction.editReply({
+        content: `Loan ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
       });
     }
 
