@@ -34,7 +34,9 @@ const {
 } = require("./economy/economyutils");
 const handleInbox = require("./utils/inbox");
 
-//Configuration
+// ===============================
+// ⚙️ Configuration
+// ===============================
 const GENERAL_LOG_CHANNEL = "1534886183040188547";
 const SESSION_LOG_CHANNEL = "1534889791416438784";
 const HR_ROLE_ID = "1350582607217430650";
@@ -60,7 +62,9 @@ const SESSION_COMMANDS = [
 const protect = require("./security/protect");
 protect.enableGlobalProtection();
 
-//Recovered Embed Helper
+// ===============================
+// 🧰 Helper Functions
+// ===============================
 function createRecoveredEmbed(originalEmbed, executor, timestamp) {
   const recoveredEmbed = { ...originalEmbed.data };
   recoveredEmbed.color = parseInt("db2727", 16);
@@ -68,7 +72,6 @@ function createRecoveredEmbed(originalEmbed, executor, timestamp) {
   return recoveredEmbed;
 }
 
-//Option Formatting Helpers
 function flattenOptions(options = []) {
   let result = [];
   for (const opt of options) {
@@ -90,7 +93,6 @@ function isSessionRelated(commandName = "") {
   return SESSION_COMMANDS.some((s) => commandName.toLowerCase().includes(s));
 }
 
-//Logging Helper
 function logEvent(
   client,
   channelIds,
@@ -125,7 +127,6 @@ function logEvent(
   }
 }
 
-//Button Click Logging Helper
 function logButtonClick(interaction) {
   const unix = Math.floor(Date.now() / 1000);
   const timestamp = `<t:${unix}:F>`;
@@ -166,7 +167,6 @@ function logButtonClick(interaction) {
     targetLogChannel.send({ embeds: [embed] }).catch(() => {});
 }
 
-//Vehicle Page Helper
 async function sendVehiclePage(interaction, vehicles, page, targetId) {
   const perPage = 5;
   const totalPages = Math.max(1, Math.ceil(vehicles.length / perPage));
@@ -216,7 +216,7 @@ async function sendVehiclePage(interaction, vehicles, page, targetId) {
   });
 }
 
-// Normalize bank types so old banks still work
+// Normalizes legacy bank type strings so old banks still resolve correctly
 function normalizeType(type) {
   if (!type) return type;
   const t = type.toLowerCase();
@@ -227,7 +227,6 @@ function normalizeType(type) {
   return type;
 }
 
-// Unified Bank Loader (owned + joined)
 async function loadAllBanks(userRecord) {
   const owned = (userRecord.banks || []).map((b) => ({
     ...b,
@@ -256,7 +255,6 @@ async function loadAllBanks(userRecord) {
   return [...owned, ...joined];
 }
 
-//Bank Owner Record Finder
 async function findBankOwnerRecord(bankId, userRecord) {
   if ((userRecord.banks || []).some((b) => b.id === bankId)) return userRecord;
 
@@ -267,7 +265,9 @@ async function findBankOwnerRecord(bankId, userRecord) {
   );
 }
 
-//Client Setup
+// ===============================
+// 🤖 Client Setup
+// ===============================
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -299,7 +299,9 @@ process.on("uncaughtException", (err) => {
   console.error("🔴 Uncaught exception:", err);
 });
 
-//Command Loader
+// ===============================
+// 📂 Command Loader
+// ===============================
 const foldersPath = path.join(__dirname, "commands");
 for (const folder of fs.readdirSync(foldersPath)) {
   const commandsPath = path.join(foldersPath, folder);
@@ -317,7 +319,9 @@ client.once(Events.ClientReady, () => {
   console.log(`🟢 Bot is online as ${client.user.tag}`);
 });
 
-//Interaction Handler
+// ===============================
+// 🎛️ Interaction Handler
+// ===============================
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     let logTitle = `${SUN} Interaction Used ${SUN}`;
@@ -365,7 +369,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const selection = interaction.values[0];
       const user = interaction.user;
 
-      // Modal form
       const modal = new ModalBuilder()
         .setCustomId(`support_modal_${selection}`)
         .setTitle("Support Request");
@@ -384,7 +387,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ===============================
-    // 📝 Modal Submission Handler
+    // 📝 Support Modal Submission Handler
     // ===============================
     if (
       interaction.isModalSubmit() &&
@@ -417,7 +420,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         name: channelName,
         type: 0,
         parent: category.id,
-        topic: "UNCLAIMED",
         permissionOverwrites: [
           { id: guild.roles.everyone, deny: ["ViewChannel"] },
           { id: roleId, allow: ["ViewChannel", "SendMessages"] },
@@ -433,6 +435,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
           `${ARROW} **Description:** ${reason}`,
         noLogo: false,
       });
+
+      // Claim state lives in the embed footer, not the channel topic —
+      // topic/name changes are rate-limited to 2 per 10 min per channel
+      embed.setFooter({ text: "Status: UNCLAIMED" });
 
       const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -476,7 +482,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const claimedMatch = footerText.match(/Claimed by:(\d+)/);
       const claimedBy = claimedMatch ? claimedMatch[1] : null;
 
-      // Already claimed by someone else
       if (claimedBy && claimedBy !== interaction.user.id) {
         return interaction.reply({
           content: `❌ This ticket is already claimed by <@${claimedBy}>.`,
@@ -601,7 +606,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply("✅ Ticket closed and transcript saved.");
     }
 
-    //Chat Input Commands
+    // ===============================
+    // 💬 Chat Input Commands
+    // ===============================
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
@@ -611,7 +618,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    //Records Handler
+    // ===============================
+    // 📋 Records Handler
+    // ===============================
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("viewRecords_")
@@ -678,7 +687,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    //Payfine Handler
+    // ===============================
+    // 💵 Pay Fine Handler
+    // ===============================
     if (
       interaction.isStringSelectMenu() &&
       interaction.customId.startsWith("payfine_select")
@@ -733,7 +744,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
 
-    //Modlogs Handler
+    // ===============================
+    // 📜 Modlogs Handler
+    // ===============================
     if (interaction.isButton() && interaction.customId.startsWith("modlogs_")) {
       const cmd = client.commands.get("modlogs");
       if (cmd && cmd.handleButton) {
@@ -790,7 +803,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const requesterUser = await interaction.client.users.fetch(requesterId);
 
-      // Remove request from pending list either way
       requesterRecord.moatCastle.businessRequests =
         requesterRecord.moatCastle.businessRequests.filter(
           (r) => r !== request,
@@ -798,12 +810,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       let channelEmbed;
 
-      // ===============================
-      // ✔ ACCEPT BUSINESS
-      // ===============================
       if (action === "accept") {
-        // Guard: in case they somehow already have a business by the time
-        // staff click Accept (e.g. two pending requests slipped through)
+        // Guard: staff may have two pending requests slip through and
+        // both get accepted before the record updates
         if (requesterRecord.moatCastle.business) {
           await updateUserRecord(requesterRecord);
 
@@ -831,7 +840,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         await updateUserRecord(requesterRecord);
 
-        // Assign business owner role
         try {
           const guildMember =
             await interaction.guild.members.fetch(requesterId);
@@ -850,7 +858,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
           noLogo: false,
         }).embed;
 
-        // DM requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏢 Moat Castle Business Approved",
@@ -864,9 +871,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         } catch {}
       }
 
-      // ===============================
-      // ❌ DENY BUSINESS
-      // ===============================
       if (action === "deny") {
         await updateUserRecord(requesterRecord);
 
@@ -879,7 +883,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
           noLogo: false,
         }).embed;
 
-        // DM requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏢 Moat Castle Business Denied",
@@ -892,16 +895,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
         } catch {}
       }
 
-      // Reply in the channel (not ephemeral)
       await interaction.message.reply({ embeds: [channelEmbed] });
 
-      // Staff confirmation
       return interaction.editReply({
         content: `Business ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
       });
     }
 
-    //Vehicle Handler
+    // ===============================
+    // 🚗 Vehicle Handlers
+    // ===============================
     if (
       interaction.isButton() &&
       interaction.customId.startsWith("viewVehicles_")
@@ -931,7 +934,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return sendVehiclePage(interaction, vehicles, 0, targetId);
     }
 
-    //Vehicle Pagination Handler
     if (interaction.isButton() && interaction.customId.startsWith("vehPage_")) {
       const [, viewerId, targetId, pageStr] = interaction.customId.split("_");
       const targetRecord = await getUserRecord(targetId);
@@ -945,7 +947,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
     }
 
-    //Session Link Handler
+    // ===============================
+    // 🔗 Session Link Handler
+    // ===============================
     if (
       interaction.isButton() &&
       SESSION_LINK_IDS.some((id) => interaction.customId.startsWith(id))
@@ -986,12 +990,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-//Inbox Handler
+// ===============================
+// 📥 Inbox Handler
+// ===============================
 client.on(Events.MessageCreate, async (message) => {
   handleInbox(message, client);
 });
 
-//Message Delete Protection
+// ===============================
+// 🛡️ Log Deletion Protection
+// ===============================
 client.on(Events.MessageDelete, async (message) => {
   if (
     ![GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL].includes(message.channelId) ||
@@ -1031,7 +1039,6 @@ client.on(Events.MessageDelete, async (message) => {
   }
 });
 
-//Bulk Delete Protection
 client.on(Events.MessageDeleteBulk, async (messages) => {
   const firstMsg = messages.first();
   if (
@@ -1071,7 +1078,9 @@ client.on(Events.MessageDeleteBulk, async (messages) => {
   }
 });
 
-//Reaction Goal Handler
+// ===============================
+// 🎯 Session Reaction Goal Handler
+// ===============================
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
     if (user.bot) return;
@@ -1107,7 +1116,9 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
   }
 });
 
-//Login
+// ===============================
+// 🔑 Login
+// ===============================
 if (!process.env.TOKEN) {
   console.error(
     "🔴 TOKEN env var is missing or empty — check Render's Environment tab.",
