@@ -315,7 +315,6 @@ for (const folder of fs.readdirSync(foldersPath)) {
 }
 
 client.once(Events.ClientReady, () => {
-  console.log("Render cache bust v2");
   console.log(`🟢 Bot is online as ${client.user.tag}`);
 });
 
