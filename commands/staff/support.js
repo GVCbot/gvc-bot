@@ -59,17 +59,14 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(menu);
 
     // Send publicly (not ephemeral)
-    await interaction.reply({
+    await interaction.channel.send({
       embeds: [bannerEmbed, mainEmbed],
       files: bannerFiles,
       components: [row],
     });
 
-    // Remove only the “used this command” banner, not the embeds
-    try {
-      await interaction.deleteReply();
-    } catch {
-      // ignore if already deleted or permissions block deletion
-    }
+    // Acknowledge the command silently so it doesn’t show “used this command”
+    await interaction.deferReply({ ephemeral: true });
+    await interaction.deleteReply().catch(() => {});
   },
 };
