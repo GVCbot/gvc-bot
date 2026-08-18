@@ -18,6 +18,7 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  EmbedBuilder,
 } = require("discord.js");
 
 const fs = require("node:fs");
@@ -470,8 +471,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
-      const topic = channel.topic || "UNCLAIMED";
-      const claimedMatch = topic.match(/CLAIMED:(\d+)/);
+      const ticketEmbed = interaction.message.embeds[0];
+      const footerText = ticketEmbed?.footer?.text || "";
+      const claimedMatch = footerText.match(/Claimed by:(\d+)/);
       const claimedBy = claimedMatch ? claimedMatch[1] : null;
 
       // Already claimed by someone else
@@ -482,16 +484,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
+      const newEmbed = EmbedBuilder.from(ticketEmbed);
+
       // Unclaim
       if (claimedBy && claimedBy === interaction.user.id) {
-        await channel.setTopic("UNCLAIMED");
+        newEmbed.setFooter({ text: "Status: UNCLAIMED" });
 
         const { embed } = embedTemplate({
           title: `${SUN} Ticket Unclaimed ${SUN}`,
           description: `${ARROW} **${interaction.user}** has unclaimed this ticket.`,
           noLogo: false,
         });
-
         await channel.send({ embeds: [embed] });
 
         const row = new ActionRowBuilder().addComponents(
@@ -505,18 +508,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setStyle(ButtonStyle.Secondary),
         );
 
-        return interaction.update({ components: [row] });
+        return interaction.update({ embeds: [newEmbed], components: [row] });
       }
 
       // Claim
-      await channel.setTopic(`CLAIMED:${interaction.user.id}`);
+      newEmbed.setFooter({ text: `Claimed by:${interaction.user.id}` });
 
       const { embed } = embedTemplate({
         title: `${SUN} Ticket Claimed ${SUN}`,
         description: `${ARROW} **${interaction.user}** has claimed this ticket.`,
         noLogo: false,
       });
-
       await channel.send({ embeds: [embed] });
 
       const row = new ActionRowBuilder().addComponents(
@@ -530,7 +532,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setStyle(ButtonStyle.Secondary),
       );
 
-      return interaction.update({ components: [row] });
+      return interaction.update({ embeds: [newEmbed], components: [row] });
     }
 
     // ===============================
@@ -547,8 +549,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
-      const topic = channel.topic || "UNCLAIMED";
-      const claimedMatch = topic.match(/CLAIMED:(\d+)/);
+      const ticketEmbed = interaction.message.embeds[0];
+      const footerText = ticketEmbed?.footer?.text || "";
+      const claimedMatch = footerText.match(/Claimed by:(\d+)/);
       const claimedBy = claimedMatch ? claimedMatch[1] : null;
 
       if (!claimedBy || claimedBy !== interaction.user.id) {
