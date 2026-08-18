@@ -2,42 +2,35 @@ const {
   SlashCommandBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  ButtonBuilder,
-  ButtonStyle,
 } = require("discord.js");
-
 const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 
 const HR_ROLE = "1350582607217430650"; // GVC HR
-const STAFF_ROLE = "1350897509752373341"; // All staff
-const PARTNERSHIP_ROLE = "1497520864135086090"; // Partnership team
-const CATEGORY_ID = "1539173722743906344"; // Support category
-
 const SUN = "<a:gvcsunspin:1527220557890850846>";
 const ARROW = "<:arrowright:1534182706836144158>";
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("support")
-    .setDescription("Open the GVC Support menu (HR only)."),
+    .setDescription("Send the public GVC Support menu (HR only)."),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
+    // Permission check
     if (!interaction.member.roles.cache.has(HR_ROLE)) {
-      return interaction.editReply(
-        "❌ You do not have permission to use this command.",
-      );
+      return interaction.reply({
+        content: "❌ You do not have permission to use this command.",
+        ephemeral: true,
+      });
     }
 
-    // Banner embed
+    // Banner embed (no title, no logo)
     const bannerPath = path.join(__dirname, "../../graphics/gvcsupport.png");
     const { embed: bannerEmbed, files: bannerFiles } = embedTemplate({
-      title: `${SUN} GVC Support Center ${SUN}`,
-      description: `${ARROW} Welcome to the official GVC Support system.`,
+      title: "",
+      description: "",
       banner: bannerPath,
-      noLogo: false,
+      noLogo: true,
     });
 
     // Main embed
@@ -45,10 +38,10 @@ module.exports = {
       title: `${SUN} Support Options ${SUN}`,
       description:
         `${ARROW} Please select the type of support you need below.\n\n` +
-        `${ARROW} 🧭 **General Support** — For general inquiries.\n` +
-        `${ARROW} 🤝 **Partnership Support** — For partnership questions.\n` +
-        `${ARROW} 🧑‍💼 **Staff Report** — Report a staff member.\n` +
-        `${ARROW} 👥 **User Report** — Report a user.`,
+        `${ARROW} **General Support** — For general inquiries.\n` +
+        `${ARROW} **Partnership Support** — For partnership questions.\n` +
+        `${ARROW} **Staff Report** — Report a staff member.\n` +
+        `${ARROW} **User Report** — Report a user.`,
       noLogo: false,
     });
 
@@ -65,10 +58,16 @@ module.exports = {
 
     const row = new ActionRowBuilder().addComponents(menu);
 
-    return interaction.editReply({
+    // Send publicly (not ephemeral)
+    await interaction.reply({
       embeds: [bannerEmbed, mainEmbed],
       files: bannerFiles,
       components: [row],
     });
+
+    // Delete the “used this command” message
+    setTimeout(() => {
+      interaction.deleteReply().catch(() => {});
+    }, 1000);
   },
 };
