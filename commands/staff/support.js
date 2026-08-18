@@ -24,11 +24,11 @@ module.exports = {
       });
     }
 
-    // Banner embed (no title, no logo)
+    // Banner embed — no title, no logo, but with a short invisible space so Discord doesn’t auto‑fill defaults
     const bannerPath = path.join(__dirname, "../../graphics/gvcsupport.png");
     const { embed: bannerEmbed, files: bannerFiles } = embedTemplate({
-      title: "",
-      description: "",
+      title: "‎", // invisible character prevents “GVC Bot” fallback
+      description: "‎", // invisible character prevents “No description provided”
       banner: bannerPath,
       noLogo: true,
     });
@@ -65,9 +65,11 @@ module.exports = {
       components: [row],
     });
 
-    // Delete the “used this command” message
-    setTimeout(() => {
-      interaction.deleteReply().catch(() => {});
-    }, 1000);
+    // Remove only the “used this command” banner, not the embeds
+    try {
+      await interaction.deleteReply();
+    } catch {
+      // ignore if already deleted or permissions block deletion
+    }
   },
 };
