@@ -396,23 +396,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
         title: `${SUN} Support Ticket Created ${SUN}`,
         description:
           `${ARROW} **Opened By:** ${user}\n` +
-          `${ARROW} **Type:** ${selection.charAt(0).toUpperCase() + selection.slice(1)} Support\n\n` +
+          `${ARROW} **Type:** ${selection.charAt(0).toUpperCase() + selection.slice(1)} Support\n` +
           `${ARROW} Please describe your issue below.`,
         noLogo: false,
       });
-
-      const {
-        ActionRowBuilder,
-        ButtonBuilder,
-        ButtonStyle,
-      } = require("discord.js");
 
       const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`claim_${channel.id}`)
           .setLabel("Claim Ticket")
           .setStyle(ButtonStyle.Success),
-
         new ButtonBuilder()
           .setCustomId(`close_${channel.id}`)
           .setLabel("Close Ticket")
@@ -435,11 +428,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // 🎟️ Support Ticket Claim / Unclaim
     // ===============================
     if (interaction.isButton() && interaction.customId.startsWith("claim_")) {
+      await interaction.deferUpdate();
+
       const channelId = interaction.customId.split("_")[1];
       const channel = interaction.guild.channels.cache.get(channelId);
 
       if (!channel) {
-        return interaction.reply({
+        return interaction.followUp({
           content: "❌ Channel not found.",
           ephemeral: true,
         });
@@ -451,7 +446,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       // Already claimed by someone else
       if (claimedBy && claimedBy !== interaction.user.id) {
-        return interaction.reply({
+        return interaction.followUp({
           content: `❌ This ticket is already claimed by <@${claimedBy}>.`,
           ephemeral: true,
         });
@@ -474,14 +469,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setCustomId(`claim_${channel.id}`)
             .setLabel("Claim Ticket")
             .setStyle(ButtonStyle.Success),
-
           new ButtonBuilder()
             .setCustomId(`close_${channel.id}`)
             .setLabel("Close Ticket")
             .setStyle(ButtonStyle.Secondary),
         );
 
-        return interaction.update({ components: [row] });
+        return interaction.message.edit({ components: [row] });
       }
 
       // Claim
@@ -500,14 +494,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setCustomId(`claim_${channel.id}`)
           .setLabel("Claimed")
           .setStyle(ButtonStyle.Danger),
-
         new ButtonBuilder()
           .setCustomId(`close_${channel.id}`)
           .setLabel("Close Ticket")
           .setStyle(ButtonStyle.Secondary),
       );
 
-      return interaction.update({ components: [row] });
+      return interaction.message.edit({ components: [row] });
     }
 
     // ===============================
