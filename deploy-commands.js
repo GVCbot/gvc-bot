@@ -1,4 +1,7 @@
 require("dotenv").config();
+console.log("APPLICATION_ID:", process.env.APPLICATION_ID);
+console.log("GUILD_ID:", process.env.GUILD_ID);
+console.log("TOKEN length:", process.env.TOKEN?.length);
 const { REST, Routes } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -40,10 +43,9 @@ const rest = new REST({ version: "10" }).setToken(token);
 (async () => {
   try {
     console.log("🔄 Registering slash commands...");
-    await rest.put(
-      Routes.applicationGuildCommands(clientId, guildId),
-      { body: commands }
-    );
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+      body: commands,
+    });
     console.log(`✅ Successfully registered ${commands.length} commands.`);
   } catch (error) {
     console.error("❌ Error registering commands:", error);
