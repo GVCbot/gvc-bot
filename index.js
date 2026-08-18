@@ -800,7 +800,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // Remove request from pending list
       requesterRecord.moatCastle.businessRequests =
         requesterRecord.moatCastle.businessRequests.filter(
-          (r) => r.id !== request,
+          (r) => r.id !== requestId,
         );
 
       let channelEmbed;
