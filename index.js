@@ -1088,27 +1088,48 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     if (!message.embeds.length) return;
     const embed = message.embeds[0];
 
+    // Must be a Session Startup embed
     if (!embed.title || !embed.title.includes("Session Startup")) return;
 
+    // Extract required reactions
     const match = embed.description.match(/Required reactions:\s\*\*(\d+)\*\*/);
     if (!match) return;
 
     const required = parseInt(match[1], 10);
     const reactionCount = reaction.count;
 
+    // Goal reached
     if (reactionCount >= required) {
-      if (reaction.message.hasSentReady) return;
-      reaction.message.hasSentReady = true;
+      if (message.hasSentReady) return;
+      message.hasSentReady = true;
 
+      // Extract host ID
       const host = embed.description.match(/<@!?(\d+)>/);
       const hostId = host ? host[1] : null;
 
-      const notifyChannel = reaction.message.guild.channels.cache.get(
+      // Notify host
+      const notifyChannel = message.guild.channels.cache.get(
         "1495828191300948111",
       );
-      if (!notifyChannel) return;
+      if (notifyChannel) {
+        await notifyChannel.send(
+          `<@${hostId}> Your session is ready to start!`,
+        );
+      }
 
-      await notifyChannel.send(`<@${hostId}> Your session is ready to start!`);
+      // ===============================
+      // 📢 AUTO-SEND SESSION SETUP EMBED
+      // ===============================
+      const { embed: setupEmbed, files } = embedTemplate({
+        title:
+          "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Session Setup__* <a:gvcsunspin:1527220557890850846>",
+        description:
+          "> <:arrowright:1534182706836144158> The reaction goal has been reached!\n" +
+          "> <:arrowright:1534182706836144158> The host is now setting up the session.\n" +
+          "> <:arrowright:1534182706836144158> Please be patient.",
+      });
+
+      await message.channel.send({ embeds: [setupEmbed], files });
     }
   } catch (err) {
     console.error("Reaction goal handler error:", err);
