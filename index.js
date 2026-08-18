@@ -367,7 +367,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // Modal form
       const modal = new ModalBuilder()
         .setCustomId(`support_modal_${selection}`)
-        .setTitle(`${SUN} Support Request`);
+        .setTitle("Support Request");
 
       const reasonInput = new TextInputBuilder()
         .setCustomId("support_reason")
