@@ -26,6 +26,7 @@ const path = require("node:path");
 const embedTemplate = require("./utils/embedTemplate");
 const moatembedTemplate = require("./utils/moatembedTemplate");
 const foxbankembedTemplate = require("./utils/foxbankembedTemplate");
+const { startBusinessIncomeLoop } = require("./utils/businessIncomeLoop");
 
 const {
   getUserRecord,
@@ -316,6 +317,7 @@ for (const folder of fs.readdirSync(foldersPath)) {
 
 client.once(Events.ClientReady, () => {
   console.log(`🟢 Bot is online as ${client.user.tag}`);
+    startBusinessIncomeLoop(client);
 });
 
 // ===============================

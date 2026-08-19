@@ -100,6 +100,14 @@ module.exports = {
     // 🟦 COLLECT ALL BUSINESS INCOME
     // ===============================
     if (sub === "collect") {
+      const MEMBERSHIP_BOOSTS = {
+        standard: 0,
+        silver: 0.02,
+        gold: 0.04,
+        platinum: 0.06,
+        black: 0.1,
+      };
+
       const allUsers = await getAllUserRecords();
       let collectedBusinesses = 0;
       let totalPaid = 0;
@@ -107,25 +115,36 @@ module.exports = {
       for (const user of allUsers) {
         if (!user.moatCastle || !user.moatCastle.businesses) continue;
 
+        const membership =
+          user.moatCastle.membership?.toLowerCase() || "standard";
+        const boost = MEMBERSHIP_BOOSTS[membership] || 0;
+
         for (const business of user.moatCastle.businesses) {
-          const income = Number(business.income) || 0;
-          if (income <= 0) continue;
+          const baseIncome = Number(business.income) || 0;
+          if (baseIncome <= 0) continue;
+
+          // Apply membership boost
+          const finalIncome = Math.floor(baseIncome * (1 + boost));
+
+          // ⭐ Manual collection should NOT reset the 24-hour timer
+          // DO NOT modify business.lastIncomeCollected here
 
           user.moatCastle.balance =
-            (Number(user.moatCastle.balance) || 0) + income;
-          business.lastIncomeCollected = Date.now();
+            (Number(user.moatCastle.balance) || 0) + finalIncome;
 
           await updateUserRecord(user);
 
           collectedBusinesses++;
-          totalPaid += income;
+          totalPaid += finalIncome;
 
           // DM owner
           try {
             const owner = await interaction.client.users.fetch(user.userId);
             const { embed } = moatembedTemplate({
               title: "🏢 Business Income Collected",
-              description: `> Your business **${business.name}** earned **$${income.toLocaleString()}**.`,
+              description:
+                `> Your business **${business.name}** earned **$${finalIncome.toLocaleString()}** ` +
+                `(including ${boost * 100}% membership boost).`,
               noLogo: false,
             });
             await owner.send({ embeds: [embed] });
