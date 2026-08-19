@@ -229,8 +229,8 @@ module.exports = {
 
       await updateUserRecord(userRecord);
 
-      const staffRoleId = "YOUR_FOX_STAFF_ROLE_ID";
-      const loanChannelId = "YOUR_FOX_LOAN_CHANNEL_ID";
+      const staffRoleId = "1537894455779270717";
+      const loanChannelId = "1539585916828516382";
 
       const { embed, files } = foxbankembedTemplate({
         title: "Fox Bank Loan Request",
