@@ -303,6 +303,7 @@ process.on("uncaughtException", (err) => {
 // ===============================
 // 📂 Command Loader
 // ===============================
+console.log("🔧 Starting command loader...");
 const foldersPath = path.join(__dirname, "commands");
 for (const folder of fs.readdirSync(foldersPath)) {
   const commandsPath = path.join(foldersPath, folder);
@@ -314,10 +315,14 @@ for (const folder of fs.readdirSync(foldersPath)) {
     client.commands.set(command.data.name, command);
   }
 }
+console.log(`✅ Loaded ${client.commands.size} commands`);
 
 client.once(Events.ClientReady, () => {
   console.log(`🟢 Bot is online as ${client.user.tag}`);
 });
+
+client.on(Events.Debug, (msg) => console.log("🔍 DEBUG:", msg));
+client.on(Events.Warn, (msg) => console.warn("🟡 WARN:", msg));
 
 // ===============================
 // 🎛️ Interaction Handler
@@ -1429,7 +1434,13 @@ if (!process.env.TOKEN) {
   process.exit(1);
 }
 
-client.login(process.env.TOKEN).catch((err) => {
-  console.error("🔴 client.login() failed:", err);
-  process.exit(1);
-});
+console.log("🔑 TOKEN present, length:", process.env.TOKEN.length);
+console.log("🔑 Attempting client.login()...");
+
+client
+  .login(process.env.TOKEN)
+  .then(() => console.log("✅ login() resolved"))
+  .catch((err) => {
+    console.error("🔴 client.login() failed:", err);
+    process.exit(1);
+  });
