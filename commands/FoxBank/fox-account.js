@@ -7,9 +7,6 @@ const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
 const { FOXEMOJIS } = foxbankembedTemplate;
 const { ARROW } = FOXEMOJIS;
 
-// Temporary Express Membership codes (memory only)
-const activeExpressCodes = new Map(); // userId → { code, expires }
-
 // Membership cost table
 const MEMBERSHIP_COSTS = {
   benefits: 500,

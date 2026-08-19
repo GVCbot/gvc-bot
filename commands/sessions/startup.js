@@ -18,6 +18,10 @@ module.exports = {
     // Prevent logging duplication in index.js
     interaction.noLog = true;
 
+    // Prevent duplicate execution
+    if (interaction.replied || interaction.deferred) return;
+
+    // Rate limit protection
     if (!protect.applyRateLimit(interaction.user.id)) {
       if (!interaction.deferred && !interaction.replied) {
         await interaction.reply({ content: "Slow down.", flags: 64 });
@@ -25,6 +29,7 @@ module.exports = {
       return;
     }
 
+    // Staff-only
     const staffRoleId = "1350897509752373341";
     if (!interaction.member.roles.cache.has(staffRoleId)) {
       return interaction.reply({
@@ -49,6 +54,7 @@ module.exports = {
       banner: path.join(__dirname, "../../graphics/gvcstartup.png"),
     });
 
+    // Send startup embed
     const sent = await interaction.channel.send({
       content: "@everyone",
       embeds: [embed],
@@ -56,7 +62,16 @@ module.exports = {
       allowedMentions: { parse: ["everyone"] },
     });
 
-    await sent.react("<:summeryes:1536265772379148298>");
+    // Safe reaction wrapper
+    if (!sent || !sent.id) {
+      console.error("⚠️ Cannot react: message not found.");
+    } else {
+      try {
+        await sent.react("<:summeryes:1536265772379148298>");
+      } catch (err) {
+        console.error("⚠️ Failed to add reaction:", err.message);
+      }
+    }
 
     await interaction.editReply({
       content: "Startup embed sent successfully.",

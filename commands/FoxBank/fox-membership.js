@@ -8,7 +8,10 @@ const { FOXEMOJIS } = foxbankembedTemplate;
 const { ARROW } = FOXEMOJIS;
 
 // Temporary Express Membership codes (memory only)
-const activeExpressCodes = new Map(); // userId → { code, expires }
+const {
+  activeExpressCodes,
+  useExpressCode,
+} = require("../../utils/expressCodes");
 
 // Membership cost table
 const MEMBERSHIP_COSTS = {
@@ -204,9 +207,14 @@ module.exports = {
 
       // EXPRESS MEMBERSHIP CHECK
       if (chosenMembership === "express") {
-        const entry = activeExpressCodes.get(interaction.user.id);
+        const { useExpressCode } = require("../../utils/expressCodes");
 
-        if (!entry || Date.now() > entry.expires) {
+        const entry = activeExpressCodes.get(interaction.user.id);
+        const valid = entry
+          ? useExpressCode(interaction.user.id, entry.code)
+          : false;
+
+        if (!valid) {
           const { embed, files } = foxbankembedTemplate({
             title: "Express Membership Requires Invite",
             description:
@@ -216,8 +224,6 @@ module.exports = {
           });
           return interaction.editReply({ embeds: [embed], files });
         }
-
-        activeExpressCodes.delete(interaction.user.id);
 
         userRecord.foxBank.membership = "Express";
         userRecord.foxBank.updatedAt = Date.now();
@@ -331,15 +337,16 @@ module.exports = {
 
       // Express membership requires a valid code
       if (tier === "express") {
-        const entry = activeExpressCodes.get(target.id);
+        const { useExpressCode } = require("../../utils/expressCodes");
 
-        if (!entry || Date.now() > entry.expires) {
+        const entry = activeExpressCodes.get(target.id);
+        const valid = entry ? useExpressCode(target.id, entry.code) : false;
+
+        if (!valid) {
           return interaction.editReply(
             "❌ Express Membership requires a valid, active Express Code.",
           );
         }
-
-        activeExpressCodes.delete(target.id);
       }
 
       const old = record.foxBank.membership;

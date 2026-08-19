@@ -73,6 +73,10 @@ module.exports = {
 
     const acct = userRecord.foxBank;
 
+    // Ensure loan arrays exist
+    acct.loans = acct.loans || [];
+    acct.loanRequests = acct.loanRequests || [];
+
     // ===============================
     // 📘 REVIEW LOANS
     // ===============================

@@ -324,6 +324,9 @@ client.once(Events.ClientReady, () => {
 // ===============================
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
+    // Prevent duplicate execution/logging
+    if (interaction.noLog) return;
+
     let logTitle = `${SUN} Interaction Used ${SUN}`;
     let extraDetails = "";
     let logChannels = [GENERAL_LOG_CHANNEL];
@@ -769,6 +772,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const requestId = parts[4];
 
       const requesterRecord = await getUserRecord(requesterId);
+
+      // FIX: Ensure loan arrays exist
+      if (!requesterRecord.foxBank.loans) requesterRecord.foxBank.loans = [];
+      if (!requesterRecord.foxBank.loanRequests)
+        requesterRecord.foxBank.loanRequests = [];
 
       if (!requesterRecord.moatCastle) {
         const { embed } = moatembedTemplate({
