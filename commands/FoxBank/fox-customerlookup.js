@@ -18,7 +18,7 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
-    const foxStaffRole = "1537894455779270717";
+    const foxStaffRole = "1537894455779270717"; // your Fox Bank staff role
 
     if (!interaction.member.roles.cache.has(foxStaffRole)) {
       return interaction.editReply({
@@ -43,6 +43,8 @@ module.exports = {
     const fb = userRecord.foxBank;
 
     const balance = fb.balance || 0;
+    const loans = fb.loans || [];
+    const pending = fb.loanRequests || [];
 
     const createdAt = fb.createdAt
       ? `<t:${Math.floor(fb.createdAt / 1000)}:F>`
@@ -53,10 +55,9 @@ module.exports = {
       : "Unknown";
 
     // ================================
-    // ⭐ OWNED HOMES DISPLAY (Unlimited)
+    // ⭐ OWNED HOMES
     // ================================
     let homesText = "";
-
     const lakevilleHomes = userRecord.homes?.lakeville || [];
     const sixhousentHomes = userRecord.homes?.sixhousent || [];
 
@@ -66,15 +67,11 @@ module.exports = {
       homesText += `${ARROW} **Owned Homes:**\n`;
 
       for (const home of lakevilleHomes) {
-        homesText +=
-          `${ARROW} Lakeville Home #${home.homeId} — ` +
-          `$${home.price.toLocaleString()}\n`;
+        homesText += `${ARROW} Lakeville Home #${home.homeId} — $${home.price.toLocaleString()}\n`;
       }
 
       for (const home of sixhousentHomes) {
-        homesText +=
-          `${ARROW} Sixhousent Home #${home.homeId} — ` +
-          `$${home.price.toLocaleString()}\n`;
+        homesText += `${ARROW} Sixhousent Home #${home.homeId} — $${home.price.toLocaleString()}\n`;
       }
 
       homesText += `\n`;
@@ -85,9 +82,7 @@ module.exports = {
     // ================================
     const depositSection = fb.lastDeposit
       ? `${ARROW} **Amount:** $${fb.lastDeposit.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(
-          fb.lastDeposit.timestamp / 1000,
-        )}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(fb.lastDeposit.timestamp / 1000)}:F>\n`
       : `${ARROW} No deposits recorded.\n`;
 
     // ================================
@@ -95,10 +90,16 @@ module.exports = {
     // ================================
     const withdrawalSection = fb.lastWithdrawal
       ? `${ARROW} **Amount:** $${fb.lastWithdrawal.amount.toLocaleString()}\n` +
-        `${ARROW} **Date:** <t:${Math.floor(
-          fb.lastWithdrawal.timestamp / 1000,
-        )}:F>\n`
+        `${ARROW} **Date:** <t:${Math.floor(fb.lastWithdrawal.timestamp / 1000)}:F>\n`
       : `${ARROW} No withdrawals recorded.\n`;
+
+    // ================================
+    // ⭐ Recent Loan Payment
+    // ================================
+    const paymentSection = fb.lastLoanPayment
+      ? `${ARROW} **Amount:** $${fb.lastLoanPayment.amount.toLocaleString()}\n` +
+        `${ARROW} **Date:** <t:${Math.floor(fb.lastLoanPayment.timestamp / 1000)}:F>\n`
+      : `${ARROW} No loan payments recorded.\n`;
 
     // ================================
     // ⭐ Card Replacement History
@@ -121,7 +122,43 @@ module.exports = {
     }
 
     // ================================
-    // ⭐ FINAL EMBED
+    // ⭐ Active Loans
+    // ================================
+    let loanSection = "";
+    if (loans.length === 0) {
+      loanSection = `${ARROW} No active loans.\n`;
+    } else {
+      loans.forEach((loan, i) => {
+        const createdUnix = Math.floor(loan.createdAt / 1000);
+        loanSection +=
+          `${ARROW} **Loan #${i + 1}**\n` +
+          `${ARROW} Amount: $${loan.amount.toLocaleString()}\n` +
+          `${ARROW} Remaining: $${loan.remaining.toLocaleString()}\n` +
+          `${ARROW} Reason: ${loan.reason}\n` +
+          `${ARROW} Created: <t:${createdUnix}:F>\n\n`;
+      });
+    }
+
+    // ================================
+    // ⭐ Pending Loan Requests
+    // ================================
+    let pendingSection = "";
+    if (pending.length === 0) {
+      pendingSection = `${ARROW} No pending loan requests.\n`;
+    } else {
+      pending.forEach((req, i) => {
+        const createdUnix = Math.floor(req.createdAt / 1000);
+        pendingSection +=
+          `${ARROW} **Request #${i + 1}**\n` +
+          `${ARROW} Amount: $${req.amount.toLocaleString()}\n` +
+          `${ARROW} Reason: ${req.reason}\n` +
+          `${ARROW} Created: <t:${createdUnix}:F>\n` +
+          `${ARROW} Status: Pending\n\n`;
+      });
+    }
+
+    // ================================
+    // ⭐ Final Embed
     // ================================
     const { embed, files } = foxbankembedTemplate({
       title: `Customer Lookup: ${target.username}`,
@@ -138,7 +175,10 @@ module.exports = {
         homesText +
         `**💳 Card Replacement History:**\n${cardSection}\n` +
         `**📘 Most Recent Deposit:**\n${depositSection}\n` +
-        `**📙 Most Recent Withdrawal:**\n${withdrawalSection}\n`,
+        `**📙 Most Recent Withdrawal:**\n${withdrawalSection}\n` +
+        `**📗 Most Recent Loan Payment:**\n${paymentSection}\n\n` +
+        `**📘 Active Loans:**\n${loanSection}\n` +
+        `**📙 Pending Requests:**\n${pendingSection}`,
       noLogo: false,
     });
 

@@ -3,26 +3,24 @@ const {
   getUserRecord,
   updateUserRecord,
 } = require("../../economy/economyutils");
+const moatembedTemplate = require("../../utils/moatembedTemplate");
+const { MOATEMOJIS } = moatembedTemplate;
+const { ARROW } = MOATEMOJIS;
 
-const foxbankembedTemplate = require("../../utils/foxbankembedTemplate");
-const { FOXEMOJIS } = foxbankembedTemplate;
-const { ARROW } = FOXEMOJIS;
-
-// Only THIS user can use these subcommands
-const FOX_ADMIN_ID = "922196235954307114";
+const MOAT_STAFF_ROLE = "1537722114176581724"; // your staff role
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("fox-managebalance")
-    .setDescription("Manage a user's Fox Bank balance. (Admin Only)")
+    .setName("moat-managebalance")
+    .setDescription("[Staff] Manage a user's Moat Castle balance.")
     .addSubcommand((sub) =>
       sub
         .setName("add")
-        .setDescription("Add Fox Bank balance to a user.")
+        .setDescription("Add Moat Castle balance to a user.")
         .addUserOption((opt) =>
           opt
             .setName("user")
-            .setDescription("User to add Fox Bank balance to")
+            .setDescription("User to add balance to")
             .setRequired(true),
         )
         .addIntegerOption((opt) =>
@@ -35,69 +33,66 @@ module.exports = {
     .addSubcommand((sub) =>
       sub
         .setName("remove")
-        .setDescription("Remove ALL Fox Bank balance from a user.")
+        .setDescription("Remove ALL Moat Castle balance from a user.")
         .addUserOption((opt) =>
           opt
             .setName("user")
-            .setDescription("User whose Fox Bank balance will be removed")
+            .setDescription("User whose balance will be cleared")
             .setRequired(true),
         ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("set")
-        .setDescription("Set a user's Fox Bank balance to a specific amount.")
+        .setDescription("Set a user's Moat Castle balance.")
         .addUserOption((opt) =>
           opt
             .setName("user")
-            .setDescription("User whose Fox Bank balance will be set")
+            .setDescription("User whose balance will be set")
             .setRequired(true),
         )
         .addIntegerOption((opt) =>
-          opt
-            .setName("amount")
-            .setDescription("New Fox Bank balance")
-            .setRequired(true),
+          opt.setName("amount").setDescription("New balance").setRequired(true),
         ),
     ),
 
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
-    // Permission check — shared across all subcommands
-    if (interaction.user.id !== FOX_ADMIN_ID) {
-      const { embed, files } = foxbankembedTemplate({
+    // Permission check
+    if (!interaction.member.roles.cache.has(MOAT_STAFF_ROLE)) {
+      const { embed, files } = moatembedTemplate({
         title: "Access Denied",
-        description: `${ARROW} Only the Fox Bank Administrator can use this command.`,
+        description: `${ARROW} Only Moat Castle staff can use this command.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const subcommand = interaction.options.getSubcommand();
+    const sub = interaction.options.getSubcommand();
     const targetUser = interaction.options.getUser("user");
     const targetRecord = await getUserRecord(targetUser.id);
 
-    // Ensure Fox Bank account exists — shared across all subcommands
-    if (!targetRecord.foxBank) {
-      const { embed, files } = foxbankembedTemplate({
-        title: "No Fox Bank Account",
-        description: `${ARROW} That user does not have a Fox Bank account.`,
+    // Ensure Moat Castle account exists
+    if (!targetRecord.moatCastle) {
+      const { embed, files } = moatembedTemplate({
+        title: "No Moat Castle Account",
+        description: `${ARROW} That user does not have a Moat Castle account.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed], files });
     }
 
-    const oldBalance = Number(targetRecord.foxBank.balance) || 0;
+    const oldBalance = Number(targetRecord.moatCastle.balance) || 0;
 
     // ===============================
-    // ➕ Add Balance
+    // ➕ ADD BALANCE
     // ===============================
-    if (subcommand === "add") {
+    if (sub === "add") {
       const amount = interaction.options.getInteger("amount");
 
       if (amount <= 0) {
-        const { embed, files } = foxbankembedTemplate({
+        const { embed, files } = moatembedTemplate({
           title: "Invalid Amount",
           description: `${ARROW} Amount must be greater than 0.`,
           noLogo: true,
@@ -105,18 +100,17 @@ module.exports = {
         return interaction.editReply({ embeds: [embed], files });
       }
 
-      targetRecord.foxBank.balance = oldBalance + amount;
-      targetRecord.foxBank.updatedAt = Date.now();
+      targetRecord.moatCastle.balance = oldBalance + amount;
+      targetRecord.moatCastle.updatedAt = Date.now();
       await updateUserRecord(targetRecord);
 
-      const { embed, files } = foxbankembedTemplate({
-        title: "Fox Bank Balance Added",
+      const { embed, files } = moatembedTemplate({
+        title: "Moat Castle Balance Added",
         description:
           `${ARROW} **User:** <@${targetUser.id}>\n` +
           `${ARROW} **Old Balance:** $${oldBalance.toLocaleString()}\n` +
           `${ARROW} **Added:** $${amount.toLocaleString()}\n` +
-          `${ARROW} **New Balance:** $${targetRecord.foxBank.balance.toLocaleString()}\n\n` +
-          `${ARROW} Balance successfully updated.`,
+          `${ARROW} **New Balance:** $${targetRecord.moatCastle.balance.toLocaleString()}`,
         noLogo: false,
       });
 
@@ -124,20 +118,19 @@ module.exports = {
     }
 
     // ===============================
-    // ➖ Remove Balance (clears to 0)
+    // ➖ REMOVE BALANCE (clear to 0)
     // ===============================
-    if (subcommand === "remove") {
-      targetRecord.foxBank.balance = 0;
-      targetRecord.foxBank.updatedAt = Date.now();
+    if (sub === "remove") {
+      targetRecord.moatCastle.balance = 0;
+      targetRecord.moatCastle.updatedAt = Date.now();
       await updateUserRecord(targetRecord);
 
-      const { embed, files } = foxbankembedTemplate({
-        title: "Fox Bank Balance Removed",
+      const { embed, files } = moatembedTemplate({
+        title: "Moat Castle Balance Removed",
         description:
           `${ARROW} **User:** <@${targetUser.id}>\n` +
           `${ARROW} **Old Balance:** $${oldBalance.toLocaleString()}\n` +
-          `${ARROW} **New Balance:** $0\n\n` +
-          `${ARROW} Balance successfully cleared.`,
+          `${ARROW} **New Balance:** $0`,
         noLogo: false,
       });
 
@@ -145,13 +138,13 @@ module.exports = {
     }
 
     // ===============================
-    // 🎯 Set Balance
+    // 🎯 SET BALANCE
     // ===============================
-    if (subcommand === "set") {
+    if (sub === "set") {
       const amount = interaction.options.getInteger("amount");
 
       if (amount < 0) {
-        const { embed, files } = foxbankembedTemplate({
+        const { embed, files } = moatembedTemplate({
           title: "Invalid Amount",
           description: `${ARROW} Balance cannot be negative.`,
           noLogo: true,
@@ -159,17 +152,16 @@ module.exports = {
         return interaction.editReply({ embeds: [embed], files });
       }
 
-      targetRecord.foxBank.balance = amount;
-      targetRecord.foxBank.updatedAt = Date.now();
+      targetRecord.moatCastle.balance = amount;
+      targetRecord.moatCastle.updatedAt = Date.now();
       await updateUserRecord(targetRecord);
 
-      const { embed, files } = foxbankembedTemplate({
-        title: "Fox Bank Balance Updated",
+      const { embed, files } = moatembedTemplate({
+        title: "Moat Castle Balance Updated",
         description:
           `${ARROW} **User:** <@${targetUser.id}>\n` +
           `${ARROW} **Old Balance:** $${oldBalance.toLocaleString()}\n` +
-          `${ARROW} **New Balance:** $${amount.toLocaleString()}\n\n` +
-          `${ARROW} Balance successfully set.`,
+          `${ARROW} **New Balance:** $${amount.toLocaleString()}`,
         noLogo: false,
       });
 

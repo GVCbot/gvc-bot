@@ -26,7 +26,6 @@ const path = require("node:path");
 const embedTemplate = require("./utils/embedTemplate");
 const moatembedTemplate = require("./utils/moatembedTemplate");
 const foxbankembedTemplate = require("./utils/foxbankembedTemplate");
-const { startBusinessIncomeLoop } = require("./utils/businessIncomeLoop");
 
 const {
   getUserRecord,
@@ -317,7 +316,6 @@ for (const folder of fs.readdirSync(foldersPath)) {
 
 client.once(Events.ClientReady, () => {
   console.log(`🟢 Bot is online as ${client.user.tag}`);
-    startBusinessIncomeLoop(client);
 });
 
 // ===============================
@@ -1036,6 +1034,125 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       // Reply in staff channel
+      await interaction.message.reply({ embeds: [channelEmbed] });
+
+      return interaction.editReply({
+        content: `Loan ${action === "accept" ? "approved ✅" : "denied ❌"} successfully.`,
+      });
+    }
+
+    // ===============================
+    // 🦊 Fox Bank Loan Accept / Deny Handler
+    // ===============================
+    if (
+      interaction.isButton() &&
+      interaction.customId.startsWith("fox_loan_")
+    ) {
+      const foxStaffRole = "1537894455779270717";
+
+      if (!interaction.member.roles.cache.has(foxStaffRole)) {
+        return interaction.reply({
+          content: "❌ Only Fox Bank staff can manage loan requests.",
+          flags: 64,
+        });
+      }
+
+      await interaction.deferReply({ flags: 64 });
+
+      const parts = interaction.customId.split("_");
+      const action = parts[2]; // accept or deny
+      const requesterId = parts[3];
+      const requestId = parts[4];
+
+      const requesterRecord = await getUserRecord(requesterId);
+
+      if (!requesterRecord.foxBank) {
+        const { embed } = foxbankembedTemplate({
+          title: "Account Deleted",
+          description:
+            `${ARROW} The requester's Fox Bank account was **deleted**.\n` +
+            `${ARROW} No further action was taken.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      const loanRequests = requesterRecord.foxBank.loanRequests || [];
+      const request = loanRequests.find((r) => r.id === requestId);
+
+      if (!request) {
+        return interaction.editReply({
+          content: "❌ Loan request not found.",
+        });
+      }
+
+      requesterRecord.foxBank.loanRequests =
+        requesterRecord.foxBank.loanRequests.filter((r) => r !== request);
+
+      let channelEmbed;
+      const requesterUser = await interaction.client.users.fetch(requesterId);
+
+      // ACCEPT
+      if (action === "accept") {
+        requesterRecord.foxBank.loans.push({
+          amount: request.amount,
+          remaining: request.amount,
+          reason: request.reason,
+          createdAt: Date.now(),
+        });
+
+        requesterRecord.foxBank.balance += request.amount;
+        requesterRecord.foxBank.updatedAt = Date.now();
+        await updateUserRecord(requesterRecord);
+
+        channelEmbed = foxbankembedTemplate({
+          title: "Loan Approved",
+          description:
+            `${ARROW} **Requester:** <@${requesterId}>\n` +
+            `${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `${ARROW} Loan has been **approved** and added to their balance.`,
+          noLogo: false,
+        }).embed;
+
+        try {
+          const { embed: dmEmbed } = foxbankembedTemplate({
+            title: "Fox Bank Loan Approved",
+            description:
+              `${ARROW} Your loan for **$${request.amount.toLocaleString()}** has been **approved**.\n` +
+              `${ARROW} The funds have been added to your Fox Bank balance.\n` +
+              `${ARROW} Use **/fox-loan review** to view it.`,
+            noLogo: false,
+          });
+          await requesterUser.send({ embeds: [dmEmbed] });
+        } catch {}
+      }
+
+      // DENY
+      if (action === "deny") {
+        requesterRecord.foxBank.updatedAt = Date.now();
+        await updateUserRecord(requesterRecord);
+
+        channelEmbed = foxbankembedTemplate({
+          title: "Loan Denied",
+          description:
+            `${ARROW} **Requester:** <@${requesterId}>\n` +
+            `${ARROW} **Amount:** $${request.amount.toLocaleString()}\n` +
+            `${ARROW} Loan request has been **denied**.`,
+          noLogo: false,
+        }).embed;
+
+        try {
+          const { embed: dmEmbed } = foxbankembedTemplate({
+            title: "Fox Bank Loan Denied",
+            description:
+              `${ARROW} Your loan request for **$${request.amount.toLocaleString()}** has been **denied**.\n` +
+              `${ARROW} You may submit another request later using **/fox-loan request**.`,
+            noLogo: false,
+          });
+          await requesterUser.send({ embeds: [dmEmbed] });
+        } catch {}
+      }
+
       await interaction.message.reply({ embeds: [channelEmbed] });
 
       return interaction.editReply({

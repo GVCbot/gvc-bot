@@ -5,7 +5,7 @@ const {
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 const { MOATEMOJIS } = moatembedTemplate;
-const { MOATCASTLE, ARROW } = MOATEMOJIS;
+const { ARROW } = MOATEMOJIS;
 
 // Membership cost table
 const MEMBERSHIP_COSTS = {
@@ -13,7 +13,7 @@ const MEMBERSHIP_COSTS = {
   silver: 250,
   gold: 500,
   platinum: 900,
-  black: 0, // Invite-only
+  black: 0, // Invite-only (cannot be selected here)
 };
 
 // Membership income boost table
@@ -24,9 +24,6 @@ const MEMBERSHIP_BOOSTS = {
   platinum: 0.06,
   black: 0.1,
 };
-
-// Secret Black Membership code
-const BLACK_CODE = "moat_HAMOODx1212";
 
 // Generate 16-digit card number
 function generateCardNumber() {
@@ -61,11 +58,6 @@ module.exports = {
               { name: "Gold ($500)", value: "gold" },
               { name: "Platinum ($900)", value: "platinum" },
             ),
-        )
-        .addStringOption((opt) =>
-          opt
-            .setName("black_code")
-            .setDescription("Black Membership invite code (optional)"),
         ),
     )
 
@@ -96,8 +88,8 @@ module.exports = {
         const { embed, files } = moatembedTemplate({
           title: "Moat Castle Account Required",
           description:
-            `> ${ARROW} You do not have a Moat Castle account.\n` +
-            `> ${ARROW} Use **/moat-account create** to open one.`,
+            `${ARROW} You do not have a Moat Castle account.\n` +
+            `${ARROW} Use **/moat-account create** to open one.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed], files });
@@ -133,8 +125,8 @@ module.exports = {
         const { embed, files } = moatembedTemplate({
           title: "Account Already Exists",
           description:
-            `> ${ARROW} You already have a Moat Castle account.\n` +
-            `> ${ARROW} Use **/moat-account view** to view it.`,
+            `${ARROW} You already have a Moat Castle account.\n` +
+            `${ARROW} Use **/moat-account view** to view it.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed], files });
@@ -143,39 +135,41 @@ module.exports = {
       const accountName = interaction.options.getString("name");
       const chosenMembership =
         interaction.options.getString("membership") || "standard";
-      const enteredCode = interaction.options.getString("black_code")?.trim();
 
-      let finalMembership = chosenMembership;
-      let membershipCost = MEMBERSHIP_COSTS[chosenMembership];
-      let invalidCode = false;
-
-      if (enteredCode) {
-        if (enteredCode === BLACK_CODE) {
-          finalMembership = "black";
-          membershipCost = MEMBERSHIP_COSTS.black;
-        } else invalidCode = true;
-      }
-
-      if (finalMembership !== "black" && userRecord.cash < membershipCost) {
+      // Black membership cannot be selected here
+      if (chosenMembership === "black") {
         const { embed, files } = moatembedTemplate({
-          title: "Insufficient Funds",
+          title: "Black Membership Restricted",
           description:
-            `> ${ARROW} **Membership:** ${finalMembership.toUpperCase()}\n` +
-            `> ${ARROW} **Cost:** $${membershipCost.toLocaleString()}\n\n` +
-            `> You only have **$${userRecord.cash.toLocaleString()}**.`,
+            `${ARROW} Black Membership cannot be selected during account creation.\n` +
+            `${ARROW} You must receive a **Black Membership Code** from Moat Castle staff.\n` +
+            `${ARROW} Use **/moat-membership upgrade membership:black** after receiving a code.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed], files });
       }
 
-      if (finalMembership !== "black") {
-        userRecord.cash -= membershipCost;
+      const membershipCost = MEMBERSHIP_COSTS[chosenMembership];
 
-        const bankRecord = await getUserRecord("MOAT_OFFICIAL_BANK");
-        bankRecord.moatCastleOfficialBank.balance += membershipCost;
-        bankRecord.moatCastleOfficialBank.lastUpdated = Date.now();
-        await updateUserRecord(bankRecord);
+      if (userRecord.cash < membershipCost) {
+        const { embed, files } = moatembedTemplate({
+          title: "Insufficient Funds",
+          description:
+            `${ARROW} **Membership:** ${chosenMembership.toUpperCase()}\n` +
+            `${ARROW} **Cost:** $${membershipCost.toLocaleString()}\n\n` +
+            `${ARROW} You only have **$${userRecord.cash.toLocaleString()}**.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
       }
+
+      // Deduct cost
+      userRecord.cash -= membershipCost;
+
+      const bankRecord = await getUserRecord("MOAT_OFFICIAL_BANK");
+      bankRecord.moatCastleOfficialBank.balance += membershipCost;
+      bankRecord.moatCastleOfficialBank.lastUpdated = Date.now();
+      await updateUserRecord(bankRecord);
 
       const accountId = `MC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const cardNumber = generateCardNumber();
@@ -187,7 +181,7 @@ module.exports = {
         cardStatus: "Active",
         balance: 0,
         membership:
-          finalMembership.charAt(0).toUpperCase() + finalMembership.slice(1),
+          chosenMembership.charAt(0).toUpperCase() + chosenMembership.slice(1),
         createdAt: Date.now(),
         updatedAt: Date.now(),
 
@@ -204,12 +198,8 @@ module.exports = {
       const createdUnix = Math.floor(Date.now() / 1000);
 
       const { embed, files } = moatembedTemplate({
-        title: invalidCode ? "Invalid Code!" : "Moat Castle Account Created",
+        title: "Moat Castle Account Created",
         description:
-          (invalidCode
-            ? `> ${ARROW} The code you entered is invalid.\n` +
-              `> ${ARROW} You have been assigned the **${userRecord.moatCastle.membership} Membership** instead.\n\n`
-            : "") +
           `> ${ARROW} **Account Name:** ${accountName}\n` +
           `> ${ARROW} **Account ID:** ${accountId}\n` +
           `> ${ARROW} **Card Number:** ${cardNumber}\n` +
@@ -232,8 +222,8 @@ module.exports = {
         const { embed, files } = moatembedTemplate({
           title: "No Moat Castle Account",
           description:
-            `> ${ARROW} You do not have a Moat Castle account.\n` +
-            `> ${ARROW} Use **/moat-account create** to open one.`,
+            `${ARROW} You do not have a Moat Castle account.\n` +
+            `${ARROW} Use **/moat-account create** to open one.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed], files });
@@ -243,8 +233,8 @@ module.exports = {
         const { embed, files } = moatembedTemplate({
           title: "Business Still Open",
           description:
-            `> ${ARROW} You still own **${userRecord.moatCastle.businesses.length} business(es)**.\n` +
-            `> ${ARROW} Delete them first using **/moat-business delete**.`,
+            `${ARROW} You still own **${userRecord.moatCastle.businesses.length} business(es)**.\n` +
+            `${ARROW} Delete them first using **/moat-business delete**.`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed], files });
