@@ -31,6 +31,7 @@ const {
   getUserRecord,
   updateUserRecord,
   getAllUserRecords,
+  MOAT_BUSINESS_LIMIT,
 } = require("./economy/economyutils");
 const handleInbox = require("./utils/inbox");
 
@@ -810,11 +811,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // ===============================
       if (action === "accept") {
         // Prevent exceeding business limit
-        if (requesterRecord.moatCastle.businesses.length >= 3) {
+        if (
+          requesterRecord.moatCastle.businesses.length >= MOAT_BUSINESS_LIMIT
+        ) {
           channelEmbed = moatembedTemplate({
             title: "❌ Business Limit Reached",
             description:
-              `> ${ARROW} <@${requesterId}> already owns **3 businesses**.\n` +
+              `> ${ARROW} <@${requesterId}> already owns **${MOAT_BUSINESS_LIMIT} businesses**.\n` +
               `> ${ARROW} Request skipped.`,
             noLogo: true,
           }).embed;

@@ -9,6 +9,8 @@ const client = new MongoClient(uri, {
   serverSelectionTimeoutMS: 5000,
 });
 
+const MOAT_BUSINESS_LIMIT = 6;
+
 // ===============================
 // 🔌 Database Connection
 // ===============================
@@ -318,6 +320,7 @@ module.exports = {
   loadSixhousentPrices,
   generateBusinessId,
   generateBusinessRequestId,
+  MOAT_BUSINESS_LIMIT,
   findBusinessOwnerRecord,
   getAllBusinesses,
   normalizeUserRecord,

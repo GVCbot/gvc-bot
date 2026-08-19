@@ -9,6 +9,7 @@ const {
   updateUserRecord,
   findBusinessOwnerRecord,
   generateBusinessRequestId,
+  MOAT_BUSINESS_LIMIT,
 } = require("../../economy/economyutils");
 const moatembedTemplate = require("../../utils/moatembedTemplate");
 
@@ -151,10 +152,9 @@ module.exports = {
       }
 
       // ⭐ Improved limit message
-      if (record.moatCastle.businesses.length >= 3) {
+      if (record.moatCastle.businesses.length >= MOAT_BUSINESS_LIMIT) {
         return interaction.editReply({
-          content:
-            "❌ You cannot create another business — you already own the maximum of **3 businesses**.",
+          content: `❌ You cannot create another business — you already own the maximum of **${MOAT_BUSINESS_LIMIT} businesses**.`,
         });
       }
 
