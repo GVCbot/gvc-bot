@@ -773,10 +773,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const requesterRecord = await getUserRecord(requesterId);
 
-      // FIX: Ensure loan arrays exist
-      if (!requesterRecord.foxBank.loans) requesterRecord.foxBank.loans = [];
-      if (!requesterRecord.foxBank.loanRequests)
+      // Ensure loan arrays exist
+      if (!requesterRecord.foxBank.loans) {
+        requesterRecord.foxBank.loans = [];
+      }
+
+      if (!requesterRecord.foxBank.loanRequests) {
         requesterRecord.foxBank.loanRequests = [];
+      }
 
       if (!requesterRecord.moatCastle) {
         const { embed } = moatembedTemplate({
@@ -1088,7 +1092,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.editReply({ embeds: [embed] });
       }
 
-      const loanRequests = requesterRecord.foxBank.loanRequests || [];
+      // ⭐ REQUIRED FIX — initialize arrays if missing
+      if (!requesterRecord.foxBank.loans) {
+        requesterRecord.foxBank.loans = [];
+      }
+
+      if (!requesterRecord.foxBank.loanRequests) {
+        requesterRecord.foxBank.loanRequests = [];
+      }
+
+      const loanRequests = requesterRecord.foxBank.loanRequests;
       const request = loanRequests.find((r) => r.id === requestId);
 
       if (!request) {
