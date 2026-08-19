@@ -1435,6 +1435,24 @@ if (!process.env.TOKEN) {
 }
 
 console.log("🔑 TOKEN present, length:", process.env.TOKEN.length);
+
+const axios = require("axios");
+
+axios
+  .get("https://discord.com/api/v10/gateway/bot", {
+    headers: { Authorization: `Bot ${process.env.TOKEN}` },
+    timeout: 10000,
+  })
+  .then((res) =>
+    console.log("✅ REST gateway/bot lookup OK:", JSON.stringify(res.data)),
+  )
+  .catch((err) =>
+    console.error(
+      "🔴 REST gateway/bot lookup failed:",
+      err.code || err.message,
+    ),
+  );
+
 console.log("🔑 Attempting client.login()...");
 
 client
