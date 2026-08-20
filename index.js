@@ -1181,6 +1181,53 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ===============================
+    // 🚨 Ban Request Button Handler
+    // ===============================
+    if (interaction.isButton() && interaction.customId.startsWith("banreq_")) {
+      await interaction.deferReply({ flags: 64 });
+
+      const HR_ROLE = "1350582607217430650";
+
+      if (!interaction.member.roles.cache.has(HR_ROLE)) {
+        return interaction.editReply("❌ Only HR can handle ban requests.");
+      }
+
+      const parts = interaction.customId.split("_");
+      const action = parts[1]; // handle or deny
+
+      // Disable buttons
+      const disabledRow = new ActionRowBuilder().addComponents(
+        ...interaction.message.components[0].components.map((btn) =>
+          ButtonBuilder.from(btn).setDisabled(true),
+        ),
+      );
+
+      await interaction.message.edit({
+        components: [disabledRow],
+      });
+
+      const { embed } = embedTemplate({
+        title:
+          action === "handle"
+            ? "✅ Ban Request Handled"
+            : "❌ Ban Request Denied",
+        description:
+          `> **HR Staff:** ${interaction.user}\n` +
+          `> **Action:** ${action === "handle" ? "Handled" : "Denied"}\n` +
+          `> **Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+        noLogo: false,
+      });
+
+      await interaction.message.reply({ embeds: [embed] });
+
+      return interaction.editReply(
+        action === "handle"
+          ? "Ban request marked as handled."
+          : "Ban request marked as denied.",
+      );
+    }
+
+    // ===============================
     // 🚗 Vehicle Handlers
     // ===============================
     if (
