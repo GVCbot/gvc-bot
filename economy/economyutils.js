@@ -9,7 +9,7 @@ const client = new MongoClient(uri, {
   serverSelectionTimeoutMS: 5000,
 });
 
-const MOAT_BUSINESS_LIMIT = 6;
+const MOAT_BUSINESS_LIMIT = 10;
 
 // ===============================
 // 🔌 Database Connection

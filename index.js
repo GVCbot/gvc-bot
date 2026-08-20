@@ -778,15 +778,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const requesterRecord = await getUserRecord(requesterId);
 
-      // Ensure loan arrays exist
-      if (!requesterRecord.foxBank.loans) {
-        requesterRecord.foxBank.loans = [];
-      }
-
-      if (!requesterRecord.foxBank.loanRequests) {
-        requesterRecord.foxBank.loanRequests = [];
-      }
-
       if (!requesterRecord.moatCastle) {
         const { embed } = moatembedTemplate({
           title: "Account Deleted",
