@@ -396,6 +396,10 @@ client.on("debug", (msg) => {
     lower.includes("gateway") ||
     lower.includes("hello") ||
     lower.includes("heartbeat");
+
+  if (important) {
+    console.log(`🔍 [Debug] ${msg}`);
+  }
 });
 
 // Warnings from Discord.js
