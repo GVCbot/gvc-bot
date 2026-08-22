@@ -1618,14 +1618,16 @@ boot("TOKEN present", `length ${process.env.TOKEN.length}`);
 
 // Watchdog: if we haven't fired ClientReady within this window, something
 // is stuck (bad token, blocked network, Cloudflare edge throttling, etc.)
-// This won't crash the process — it just makes stalls loud instead of silent.
+// Exit so Render's process manager restarts us and retries with a fresh
+// connection attempt, instead of hanging forever.
 const LOGIN_TIMEOUT_MS = 45_000;
 const loginWatchdog = setTimeout(() => {
   console.error(
     `🔴 WATCHDOG: client.login() has not resolved to ClientReady after ${
       LOGIN_TIMEOUT_MS / 1000
-    }s. Likely causes: bad/rotated token, blocked outbound WSS, Cloudflare rate-limit on this IP, or Discord API outage.`,
+    }s. Restarting process to retry with a fresh connection attempt.`,
   );
+  process.exit(1); // Render will auto-restart the service
 }, LOGIN_TIMEOUT_MS);
 
 client.once(Events.ClientReady, () => clearTimeout(loginWatchdog));
