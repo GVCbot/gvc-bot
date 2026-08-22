@@ -1616,10 +1616,6 @@ if (!process.env.TOKEN) {
 
 boot("TOKEN present", `length ${process.env.TOKEN.length}`);
 
-// Watchdog: if we haven't fired ClientReady within this window, something
-// is stuck (bad token, blocked network, Cloudflare edge throttling, etc.)
-// Exit so Render's process manager restarts us and retries with a fresh
-// connection attempt, instead of hanging forever.
 const LOGIN_TIMEOUT_MS = 45_000;
 const loginWatchdog = setTimeout(() => {
   console.error(
@@ -1627,7 +1623,6 @@ const loginWatchdog = setTimeout(() => {
       LOGIN_TIMEOUT_MS / 1000
     }s. Restarting process to retry with a fresh connection attempt.`,
   );
-  process.exit(1); // Render will auto-restart the service
 }, LOGIN_TIMEOUT_MS);
 
 client.once(Events.ClientReady, () => clearTimeout(loginWatchdog));
