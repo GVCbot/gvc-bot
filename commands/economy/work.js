@@ -21,56 +21,69 @@ function getWorkPayout() {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("work")
-    .setDescription("Work a job and earn money (6 hour cooldown)"),
+    .setDescription("Work a job and earn money (6‑hour cooldown)"),
 
   async execute(interaction) {
-    const userId = interaction.user.id;
-    const user = await getUserRecord(userId);
+    try {
+      // Immediately acknowledge to avoid timeout
+      await interaction.deferReply({ flags: 64 });
 
-    const bypassRole = "1368142895181205636";
-    const isBypass = interaction.member.roles.cache.has(bypassRole);
+      const userId = interaction.user.id;
+      const user = await getUserRecord(userId);
 
-    const cooldown = 60 * 60 * 1000 * 6;
-    const now = Date.now();
+      const bypassRole = "1368142895181205636";
+      const isBypass = interaction.member.roles.cache.has(bypassRole);
 
-    if (!isBypass && user.lastWork && now - user.lastWork < cooldown) {
-      const remaining = cooldown - (now - user.lastWork);
-      const minutes = Math.ceil(remaining / 60000);
+      const cooldown = 6 * 60 * 60 * 1000; // 6 hours
+      const now = Date.now();
+
+      // Cooldown check
+      if (!isBypass && user.lastWork && now - user.lastWork < cooldown) {
+        const remaining = cooldown - (now - user.lastWork);
+        const minutes = Math.ceil(remaining / 60000);
+
+        const { embed } = embedTemplate({
+          title: "⏳ Cooldown Active",
+          description: `You must wait **${minutes} minutes** before working again.`,
+          noLogo: true,
+        });
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      // Load random work message
+      const workMessages = await loadWorkMessages();
+      const message =
+        workMessages[Math.floor(Math.random() * workMessages.length)];
+
+      // Calculate payout
+      const payout = getWorkPayout();
+
+      user.cash = (user.cash ?? 0) + payout;
+      user.lastWork = now;
+
+      await updateUserRecord(user);
+
+      const desc =
+        `> <:arrowright:1534182706836144158> ${message}\n` +
+        `> <:arrowright:1534182706836144158> You earned **$${payout.toLocaleString()}**!\n\n` +
+        `> <:arrowright:1534182706836144158> **New Cash Balance:** $${user.cash.toLocaleString()}`;
 
       const { embed } = embedTemplate({
-        title: "⏳ Cooldown Active",
-        description: `You must wait **${minutes} minutes** before working again.`,
+        title:
+          "<a:gvcsunspin:1527220557890850846> Work Complete <a:gvcsunspin:1527220557890850846>",
+        description: desc,
         noLogo: true,
       });
 
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
+
+      return interaction.editReply({ embeds: [embed] });
+    } catch (err) {
+      console.error("Work command error:", err);
+      return interaction.editReply({
+        content: "❌ Something went wrong while processing your work command.",
+      });
     }
-
-    const workMessages = await loadWorkMessages();
-    const message =
-      workMessages[Math.floor(Math.random() * workMessages.length)];
-
-    const payout = getWorkPayout();
-
-    user.cash = (user.cash ?? 0) + payout;
-    user.lastWork = now;
-
-    await updateUserRecord(user);
-
-    const desc =
-      `> <:arrowright:1534182706836144158> ${message}\n` +
-      `> <:arrowright:1534182706836144158> You earned **$${payout.toLocaleString()}**!\n\n` +
-      `> <:arrowright:1534182706836144158> **New Cash Balance:** $${user.cash.toLocaleString()}`;
-
-    const { embed } = embedTemplate({
-      title:
-        "<a:gvcsunspin:1527220557890850846> Work Complete <a:gvcsunspin:1527220557890850846>",
-      description: desc,
-      noLogo: true,
-    });
-
-    embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
-
-    return interaction.reply({ embeds: [embed] });
   },
 };
