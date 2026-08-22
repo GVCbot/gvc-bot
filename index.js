@@ -385,18 +385,17 @@ client.on("shardResume", (id, replayed) => {
 
 // Debug (filtered for important events)
 client.on("debug", (msg) => {
+  const lower = msg.toLowerCase();
   const important =
-    msg.includes("IDENTIFY") ||
-    msg.includes("Invalid session") ||
-    msg.includes("Cloudflare") ||
-    msg.includes("rate limit") ||
-    msg.includes("Reconnect") ||
-    msg.includes("Resume") ||
-    msg.includes("Gateway");
-
-  if (important) {
-    console.log(`🔍 [Debug] ${msg}`);
-  }
+    lower.includes("identify") ||
+    lower.includes("invalid session") ||
+    lower.includes("cloudflare") ||
+    lower.includes("rate limit") ||
+    lower.includes("reconnect") ||
+    lower.includes("resume") ||
+    lower.includes("gateway") ||
+    lower.includes("hello") ||
+    lower.includes("heartbeat");
 });
 
 // Warnings from Discord.js
