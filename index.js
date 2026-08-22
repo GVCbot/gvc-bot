@@ -333,51 +333,81 @@ client.commands = new Collection();
 boot("Discord Client constructed");
 
 // ===============================
-// 🩺 Global Error / Lifecycle Listeners
+// 📡 ADVANCED GATEWAY MONITORING
 // ===============================
-// Registered before anything else touches the client or the gateway,
-// so nothing that happens later can slip past unlogged.
 
-client.on("error", (err) => {
-  console.error("🔴 Discord client error:", err);
+// Successful connection
+client.on("shardReady", (id) => {
+  console.log(`🟢 [Gateway] Shard ${id} connected successfully.`);
 });
 
-client.on("shardError", (err) => {
-  console.error("🔴 Shard error:", err);
+// Reconnecting (Discord or network hiccup)
+client.on("shardReconnecting", (id) => {
+  console.log(`🟡 [Gateway] Shard ${id} reconnecting...`);
 });
 
-client.on(Events.ShardReady, (id) => {
-  console.log(`🟢 [Shard ${id}] Ready`);
-});
-
-client.on(Events.ShardResume, (id, replayedEvents) => {
+// Disconnected (with detailed reason)
+client.on("shardDisconnect", (event, id) => {
   console.log(
-    `🔁 [Shard ${id}] Resumed session — replayed ${replayedEvents} events`,
+    `🔴 [Gateway] Shard ${id} disconnected — code ${event.code}, reason: ${event.reason || "none"}`,
+  );
+
+  // Common gateway close codes
+  const codes = {
+    1000: "Normal closure",
+    4000: "Unknown error",
+    4001: "Unknown opcode",
+    4002: "Decode error",
+    4003: "Not authenticated",
+    4004: "Authentication failed (INVALID TOKEN)",
+    4005: "Already authenticated",
+    4007: "Invalid sequence",
+    4008: "Rate limited",
+    4009: "Session timed out",
+    4010: "Invalid shard",
+    4011: "Sharding required",
+    4012: "Invalid API version",
+    4013: "Invalid intent",
+    4014: "Disallowed intent",
+  };
+
+  if (codes[event.code]) {
+    console.log(`🔎 [Gateway] Meaning: ${codes[event.code]}`);
+  }
+});
+
+// Resume session (no full reconnect)
+client.on("shardResume", (id, replayed) => {
+  console.log(
+    `🔁 [Gateway] Shard ${id} resumed — replayed ${replayed} events.`,
   );
 });
 
-client.on(Events.ShardReconnecting, (id) => {
-  console.log(`🟡 [Shard ${id}] Reconnecting...`);
+// Debug (filtered for important events)
+client.on("debug", (msg) => {
+  const important =
+    msg.includes("IDENTIFY") ||
+    msg.includes("Invalid session") ||
+    msg.includes("Cloudflare") ||
+    msg.includes("rate limit") ||
+    msg.includes("Reconnect") ||
+    msg.includes("Resume") ||
+    msg.includes("Gateway");
+
+  if (important) {
+    console.log(`🔍 [Debug] ${msg}`);
+  }
 });
 
-client.on(Events.ShardDisconnect, (event, id) => {
-  console.warn(
-    `🔴 [Shard ${id}] Disconnected — code ${event.code}, reason: ${event.reason || "none given"}`,
-  );
+// Warnings from Discord.js
+client.on("warn", (msg) => {
+  console.warn(`⚠️ [Warn] ${msg}`);
 });
 
-client.on(Events.Debug, (msg) => console.log("🔍 DEBUG:", msg));
-client.on(Events.Warn, (msg) => console.warn("🟡 WARN:", msg));
-
-process.on("unhandledRejection", (reason) => {
-  console.error("🔴 Unhandled promise rejection:", reason);
+// Fatal gateway errors
+client.on("error", (err) => {
+  console.error(`❌ [Error] ${err}`);
 });
-
-process.on("uncaughtException", (err) => {
-  console.error("🔴 Uncaught exception:", err);
-});
-
-boot("Lifecycle listeners registered");
 
 // ===============================
 // 📂 Command Loader
