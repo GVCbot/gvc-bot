@@ -1487,7 +1487,9 @@ axios
   .catch((err) =>
     console.error(
       "🔴 REST gateway/bot lookup failed:",
-      err.code || err.message,
+      err.response?.status,
+      JSON.stringify(err.response?.data),
+      err.message,
     ),
   );
 
