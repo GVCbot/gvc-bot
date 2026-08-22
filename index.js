@@ -1,9 +1,30 @@
+// ===============================
+// 🚀 BOOT SEQUENCE TRACKER
+// ===============================
+// Every stage of startup logs a timestamped checkpoint. If the process
+// stalls, whatever printed last tells you exactly where to look.
+const BOOT_START = Date.now();
+function boot(stage, extra = "") {
+  const elapsed = Date.now() - BOOT_START;
+  console.log(`🚀 [BOOT +${elapsed}ms] ${stage}${extra ? " — " + extra : ""}`);
+}
+
+boot("Process started", `node ${process.version} on ${process.platform}`);
+
 require("dotenv").config();
+boot("dotenv config loaded");
+
+// ===============================
+// 🌐 Web Server (Render health check)
+// ===============================
 const express = require("express");
 const app = express();
 app.get("/", (req, res) => res.send("Bot is alive!"));
-app.listen(3000, () => console.log("Web server running on port 3000"));
+app.listen(3000, () => boot("Web server listening", "port 3000"));
 
+// ===============================
+// 📦 Core Dependencies
+// ===============================
 const {
   Client,
   GatewayIntentBits,
@@ -35,6 +56,8 @@ const {
 } = require("./economy/economyutils");
 const handleInbox = require("./utils/inbox");
 
+boot("Dependencies loaded");
+
 // ===============================
 // ⚙️ Configuration
 // ===============================
@@ -62,6 +85,7 @@ const SESSION_COMMANDS = [
 
 const protect = require("./security/protect");
 protect.enableGlobalProtection();
+boot("Global protection enabled");
 
 // ===============================
 // 🧰 Helper Functions
@@ -102,7 +126,10 @@ function logEvent(
   extraDescription = "",
 ) {
   const guild = client.guilds.cache.get("1058305800252182528");
-  if (!guild) return;
+  if (!guild) {
+    console.warn("🟡 logEvent: target guild not found in cache");
+    return;
+  }
 
   const unix = Math.floor(Date.now() / 1000);
   const timestamp = `<t:${unix}:F>`;
@@ -124,7 +151,18 @@ function logEvent(
   const ids = Array.isArray(channelIds) ? channelIds : [channelIds];
   for (const id of ids) {
     const logChannel = guild.channels.cache.get(id);
-    if (logChannel) logChannel.send({ embeds: [embed] }).catch(() => {});
+    if (logChannel) {
+      logChannel
+        .send({ embeds: [embed] })
+        .catch((err) =>
+          console.error(
+            `🔴 logEvent: failed to send to channel ${id}:`,
+            err.message,
+          ),
+        );
+    } else {
+      console.warn(`🟡 logEvent: channel ${id} not found in cache`);
+    }
   }
 }
 
@@ -164,8 +202,15 @@ function logButtonClick(interaction) {
     isSessionButton ? SESSION_BUTTON_LOG : OTHER_BUTTON_LOG,
   );
 
-  if (targetLogChannel)
-    targetLogChannel.send({ embeds: [embed] }).catch(() => {});
+  if (targetLogChannel) {
+    targetLogChannel
+      .send({ embeds: [embed] })
+      .catch((err) =>
+        console.error("🔴 logButtonClick: send failed:", err.message),
+      );
+  } else {
+    console.warn("🟡 logButtonClick: target log channel not found in cache");
+  }
 }
 
 async function sendVehiclePage(interaction, vehicles, page, targetId) {
@@ -266,6 +311,8 @@ async function findBankOwnerRecord(bankId, userRecord) {
   );
 }
 
+boot("Helper functions defined");
+
 // ===============================
 // 🤖 Client Setup
 // ===============================
@@ -283,6 +330,13 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+boot("Discord Client constructed");
+
+// ===============================
+// 🩺 Global Error / Lifecycle Listeners
+// ===============================
+// Registered before anything else touches the client or the gateway,
+// so nothing that happens later can slip past unlogged.
 
 client.on("error", (err) => {
   console.error("🔴 Discord client error:", err);
@@ -292,6 +346,29 @@ client.on("shardError", (err) => {
   console.error("🔴 Shard error:", err);
 });
 
+client.on(Events.ShardReady, (id) => {
+  console.log(`🟢 [Shard ${id}] Ready`);
+});
+
+client.on(Events.ShardResume, (id, replayedEvents) => {
+  console.log(
+    `🔁 [Shard ${id}] Resumed session — replayed ${replayedEvents} events`,
+  );
+});
+
+client.on(Events.ShardReconnecting, (id) => {
+  console.log(`🟡 [Shard ${id}] Reconnecting...`);
+});
+
+client.on(Events.ShardDisconnect, (event, id) => {
+  console.warn(
+    `🔴 [Shard ${id}] Disconnected — code ${event.code}, reason: ${event.reason || "none given"}`,
+  );
+});
+
+client.on(Events.Debug, (msg) => console.log("🔍 DEBUG:", msg));
+client.on(Events.Warn, (msg) => console.warn("🟡 WARN:", msg));
+
 process.on("unhandledRejection", (reason) => {
   console.error("🔴 Unhandled promise rejection:", reason);
 });
@@ -300,29 +377,52 @@ process.on("uncaughtException", (err) => {
   console.error("🔴 Uncaught exception:", err);
 });
 
+boot("Lifecycle listeners registered");
+
 // ===============================
 // 📂 Command Loader
 // ===============================
-console.log("🔧 Starting command loader...");
+boot("Command loader starting");
 const foldersPath = path.join(__dirname, "commands");
+let loadedCount = 0;
+let failedCount = 0;
+
 for (const folder of fs.readdirSync(foldersPath)) {
   const commandsPath = path.join(foldersPath, folder);
   const commandFiles = fs
     .readdirSync(commandsPath)
     .filter((f) => f.endsWith(".js"));
+
   for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
-    client.commands.set(command.data.name, command);
+    try {
+      const command = require(path.join(commandsPath, file));
+      if (!command?.data?.name) {
+        console.warn(`🟡 Skipped ${folder}/${file} — missing data.name`);
+        failedCount++;
+        continue;
+      }
+      client.commands.set(command.data.name, command);
+      loadedCount++;
+    } catch (err) {
+      console.error(
+        `🔴 Failed to load command ${folder}/${file}:`,
+        err.message,
+      );
+      failedCount++;
+    }
   }
 }
-console.log(`✅ Loaded ${client.commands.size} commands`);
 
+boot("Command loader finished", `${loadedCount} loaded, ${failedCount} failed`);
+
+// ===============================
+// 🎉 Ready Event
+// ===============================
 client.once(Events.ClientReady, () => {
+  boot("Client ready", `logged in as ${client.user.tag}`);
   console.log(`🟢 Bot is online as ${client.user.tag}`);
+  console.log(`🏠 Serving ${client.guilds.cache.size} guild(s)`);
 });
-
-client.on(Events.Debug, (msg) => console.log("🔍 DEBUG:", msg));
-client.on(Events.Warn, (msg) => console.warn("🟡 WARN:", msg));
 
 // ===============================
 // 🎛️ Interaction Handler
@@ -619,7 +719,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // ===============================
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
-      if (!command) return;
+      if (!command) {
+        console.warn(`🟡 Unknown command invoked: /${interaction.commandName}`);
+        return;
+      }
 
       await command.execute(interaction);
       logEvent(client, logChannels, logTitle, interaction, extraDetails);
@@ -1302,7 +1405,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.editReply({ embeds: [embed] });
     }
   } catch (error) {
-    console.error("Interaction error:", error);
+    // Extra context: which interaction type/customId/command triggered this
+    const context =
+      interaction.customId || interaction.commandName || "unknown";
+    console.error(`🔴 Interaction error [${context}]:`, error);
+
     const { embed } = embedTemplate({
       title: "⚠️ Error ⚠️",
       description: `> ${ARROW} There was an error executing this interaction.`,
@@ -1360,7 +1467,7 @@ client.on(Events.MessageDelete, async (message) => {
       embeds: recoveredEmbeds,
     });
   } catch (error) {
-    console.error("Failed to recover deleted log:", error);
+    console.error("🔴 Failed to recover deleted log:", error);
   }
 });
 
@@ -1399,7 +1506,7 @@ client.on(Events.MessageDeleteBulk, async (messages) => {
       });
     }
   } catch (error) {
-    console.error("Failed to recover bulk deleted logs:", error);
+    console.error("🔴 Failed to recover bulk deleted logs:", error);
   }
 });
 
@@ -1458,9 +1565,11 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
       await message.channel.send({ embeds: [setupEmbed], files });
     }
   } catch (err) {
-    console.error("Reaction goal handler error:", err);
+    console.error("🔴 Reaction goal handler error:", err);
   }
 });
+
+boot("Event handlers registered");
 
 // ===============================
 // 🔑 Login
@@ -1472,33 +1581,29 @@ if (!process.env.TOKEN) {
   process.exit(1);
 }
 
-console.log("🔑 TOKEN present, length:", process.env.TOKEN.length);
+boot("TOKEN present", `length ${process.env.TOKEN.length}`);
 
-const axios = require("axios");
-
-axios
-  .get("https://discord.com/api/v10/gateway/bot", {
-    headers: { Authorization: `Bot ${process.env.TOKEN}` },
-    timeout: 10000,
-  })
-  .then((res) =>
-    console.log("✅ REST gateway/bot lookup OK:", JSON.stringify(res.data)),
-  )
-  .catch((err) =>
-    console.error(
-      "🔴 REST gateway/bot lookup failed:",
-      err.response?.status,
-      JSON.stringify(err.response?.data),
-      err.message,
-    ),
+// Watchdog: if we haven't fired ClientReady within this window, something
+// is stuck (bad token, blocked network, Cloudflare edge throttling, etc.)
+// This won't crash the process — it just makes stalls loud instead of silent.
+const LOGIN_TIMEOUT_MS = 45_000;
+const loginWatchdog = setTimeout(() => {
+  console.error(
+    `🔴 WATCHDOG: client.login() has not resolved to ClientReady after ${
+      LOGIN_TIMEOUT_MS / 1000
+    }s. Likely causes: bad/rotated token, blocked outbound WSS, Cloudflare rate-limit on this IP, or Discord API outage.`,
   );
+}, LOGIN_TIMEOUT_MS);
 
-console.log("🔑 Attempting client.login()...");
+client.once(Events.ClientReady, () => clearTimeout(loginWatchdog));
+
+boot("Attempting client.login()");
 
 client
   .login(process.env.TOKEN)
-  .then(() => console.log("✅ login() resolved"))
+  .then(() => boot("login() promise resolved", "waiting for ClientReady..."))
   .catch((err) => {
+    clearTimeout(loginWatchdog);
     console.error("🔴 client.login() failed:", err);
     process.exit(1);
   });
