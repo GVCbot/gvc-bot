@@ -2,8 +2,8 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const { getUserRecord } = require("../../economy/economyutils");
 
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -39,7 +39,7 @@ module.exports = {
       `> ${ARROW} Bank balance is separate and accessed via bank commands.`;
 
     const { embed } = embedTemplate({
-      title: `${SUN} Balance — ${targetUser.username} ${SUN}`,
+      title: `${STAR} Balance — ${targetUser.username} ${STAR}`,
       description: desc,
       noLogo: true,
     });

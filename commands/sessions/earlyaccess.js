@@ -8,6 +8,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("earlyaccess")
@@ -42,12 +45,12 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const description =
-      `> <:arrowright:1534182706836144158> ${host} has opened **Early Access**.\n` +
-      `> <:arrowright:1534182706836144158> Use the button below to get the link.`;
+      `> ${ARROW} ${host} has opened **Early Access**.\n` +
+      `> ${ARROW} Use the button below to get the link.`;
 
     const { embed, files } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Early Access__* <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Greenville Community - *__Early Access__* ${STAR}",
       description,
       banner: path.join(__dirname, "../../graphics/gvcearlyaccess.png"),
     });

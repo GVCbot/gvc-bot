@@ -12,8 +12,8 @@ const {
   loadWorkMessages,
 } = require("../../economy/economyutils");
 
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -82,7 +82,7 @@ module.exports = {
     desc += `> ${ARROW} **Work Messages Loaded:** ${workMessages.length}`;
 
     const { embed } = embedTemplate({
-      title: `${SUN} ${targetUser.username}'s Profile ${SUN}`,
+      title: `${STAR} ${targetUser.username}'s Profile ${STAR}`,
       description: desc,
     });
 

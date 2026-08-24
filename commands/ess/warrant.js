@@ -5,6 +5,10 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 // LEO roles allowed to use this command
 const LEO_ROLES = [
   "1352019732055851048",
@@ -45,9 +49,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Access Denied ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You are not authorized to issue warrants.",
+          "> ${ARROW} You are not authorized to issue warrants.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -83,15 +87,15 @@ module.exports = {
 
     // Build embed for LEO confirmation
     const desc =
-      `> <:arrowright:1534182706836144158> **Warrant Issued For:** <@${target.id}>\n` +
-      `> <:arrowright:1534182706836144158> **Case:** ${caseNumber}\n` +
-      `> <:arrowright:1534182706836144158> **Offense:** ${offense}\n` +
-      `> <:arrowright:1534182706836144158> **Reason:** ${reason}\n` +
-      `> <:arrowright:1534182706836144158> **Status:** ⚠️ Active Warrant`;
+      `> ${ARROW} **Warrant Issued For:** <@${target.id}>\n` +
+      `> ${ARROW} **Case:** ${caseNumber}\n` +
+      `> ${ARROW} **Offense:** ${offense}\n` +
+      `> ${ARROW} **Reason:** ${reason}\n` +
+      `> ${ARROW} **Status:** ⚠️ Active Warrant`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Warrant Issued <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Warrant Issued ${STAR}",
       description: desc,
       noLogo: true,
     });
@@ -103,15 +107,15 @@ module.exports = {
     // DM the user
     try {
       const dmDesc =
-        `> <:arrowright:1534182706836144158> **A warrant has been issued for you.**\n\n` +
-        `> <:bulletpoint:1534184707900837961> **Case:** ${caseNumber}\n` +
-        `> <:bulletpoint:1534184707900837961> **Offense:** ${offense}\n` +
-        `> <:bulletpoint:1534184707900837961> **Reason:** ${reason}\n` +
-        `> <:bulletpoint:1534184707900837961> **Issued By:** ${interaction.user.username}`;
+        `> ${ARROW} **A warrant has been issued for you.**\n\n` +
+        `> ${BULLETPOINT} **Case:** ${caseNumber}\n` +
+        `> ${BULLETPOINT} **Offense:** ${offense}\n` +
+        `> ${BULLETPOINT} **Reason:** ${reason}\n` +
+        `> ${BULLETPOINT} **Issued By:** ${interaction.user.username}`;
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Active Warrant Notice <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Active Warrant Notice ${STAR}",
         description: dmDesc,
         noLogo: true,
       });

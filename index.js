@@ -67,8 +67,8 @@ const HR_ROLE_ID = "1350582607217430650";
 const SESSION_BUTTON_LOG = "1515684241101295646";
 const OTHER_BUTTON_LOG = "1536797059355508826";
 
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 const SESSION_LINK_IDS = ["rl_", "ri_", "ea_", "regen_"];
 
@@ -93,7 +93,7 @@ boot("Global protection enabled");
 function createRecoveredEmbed(originalEmbed, executor, timestamp) {
   const recoveredEmbed = { ...originalEmbed.data };
   recoveredEmbed.color = parseInt("db2727", 16);
-  recoveredEmbed.title = `${SUN} RECOVERED DELETED LOG BY ${executor.tag || executor.username} AT ${timestamp} ${SUN}`;
+  recoveredEmbed.title = `${STAR} RECOVERED DELETED LOG BY ${executor.tag || executor.username} AT ${timestamp} ${STAR}`;
   return recoveredEmbed;
 }
 
@@ -188,7 +188,7 @@ function logButtonClick(interaction) {
     `> ${ARROW} **Clicked At:** ${timestamp}`;
 
   const { embed } = embedTemplate({
-    title: `${SUN} Button Click Logged ${SUN}`,
+    title: `${STAR} Button Click Logged ${STAR}`,
     description: logDescription,
     noLogo: true,
   });
@@ -465,12 +465,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // Prevent duplicate execution/logging
     if (interaction.noLog) return;
 
-    let logTitle = `${SUN} Interaction Used ${SUN}`;
+    let logTitle = `${STAR} Interaction Used ${STAR}`;
     let extraDetails = "";
     let logChannels = [GENERAL_LOG_CHANNEL];
 
     if (interaction.isChatInputCommand()) {
-      logTitle = `${SUN} Command Used ${SUN}`;
+      logTitle = `${STAR} Command Used ${STAR}`;
 
       const flatOptions = flattenOptions(interaction.options.data);
       const optionsFormatted = flatOptions
@@ -486,15 +486,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } else if (interaction.isButton()) {
       logButtonClick(interaction);
     } else if (interaction.isAnySelectMenu()) {
-      logTitle = `${SUN} Menu Selected ${SUN}`;
+      logTitle = `${STAR} Menu Selected ${STAR}`;
       extraDetails =
         `> ${ARROW} **Menu ID:** ${interaction.customId}\n` +
         `> ${ARROW} **Values:** ${interaction.values.join(", ")}`;
     } else if (interaction.isModalSubmit()) {
-      logTitle = `${SUN} Modal Submitted ${SUN}`;
+      logTitle = `${STAR} Modal Submitted ${STAR}`;
       extraDetails = `> ${ARROW} **Modal ID:** ${interaction.customId}`;
     } else if (interaction.isContextMenuCommand()) {
-      logTitle = `${SUN} Context Menu Used ${SUN}`;
+      logTitle = `${STAR} Context Menu Used ${STAR}`;
       extraDetails = `> ${ARROW} **Context Command:** ${interaction.commandName}`;
       if (isSessionRelated(interaction.commandName))
         logChannels = [GENERAL_LOG_CHANNEL, SESSION_LOG_CHANNEL];
@@ -569,7 +569,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       const { embed, files } = embedTemplate({
-        title: `${SUN} Support Ticket Created ${SUN}`,
+        title: `${STAR} Support Ticket Created ${STAR}`,
         description:
           `${ARROW} **Opened By:** ${user}\n` +
           `${ARROW} **Type:** ${selection.charAt(0).toUpperCase() + selection.slice(1)} Support\n` +
@@ -637,7 +637,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         newEmbed.setFooter({ text: "Status: UNCLAIMED" });
 
         const { embed } = embedTemplate({
-          title: `${SUN} Ticket Unclaimed ${SUN}`,
+          title: `${STAR} Ticket Unclaimed ${STAR}`,
           description: `${ARROW} **${interaction.user}** has unclaimed this ticket.`,
           noLogo: false,
         });
@@ -661,7 +661,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       newEmbed.setFooter({ text: `Claimed by:${interaction.user.id}` });
 
       const { embed } = embedTemplate({
-        title: `${SUN} Ticket Claimed ${SUN}`,
+        title: `${STAR} Ticket Claimed ${STAR}`,
         description: `${ARROW} **${interaction.user}** has claimed this ticket.`,
         noLogo: false,
       });
@@ -721,7 +721,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       await transcriptChannel.send({
-        content: `${SUN} **Transcript for:** ${channel.name}\n${ARROW} Closed by: <@${interaction.user.id}>`,
+        content: `${STAR} **Transcript for:** ${channel.name}\n${ARROW} Closed by: <@${interaction.user.id}>`,
         files: [
           {
             attachment: Buffer.from(transcriptText, "utf-8"),
@@ -731,7 +731,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       const { embed } = embedTemplate({
-        title: `${SUN} Ticket Closed ${SUN}`,
+        title: `${STAR} Ticket Closed ${STAR}`,
         description:
           `${ARROW} Closed by: ${interaction.user}\n` +
           `${ARROW} Transcript has been saved.`,
@@ -814,7 +814,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           : null;
 
       const { embed } = embedTemplate({
-        title: `${SUN} ${viewerId === targetId ? "Your" : `${targetMember?.user.username}'s`} Records ${SUN}`,
+        title: `${STAR} ${viewerId === targetId ? "Your" : `${targetMember?.user.username}'s`} Records ${STAR}`,
         description: desc,
         noLogo: true,
       });
@@ -861,7 +861,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       if (cash < citation.price) {
         const { embed } = embedTemplate({
-          title: `${SUN} Insufficient Cash ${SUN}`,
+          title: `${STAR} Insufficient Cash ${STAR}`,
           description:
             `> ${ARROW} **Required:** $${citation.price}\n` +
             `> ${ARROW} **You Have:** $${cash}\n\n` +
@@ -877,7 +877,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await updateUserRecord(userRecord);
 
       const { embed } = embedTemplate({
-        title: `${SUN} Fine Paid ${SUN}`,
+        title: `${STAR} Fine Paid ${STAR}`,
         description:
           `> ${ARROW} **Case:** ${citation.case}\n` +
           `> ${ARROW} **Violation:** ${citation.violation}\n` +
@@ -1431,7 +1431,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       const { embed } = embedTemplate({
-        title: `${SUN} Session Link ${SUN}`,
+        title: `${STAR} Session Link ${STAR}`,
         description: `> ${ARROW} Here is your link:\n${msg.sessionLink}`,
       });
 
@@ -1588,11 +1588,11 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
       // ===============================
       const { embed: setupEmbed, files } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Session Setup__* <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Greenville Community - *__Session Setup__* ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> The reaction goal has been reached!\n" +
-          "> <:arrowright:1534182706836144158> The host is now setting up the session.\n" +
-          "> <:arrowright:1534182706836144158> Please be patient.",
+          "> ${ARROW} The reaction goal has been reached!\n" +
+          "> ${ARROW} The host is now setting up the session.\n" +
+          "> ${ARROW} Please be patient.",
       });
 
       await message.channel.send({ embeds: [setupEmbed], files });
@@ -1615,25 +1615,14 @@ if (!process.env.TOKEN) {
 }
 
 boot("TOKEN present", `length ${process.env.TOKEN.length}`);
-
-const LOGIN_TIMEOUT_MS = 45_000;
-const loginWatchdog = setTimeout(() => {
-  console.error(
-    `🔴 WATCHDOG: client.login() has not resolved to ClientReady after ${
-      LOGIN_TIMEOUT_MS / 1000
-    }s. Restarting process to retry with a fresh connection attempt.`,
-  );
-}, LOGIN_TIMEOUT_MS);
-
-client.once(Events.ClientReady, () => clearTimeout(loginWatchdog));
-
 boot("Attempting client.login()");
 
 client
   .login(process.env.TOKEN)
-  .then(() => boot("login() promise resolved", "waiting for ClientReady..."))
+  .then(() => {
+    boot("login() promise resolved", "waiting for ClientReady...");
+  })
   .catch((err) => {
-    clearTimeout(loginWatchdog);
     console.error("🔴 client.login() failed:", err);
     process.exit(1);
   });

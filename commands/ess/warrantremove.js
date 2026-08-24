@@ -5,6 +5,10 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 // LEO roles allowed to use this command
 const LEO_ROLES = [
   "1352019732055851048",
@@ -39,9 +43,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Access Denied ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You are not authorized to remove warrants.",
+          "> ${ARROW} You are not authorized to remove warrants.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -65,8 +69,8 @@ module.exports = {
     if (index === -1) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Warrant Not Found <a:gvcsunspin:1527220557890850846>",
-        description: `> <:arrowright:1534182706836144158> No warrant found with case **${caseNumber}**.`,
+          "${STAR} Warrant Not Found ${STAR}",
+        description: `> ${ARROW} No warrant found with case **${caseNumber}**.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -77,14 +81,14 @@ module.exports = {
 
     // Confirmation embed
     const desc =
-      `> <:arrowright:1534182706836144158> **Warrant Removed For:** <@${target.id}>\n` +
-      `> <:arrowright:1534182706836144158> **Case:** ${removed.case}\n` +
-      `> <:arrowright:1534182706836144158> **Offense:** ${removed.offense}\n` +
-      `> <:arrowright:1534182706836144158> **Reason:** ${removed.reason}`;
+      `> ${ARROW} **Warrant Removed For:** <@${target.id}>\n` +
+      `> ${ARROW} **Case:** ${removed.case}\n` +
+      `> ${ARROW} **Offense:** ${removed.offense}\n` +
+      `> ${ARROW} **Reason:** ${removed.reason}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Warrant Removed <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Warrant Removed ${STAR}",
       description: desc,
       noLogo: true,
     });
@@ -96,15 +100,15 @@ module.exports = {
     // DM the user
     try {
       const dmDesc =
-        `> <:arrowright:1534182706836144158> **A warrant has been removed from your record.**\n\n` +
-        `> <:bulletpoint:1534184707900837961> **Case:** ${removed.case}\n` +
-        `> <:bulletpoint:1534184707900837961> **Offense:** ${removed.offense}\n` +
-        `> <:bulletpoint:1534184707900837961> **Reason:** ${removed.reason}\n` +
-        `> <:bulletpoint:1534184707900837961> **Removed By:** ${interaction.user.username}`;
+        `> ${ARROW} **A warrant has been removed from your record.**\n\n` +
+        `> ${BULLETPOINT} **Case:** ${removed.case}\n` +
+        `> ${BULLETPOINT} **Offense:** ${removed.offense}\n` +
+        `> ${BULLETPOINT} **Reason:** ${removed.reason}\n` +
+        `> ${BULLETPOINT} **Removed By:** ${interaction.user.username}`;
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Warrant Removed <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Warrant Removed ${STAR}",
         description: dmDesc,
         noLogo: true,
       });

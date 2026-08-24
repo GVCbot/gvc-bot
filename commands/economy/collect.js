@@ -6,6 +6,9 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("collect")
@@ -68,9 +71,9 @@ module.exports = {
     await updateUserRecord(user);
 
     let desc = "";
-    desc += `> <:arrowright:1534182706836144158> **Total Collected:** $${totalIncome}\n`;
-    desc += `> <:arrowright:1534182706836144158> **New Cash Balance:** $${user.cash.toLocaleString()}\n\n`;
-    desc += `> <:arrowright:1534182706836144158> **Income Breakdown:**\n`;
+    desc += `> ${ARROW} **Total Collected:** $${totalIncome}\n`;
+    desc += `> ${ARROW} **New Cash Balance:** $${user.cash.toLocaleString()}\n\n`;
+    desc += `> ${ARROW} **Income Breakdown:**\n`;
 
     for (const entry of earnedFrom) {
       const role = interaction.guild.roles.cache.get(entry.roleId);
@@ -80,7 +83,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Income Collected <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Income Collected ${STAR}>",
       description: desc,
       noLogo: true,
     });

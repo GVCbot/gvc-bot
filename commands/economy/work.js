@@ -6,6 +6,9 @@ const {
 } = require("../../economy/economyutils");
 const embedTemplate = require("../../utils/embedTemplate");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 // Weighted random payout function
 function getWorkPayout() {
   const roll = Math.random();
@@ -65,13 +68,13 @@ module.exports = {
       await updateUserRecord(user);
 
       const desc =
-        `> <:arrowright:1534182706836144158> ${message}\n` +
-        `> <:arrowright:1534182706836144158> You earned **$${payout.toLocaleString()}**!\n\n` +
-        `> <:arrowright:1534182706836144158> **New Cash Balance:** $${user.cash.toLocaleString()}`;
+        `> ${ARROW} ${message}\n` +
+        `> ${ARROW} You earned **$${payout.toLocaleString()}**!\n\n` +
+        `> ${ARROW} **New Cash Balance:** $${user.cash.toLocaleString()}`;
 
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Work Complete <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Work Complete ${STAR}",
         description: desc,
         noLogo: true,
       });

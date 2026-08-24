@@ -3,6 +3,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("cancel")
@@ -43,12 +46,12 @@ module.exports = {
     }
 
     const description =
-      `> <:arrowright:1534182706836144158> This session has been canceled by ${host}.\n\n` +
-      `> <:arrowright:1534182706836144158> **Reason:** ${notes}`;
+      `> ${ARROW} This session has been canceled by ${host}.\n\n` +
+      `> ${ARROW} **Reason:** ${notes}`;
 
     const { embed, files } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Session Cancelled__* <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Greenville Community - *__Session Cancelled__* ${STAR}",
       description,
       banner: path.join(__dirname, "../../graphics/gvccancelled.png"),
     });

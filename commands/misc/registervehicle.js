@@ -4,6 +4,10 @@ const { getUserRecord, updateUserRecord } = require("../../economy/economyutils"
 
 const PREMIUM_ROLE = "1445765392168517745"; // Premium vehicle slot role
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("registervehicle")
@@ -47,10 +51,10 @@ module.exports = {
       const { embed } = embedTemplate({
         title: "🚫 Vehicle Limit Reached",
         description:
-          `> <:arrowright:1534182706836144158> You can only register **${limit} vehicles**.\n` +
+          `> ${ARROW} You can only register **${limit} vehicles**.\n` +
           (hasPremium
-            ? "> <:arrowright:1534182706836144158> You already have the premium role."
-            : "> <:arrowright:1534182706836144158> Unlock **15 slots** with the premium role.")
+            ? "> ${ARROW} You already have the premium role."
+            : "> ${ARROW} Unlock **15 slots** with the premium role.")
       });
 
       embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
@@ -66,7 +70,7 @@ module.exports = {
       const { embed } = embedTemplate({
         title: "❌ Duplicate Vehicle",
         description:
-          `> <:arrowright:1534182706836144158> You already registered a vehicle with plate **${plate}**.`
+          `> ${ARROW} You already registered a vehicle with plate **${plate}**.`
       });
 
       embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
@@ -80,15 +84,15 @@ module.exports = {
     await updateUserRecord(user);
 
     const desc =
-      `> <:bulletpoint:1534184707900837961> **Year:** ${year}\n` +
-      `> <:bulletpoint:1534184707900837961> **Make:** ${make}\n` +
-      `> <:bulletpoint:1534184707900837961> **Model:** ${model}\n` +
-      `> <:bulletpoint:1534184707900837961> **Color:** ${color}\n` +
-      `> <:bulletpoint:1534184707900837961> **Plate:** ${plate}`;
+      `> ${BULLETPOINT} **Year:** ${year}\n` +
+      `> ${BULLETPOINT} **Make:** ${make}\n` +
+      `> ${BULLETPOINT} **Model:** ${model}\n` +
+      `> ${BULLETPOINT} **Color:** ${color}\n` +
+      `> ${BULLETPOINT} **Plate:** ${plate}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Vehicle Registered <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Vehicle Registered ${STAR}",
       description: desc
     });
 

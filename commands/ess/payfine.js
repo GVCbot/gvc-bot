@@ -9,6 +9,9 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("payfine")
@@ -24,9 +27,9 @@ module.exports = {
     if (!userRecord.records || !userRecord.records.citations) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> No Citations <a:gvcsunspin:1527220557890850846>",
+          "${STAR} No Citations ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You have no outstanding citations.",
+          "> ${ARROW} You have no outstanding citations.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -37,9 +40,9 @@ module.exports = {
     if (citations.length === 0) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> No Citations <a:gvcsunspin:1527220557890850846>",
+          "${STAR} No Citations ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You have no outstanding citations.",
+          "> ${ARROW} You have no outstanding citations.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -61,9 +64,9 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Pay a Citation <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Pay a Citation ${STAR}",
       description:
-        "> <:arrowright:1534182706836144158> Select a citation from the menu below.",
+        "> ${ARROW} Select a citation from the menu below.",
       noLogo: true,
     });
 

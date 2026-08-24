@@ -15,8 +15,8 @@ const LEO_ROLES = [
   "1058635001329107005",
 ];
 
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -38,7 +38,7 @@ module.exports = {
 
     if (!isLEO) {
       const { embed } = embedTemplate({
-        title: `${SUN} Access Denied ${SUN}`,
+        title: `${STAR} Access Denied ${STAR}`,
         description: `> ${ARROW} You are not authorized to use LEO commands.`,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -83,7 +83,7 @@ module.exports = {
       `> ${ARROW} **Plate:** ${foundVehicle.plate}`;
 
     const { embed } = embedTemplate({
-      title: `${SUN} Vehicle Lookup Result ${SUN}`,
+      title: `${STAR} Vehicle Lookup Result ${STAR}`,
       description: desc,
     });
 

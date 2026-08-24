@@ -5,7 +5,7 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
-const ARROW = "<:arrowright:1534182706836144158>";
+const ARROW = "<:arrowright:1541479360932876398>";
 const BYPASS_ROLE_ID = "1368142895181205636";
 const COOLDOWN_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 

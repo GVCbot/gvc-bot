@@ -2,6 +2,10 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const { getUserRecord, updateUserRecord } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("unregistervehicle")
@@ -33,7 +37,7 @@ module.exports = {
     if (vehicleIndex === -1) {
       const { embed } = embedTemplate({
         title: "❌ Vehicle Not Found",
-        description: `> <:arrowright:1534182706836144158> No vehicle with plate **${plate}** is registered to your profile.`
+        description: `> ${ARROW} No vehicle with plate **${plate}** is registered to your profile.`
       });
 
       embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
@@ -46,15 +50,15 @@ module.exports = {
 
     // Build success embed
     const desc =
-      `> <:bulletpoint:1534184707900837961> **Year:** ${removedVehicle.year}\n` +
-      `> <:bulletpoint:1534184707900837961> **Make:** ${removedVehicle.make}\n` +
-      `> <:bulletpoint:1534184707900837961> **Model:** ${removedVehicle.model}\n` +
-      `> <:bulletpoint:1534184707900837961> **Color:** ${removedVehicle.color}\n` +
-      `> <:bulletpoint:1534184707900837961> **Plate:** ${removedVehicle.plate}`;
+      `> ${BULLETPOINT} **Year:** ${removedVehicle.year}\n` +
+      `> ${BULLETPOINT} **Make:** ${removedVehicle.make}\n` +
+      `> ${BULLETPOINT} **Model:** ${removedVehicle.model}\n` +
+      `> ${BULLETPOINT} **Color:** ${removedVehicle.color}\n` +
+      `> ${BULLETPOINT} **Plate:** ${removedVehicle.plate}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Vehicle Unregistered <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Vehicle Unregistered ${STAR}",
       description: desc
     });
 

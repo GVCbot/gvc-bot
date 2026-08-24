@@ -3,6 +3,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("startup")
@@ -44,13 +47,12 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const { embed, files } = embedTemplate({
-      title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Session Startup__* <a:gvcsunspin:1527220557890850846>",
+      title: "${STAR} Greenville Community - *__Session Startup__* ${STAR}",
       description:
-        `> <:arrowright:1534182706836144158> ${host} is hosting a session.\n\n` +
+        `> ${ARROW} ${host} is hosting a session.\n\n` +
         `**Startup Information**\n` +
-        `> <:arrowright:1534182706836144158> If the reaction requirement is not met within 20 minutes, the session will be cancelled.\n` +
-        `> <:arrowright:1534182706836144158> Required reactions: **${reactionsNeeded}**`,
+        `> ${ARROW} If the reaction requirement is not met within 20 minutes, the session will be cancelled.\n` +
+        `> ${ARROW} Required reactions: **${reactionsNeeded}**`,
       banner: path.join(__dirname, "../../graphics/gvcstartup.png"),
     });
 

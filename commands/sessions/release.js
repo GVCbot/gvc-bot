@@ -8,6 +8,10 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("release")
@@ -69,18 +73,18 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const description =
-      `> <:arrowright:1534182706836144158> ${host} has released their session.\n` +
-      `> <:arrowright:1534182706836144158> Please read the rules below before joining.\n\n` +
+      `> ${ARROW} ${host} has released their session.\n` +
+      `> ${ARROW} Please read the rules below before joining.\n\n` +
       `**Session Rules:**\n` +
-      `> <:bulletpoint:1534184707900837961> **Peacetime Status:** ${peacetime}\n` +
-      `> <:bulletpoint:1534184707900837961> **Fail RP Speeds:** ${frp}MPH\n` +
-      `> <:bulletpoint:1534184707900837961> **Public Service Status:** ${ps}\n` +
-      `> <:bulletpoint:1534184707900837961> **Area of Roleplay:** ${aorp}\n\n` +
-      `> <:arrowright:1534182706836144158> Click the button below to receive the session link privately.\n`;
+      `> ${BULLETPOINT} **Peacetime Status:** ${peacetime}\n` +
+      `> ${BULLETPOINT} **Fail RP Speeds:** ${frp}MPH\n` +
+      `> ${BULLETPOINT} **Public Service Status:** ${ps}\n` +
+      `> ${BULLETPOINT} **Area of Roleplay:** ${aorp}\n\n` +
+      `> ${ARROW} Click the button below to receive the session link privately.\n`;
 
     const { embed, files } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Session Release__* <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Greenville Community - *__Session Release__* ${STAR}",
       description,
       banner: path.join(__dirname, "../../graphics/gvcrelease.png"),
     });

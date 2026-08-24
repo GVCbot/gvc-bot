@@ -8,6 +8,9 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("reinvites")
@@ -54,12 +57,12 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const description =
-      `> <:arrowright:1534182706836144158> ${host} is hosting reinvites.\n` +
-      `> <:arrowright:1534182706836144158> Click the button below to receive the reinvite link privately.`;
+      `> ${ARROW} ${host} is hosting reinvites.\n` +
+      `> ${ARROW} Click the button below to receive the reinvite link privately.`;
 
     const { embed, files } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Reinvites__* <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Greenville Community - *__Reinvites__* ${STAR}",
       description,
       banner: path.join(__dirname, "../../graphics/gvcreinvites.png"),
     });

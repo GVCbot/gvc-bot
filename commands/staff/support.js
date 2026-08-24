@@ -7,8 +7,8 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 
 const HR_ROLE = "1350582607217430650"; // GVC HR
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -29,7 +29,7 @@ module.exports = {
 
     // Single embed — compact, clean, announcement-style
     const { embed, files } = embedTemplate({
-      title: `${SUN} Server Support ${SUN}`,
+      title: `${STAR} Server Support ${STAR}`,
       description:
         `${ARROW} Welcome to the Greenville Community Server Support channel.\n` +
         `${ARROW} In this channel, you can open several different types of tickets — from general assistance to member reports.\n` +

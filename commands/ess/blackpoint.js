@@ -5,6 +5,10 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 // LEO roles allowed to use this command
 const LEO_ROLES = [
   "1352019732055851048",
@@ -39,9 +43,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Access Denied ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You are not authorized to add blackpoints.",
+          "> ${ARROW} You are not authorized to add blackpoints.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -52,9 +56,9 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Invalid Amount <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Invalid Amount ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> Amount must be greater than 0.",
+          "> ${ARROW} Amount must be greater than 0.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -73,13 +77,13 @@ module.exports = {
     await updateUserRecord(userRecord);
 
     const desc =
-      `> <:arrowright:1534182706836144158> **Blackpoints Added To:** <@${target.id}>\n` +
-      `> <:arrowright:1534182706836144158> **Amount:** ${amount}\n` +
-      `> <:arrowright:1534182706836144158> **New Total:** ${userRecord.records.blackpoints}`;
+      `> ${ARROW} **Blackpoints Added To:** <@${target.id}>\n` +
+      `> ${ARROW} **Amount:** ${amount}\n` +
+      `> ${ARROW} **New Total:** ${userRecord.records.blackpoints}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Blackpoints Added <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Blackpoints Added ${STAR}",
       description: desc,
       noLogo: true,
     });
@@ -91,14 +95,14 @@ module.exports = {
     // DM the user
     try {
       const dmDesc =
-        `> <:arrowright:1534182706836144158> **Blackpoints have been added to your record.**\n\n` +
-        `> <:bulletpoint:1534184707900837961> **Amount:** ${amount}\n` +
-        `> <:bulletpoint:1534184707900837961> **New Total:** ${userRecord.records.blackpoints}\n` +
-        `> <:bulletpoint:1534184707900837961> **Added By:** ${interaction.user.username}`;
+        `> ${ARROW} **Blackpoints have been added to your record.**\n\n` +
+        `> ${BULLETPOINT} **Amount:** ${amount}\n` +
+        `> ${BULLETPOINT} **New Total:** ${userRecord.records.blackpoints}\n` +
+        `> ${BULLETPOINT} **Added By:** ${interaction.user.username}`;
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Blackpoint Notice <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Blackpoint Notice ${STAR}",
         description: dmDesc,
         noLogo: true,
       });

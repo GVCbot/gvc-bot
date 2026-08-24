@@ -5,8 +5,8 @@ const protect = require("../../security/protect");
 // ===============================
 // 🔆 Global Constants (no repetition)
 // ===============================
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 const STAFF_ROLE_ID = "1350897509752373341";
 
 module.exports = {
@@ -87,7 +87,7 @@ module.exports = {
     if (sub === "aorp") {
       const value = interaction.options.getString("value");
 
-      title = `${SUN} Greenville Community - *__AORP Change__* ${SUN}`;
+      title = `${STAR} Greenville Community - *__AORP Change__* ${STAR}`;
       description = `${ARROW} AORP has been changed to **${value}** by ${host}.`;
     }
 
@@ -97,7 +97,7 @@ module.exports = {
     if (sub === "peacetime") {
       const status = interaction.options.getString("status");
 
-      title = `${SUN} Greenville Community - *__Peacetime Change__* ${SUN}`;
+      title = `${STAR} Greenville Community - *__Peacetime Change__* ${STAR}`;
 
       if (status === "strict") {
         description =
@@ -126,7 +126,7 @@ module.exports = {
     if (sub === "drift") {
       const status = interaction.options.getString("status");
 
-      title = `${SUN} Greenville Community - *__Drift Mode Change__* ${SUN}`;
+      title = `${STAR} Greenville Community - *__Drift Mode Change__* ${STAR}`;
 
       if (status === "off") {
         description =

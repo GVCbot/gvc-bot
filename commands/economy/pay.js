@@ -5,7 +5,7 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
-const GVCARROW = "<:arrowright:1534182706836144158>";
+const GVCARROW = "<:arrowright:1541479360932876398>";
 const invoiceChannelId = "1537770259677847612";
 
 module.exports = {

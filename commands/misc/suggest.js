@@ -2,8 +2,8 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 
 const SUGGESTION_CHANNEL = "1394669829189013668";
-const ARROW = "<:arrowright:1534182706836144158>";
-const SUN = "<a:gvcsunspin:1527220557890850846>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -37,7 +37,7 @@ module.exports = {
       `> ${ARROW} **Suggestion:** ${suggestion}`;
 
     const { embed } = embedTemplate({
-      title: `${SUN} New Suggestion Submitted ${SUN}`,
+      title: `${STAR} New Suggestion Submitted ${STAR}`,
       description: desc,
       noLogo: true,
     });
@@ -48,11 +48,11 @@ module.exports = {
     const sentMessage = await channel.send({ embeds: [embed] });
 
     // Auto-react with yes/no emojis
-    await sentMessage.react("1536265772379148298"); // <:summeryes:...>
-    await sentMessage.react("1536265802649571349"); // <:summerno:...>
+    await sentMessage.react("1541478847281889481");
+    await sentMessage.react("1541478254748246087");
 
     const { embed: confirmEmbed } = embedTemplate({
-      title: `${SUN} Suggestion Sent ${SUN}`,
+      title: `${STAR} Suggestion Sent ${STAR}`,
       description:
         `> ${ARROW} Your suggestion has been forwarded to the suggestion channel.\n` +
         `> ${ARROW} Thank you for helping improve Greenville Community.`,

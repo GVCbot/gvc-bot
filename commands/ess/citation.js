@@ -5,6 +5,10 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 // LEO roles allowed to use this command
 const LEO_ROLES = [
   "1352019732055851048",
@@ -54,9 +58,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Access Denied ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You are not authorized to issue citations.",
+          "> ${ARROW} You are not authorized to issue citations.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -96,16 +100,16 @@ module.exports = {
 
     // Build embed for LEO confirmation
     const desc =
-      `> <:arrowright:1534182706836144158> **Citation Issued To:** <@${target.id}>\n` +
-      `> <:arrowright:1534182706836144158> **Case:** ${caseNumber}\n` +
-      `> <:arrowright:1534182706836144158> **Violation:** ${violation}\n` +
-      `> <:arrowright:1534182706836144158> **Offense:** ${offense}\n` +
-      `> <:arrowright:1534182706836144158> **Price:** $${price}\n` +
-      `> <:arrowright:1534182706836144158> **Location:** ${location}`;
+      `> ${ARROW} **Citation Issued To:** <@${target.id}>\n` +
+      `> ${ARROW} **Case:** ${caseNumber}\n` +
+      `> ${ARROW} **Violation:** ${violation}\n` +
+      `> ${ARROW} **Offense:** ${offense}\n` +
+      `> ${ARROW} **Price:** $${price}\n` +
+      `> ${ARROW} **Location:** ${location}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Citation Added <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Citation Added ${STAR}",
       description: desc,
       noLogo: true,
     });
@@ -117,17 +121,17 @@ module.exports = {
     // DM the user
     try {
       const dmDesc =
-        `> <:arrowright:1534182706836144158> **You have received a citation.**\n\n` +
-        `> <:bulletpoint:1534184707900837961> **Case:** ${caseNumber}\n` +
-        `> <:bulletpoint:1534184707900837961> **Violation:** ${violation}\n` +
-        `> <:bulletpoint:1534184707900837961> **Offense:** ${offense}\n` +
-        `> <:bulletpoint:1534184707900837961> **Price:** $${price}\n` +
-        `> <:bulletpoint:1534184707900837961> **Location:** ${location}\n` +
-        `> <:bulletpoint:1534184707900837961> **Issued By:** ${interaction.user.username}`;
+        `> ${ARROW} **You have received a citation.**\n\n` +
+        `> ${BULLETPOINT} **Case:** ${caseNumber}\n` +
+        `> ${BULLETPOINT} **Violation:** ${violation}\n` +
+        `> ${BULLETPOINT} **Offense:** ${offense}\n` +
+        `> ${BULLETPOINT} **Price:** $${price}\n` +
+        `> ${BULLETPOINT} **Location:** ${location}\n` +
+        `> ${BULLETPOINT} **Issued By:** ${interaction.user.username}`;
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> New Citation Issued <a:gvcsunspin:1527220557890850846>",
+          "${STAR} New Citation Issued ${STAR}",
         description: dmDesc,
         noLogo: true,
       });

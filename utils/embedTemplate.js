@@ -2,7 +2,7 @@ const { EmbedBuilder, AttachmentBuilder } = require("discord.js");
 const path = require("node:path");
 
 // Default GVRE brand color
-const DEFAULT_COLOR = 0xffad65;
+const DEFAULT_COLOR = 0x7f34eb;
 
 // Default logo path (inside graphics folder)
 const DEFAULT_LOGO = path.join(__dirname, "..", "graphics", "GVClogo.png");

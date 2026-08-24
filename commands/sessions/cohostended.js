@@ -2,6 +2,9 @@ const { SlashCommandBuilder } = require("discord.js");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("cohostended")
@@ -24,11 +27,11 @@ module.exports = {
 
     const host = interaction.user;
 
-    const description = `> <:arrowright:1534182706836144158> ${host} has ended their co-host duties.`;
+    const description = `> ${ARROW} ${host} has ended their co-host duties.`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Co-host Ended__* <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Greenville Community - *__Co-host Ended__* ${STAR}",
       description,
     });
 

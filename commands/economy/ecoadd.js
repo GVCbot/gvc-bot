@@ -7,6 +7,10 @@ const {
 
 const HR_ROLE_ID = "1350582607217430650"; // HR Staff role
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ecoadd")
@@ -31,9 +35,9 @@ module.exports = {
     if (!interaction.member.roles.cache.has(HR_ROLE_ID)) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Access Denied ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> Only HR staff can use this command.",
+          "> ${ARROW} Only HR staff can use this command.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -46,9 +50,9 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Invalid Amount <a:gvcsunspin:1527220557890850846>",
+          "${STAR}Invalid Amount ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> Amount must be greater than 0.",
+          "> $(ARROW) Amount must be greater than 0.",
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -64,13 +68,13 @@ module.exports = {
     await updateUserRecord(receiverRecord);
 
     const desc =
-      `> <:bulletpoint:1534184707900837961> **Added to:** <@${receiver.id}>\n` +
-      `> <:bulletpoint:1534184707900837961> **Amount:** $${amount.toLocaleString()}\n` +
-      `> <:bulletpoint:1534184707900837961> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`;
+      `> ${BULLETPOINT} **Added to:** <@${receiver.id}>\n` +
+      `> ${BULLETPOINT} **Amount:** $${amount.toLocaleString()}\n` +
+      `> ${BULLETPOINT} **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Money Added <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Money Added ${STAR}",
       description: desc,
       noLogo: true,
     });
@@ -83,11 +87,11 @@ module.exports = {
     try {
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Money Received <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Money Received ${STAR}",
         description:
-          `> <:bulletpoint:1524621721318195230> **From:** ${hrMember.user.username} (HR)\n` +
-          `> <:bulletpoint:1524621721318195230> **Amount:** $${amount.toLocaleString()}\n` +
-          `> <:bulletpoint:1524621721318195230> **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
+          `> ${BULLETPOINT} **From:** ${hrMember.user.username} (HR)\n` +
+          `> ${BULLETPOINT} **Amount:** $${amount.toLocaleString()}\n` +
+          `> ${BULLETPOINT} **New Cash Balance:** $${receiverRecord.cash.toLocaleString()}`,
         noLogo: true,
       });
 

@@ -5,6 +5,10 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+const BULLETPOINT = "<:bulletpoint:1541479624209604608>";
+
 // LEO roles allowed to use this command
 const LEO_ROLES = [
   "1352019732055851048",
@@ -39,9 +43,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Access Denied <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Access Denied ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> You are not authorized to remove blackpoints.",
+          "> ${ARROW} You are not authorized to remove blackpoints.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -62,8 +66,8 @@ module.exports = {
     if (currentPoints <= 0) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> No Blackpoints <a:gvcsunspin:1527220557890850846>",
-        description: `> <:arrowright:1534182706836144158> <@${target.id}> currently has 0 blackpoints.`,
+          "${STAR} No Blackpoints ${STAR}",
+        description: `> ${ARROW} <@${target.id}> currently has 0 blackpoints.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -79,9 +83,9 @@ module.exports = {
     if (isNaN(amountToRemove) || amountToRemove <= 0) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Invalid Amount <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Invalid Amount ${STAR}",
         description:
-          "> <:arrowright:1534182706836144158> Please provide a valid positive number or type `'all'`.",
+          "> ${ARROW} Please provide a valid positive number or type `'all'`.",
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -89,8 +93,8 @@ module.exports = {
     if (amountToRemove > currentPoints) {
       const { embed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Invalid Amount <a:gvcsunspin:1527220557890850846>",
-        description: `> <:arrowright:1534182706836144158> Cannot remove **${amountToRemove}** blackpoints because <@${target.id}> only has **${currentPoints}**.`,
+          "${STAR} Invalid Amount ${STAR}",
+        description: `> ${ARROW} Cannot remove **${amountToRemove}** blackpoints because <@${target.id}> only has **${currentPoints}**.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -101,13 +105,13 @@ module.exports = {
     await updateUserRecord(userRecord);
 
     const desc =
-      `> <:arrowright:1534182706836144158> **Blackpoints Removed From:** <@${target.id}>\n` +
-      `> <:arrowright:1534182706836144158> **Amount Removed:** ${amountToRemove}\n` +
-      `> <:arrowright:1534182706836144158> **New Total:** ${userRecord.records.blackpoints}`;
+      `> ${ARROW} **Blackpoints Removed From:** <@${target.id}>\n` +
+      `> ${ARROW} **Amount Removed:** ${amountToRemove}\n` +
+      `> ${ARROW} **New Total:** ${userRecord.records.blackpoints}`;
 
     const { embed } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Blackpoints Removed <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Blackpoints Removed ${STAR}",
       description: desc,
       noLogo: true,
     });
@@ -119,14 +123,14 @@ module.exports = {
     // DM the user
     try {
       const dmDesc =
-        `> <:arrowright:1534182706836144158> **Blackpoints have been removed from your record.**\n\n` +
-        `> <:bulletpoint:1534184707900837961> **Amount Removed:** ${amountToRemove}\n` +
-        `> <:bulletpoint:1534184707900837961> **New Total:** ${userRecord.records.blackpoints}\n` +
-        `> <:bulletpoint:1534184707900837961> **Removed By:** ${interaction.user.username}`;
+        `> ${ARROW} **Blackpoints have been removed from your record.**\n\n` +
+        `> ${BULLETPOINT} **Amount Removed:** ${amountToRemove}\n` +
+        `> ${BULLETPOINT} **New Total:** ${userRecord.records.blackpoints}\n` +
+        `> ${BULLETPOINT} **Removed By:** ${interaction.user.username}`;
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Blackpoint Removal Notice <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Blackpoint Removal Notice ${STAR}",
         description: dmDesc,
         noLogo: true,
       });

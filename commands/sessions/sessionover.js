@@ -3,6 +3,8 @@ const path = require("node:path");
 const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 
+const STAR = "<a:starspin:1541482139759935558>";
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("sessionover")
@@ -116,7 +118,7 @@ module.exports = {
 
     const { embed, files } = embedTemplate({
       title:
-        "<a:gvcsunspin:1527220557890850846> Greenville Community - *__Session Over__* <a:gvcsunspin:1527220557890850846>",
+        "${STAR} Greenville Community - *__Session Over__* ${STAR}",
       description,
       banner: path.join(__dirname, "../../graphics/gvcsessionover.png"),
     });
@@ -137,7 +139,7 @@ module.exports = {
 
       const { embed: logEmbed } = embedTemplate({
         title:
-          "<a:gvcsunspin:1527220557890850846> Session Logged <a:gvcsunspin:1527220557890850846>",
+          "${STAR} Session Logged ${STAR}",
         description:
           `> **Host:** ${host} (${host.id})\n` +
           `> **Channel:** ${interaction.channel} (${interaction.channel.id})\n` +
