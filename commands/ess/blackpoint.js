@@ -56,7 +56,7 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Invalid Amount ${STAR}",
+          `${STAR} Invalid Amount ${STAR}`,
         description:
           "> ${ARROW} Amount must be greater than 0.",
       });
@@ -102,7 +102,7 @@ module.exports = {
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "${STAR} Blackpoint Notice ${STAR}",
+          `${STAR} Blackpoint Notice ${STAR}`,
         description: dmDesc,
         noLogo: true,
       });

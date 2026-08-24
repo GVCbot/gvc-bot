@@ -58,7 +58,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Vehicle Unregistered ${STAR}",
+        `${STAR} Vehicle Unregistered ${STAR}`,
       description: desc
     });
 

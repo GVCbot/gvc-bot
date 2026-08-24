@@ -47,7 +47,7 @@ module.exports = {
     await interaction.deferReply({ flags: 64 });
 
     const { embed, files } = embedTemplate({
-      title: "${STAR} Greenville Community - *__Session Startup__* ${STAR}",
+      title: `${STAR} Greenville Community - *__Session Startup__* ${STAR}`,
       description:
         `> ${ARROW} ${host} is hosting a session.\n\n` +
         `**Startup Information**\n` +

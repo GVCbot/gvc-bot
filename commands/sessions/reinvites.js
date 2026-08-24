@@ -16,10 +16,7 @@ module.exports = {
     .setName("reinvites")
     .setDescription("Send the reinvites embed")
     .addStringOption((option) =>
-      option
-        .setName("link")
-        .setDescription("Session link (e.g., https://discord.gg/yourlink)")
-        .setRequired(true),
+      option.setName("link").setDescription("Session Code").setRequired(true),
     ),
 
   async execute(interaction) {
@@ -47,11 +44,16 @@ module.exports = {
       });
     }
 
-    let link = protect.sanitize(interaction.options.getString("link"));
+    // Get raw Greenville private server code
+    const code = interaction.options.getString("link").trim();
     const host = interaction.user;
 
-    if (!link.startsWith("http://") && !link.startsWith("https://")) {
-      link = `https://${link}`;
+    // Optional: basic empty check
+    if (!code) {
+      return interaction.reply({
+        content: "You must provide a Greenville private server code.",
+        flags: 64,
+      });
     }
 
     await interaction.deferReply({ flags: 64 });
@@ -61,8 +63,7 @@ module.exports = {
       `> ${ARROW} Click the button below to receive the reinvite link privately.`;
 
     const { embed, files } = embedTemplate({
-      title:
-        "${STAR} Greenville Community - *__Reinvites__* ${STAR}",
+      title: `${STAR} Greenville Community - *__Reinvites__* ${STAR}`,
       description,
       banner: path.join(__dirname, "../../graphics/gvcreinvites.png"),
     });
@@ -102,7 +103,7 @@ module.exports = {
       });
     }
 
-    sent.sessionLink = link;
+    sent.sessionCode = code;
 
     await interaction.editReply({
       content: "Reinvites embed sent successfully.",

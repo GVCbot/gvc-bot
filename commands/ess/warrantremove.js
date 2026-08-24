@@ -43,9 +43,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Access Denied ${STAR}",
+          `${STAR} Access Denied ${STAR}`,
         description:
-          "> ${ARROW} You are not authorized to remove warrants.",
+          `> ${ARROW} You are not authorized to remove warrants.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -69,7 +69,7 @@ module.exports = {
     if (index === -1) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Warrant Not Found ${STAR}",
+          `${STAR} Warrant Not Found ${STAR}`,
         description: `> ${ARROW} No warrant found with case **${caseNumber}**.`,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -88,7 +88,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Warrant Removed ${STAR}",
+        `${STAR} Warrant Removed ${STAR}`,
       description: desc,
       noLogo: true,
     });
@@ -108,7 +108,7 @@ module.exports = {
 
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "${STAR} Warrant Removed ${STAR}",
+          `${STAR} Warrant Removed ${STAR}`,
         description: dmDesc,
         noLogo: true,
       });

@@ -139,7 +139,7 @@ module.exports = {
 
       const { embed: logEmbed } = embedTemplate({
         title:
-          "${STAR} Session Logged ${STAR}",
+          `${STAR} Session Logged ${STAR}`,
         description:
           `> **Host:** ${host} (${host.id})\n` +
           `> **Channel:** ${interaction.channel} (${interaction.channel.id})\n` +

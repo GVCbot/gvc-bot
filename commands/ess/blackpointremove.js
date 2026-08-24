@@ -43,9 +43,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Access Denied ${STAR}",
+          `${STAR} Access Denied ${STAR}`,
         description:
-          "> ${ARROW} You are not authorized to remove blackpoints.",
+          `> ${ARROW} You are not authorized to remove blackpoints.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -66,7 +66,7 @@ module.exports = {
     if (currentPoints <= 0) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} No Blackpoints ${STAR}",
+          `${STAR} No Blackpoints ${STAR}`,
         description: `> ${ARROW} <@${target.id}> currently has 0 blackpoints.`,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -83,9 +83,9 @@ module.exports = {
     if (isNaN(amountToRemove) || amountToRemove <= 0) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Invalid Amount ${STAR}",
+          `${STAR} Invalid Amount ${STAR}`,
         description:
-          "> ${ARROW} Please provide a valid positive number or type `'all'`.",
+          `> ${ARROW} Please provide a valid positive number or type "all".`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -93,7 +93,7 @@ module.exports = {
     if (amountToRemove > currentPoints) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Invalid Amount ${STAR}",
+          `${STAR} Invalid Amount ${STAR}`,
         description: `> ${ARROW} Cannot remove **${amountToRemove}** blackpoints because <@${target.id}> only has **${currentPoints}**.`,
       });
       return interaction.editReply({ embeds: [embed] });

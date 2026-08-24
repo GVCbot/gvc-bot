@@ -83,7 +83,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Income Collected ${STAR}>",
+        `${STAR} Income Collected ${STAR}`,
       description: desc,
       noLogo: true,
     });

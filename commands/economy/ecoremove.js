@@ -50,7 +50,7 @@ module.exports = {
     if (amount <= 0) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Invalid Amount ${STAR}",
+          `${STAR} Invalid Amount ${STAR}`,
         description:
           "> ${ARROW} Amount must be greater than 0.",
         noLogo: true,
@@ -65,7 +65,7 @@ module.exports = {
     if (receiverRecord.cash < amount) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Insufficient Funds ${STAR}",
+          `${STAR} Insufficient Funds ${STAR}`,
         description:
           "> ${ARROW} That user does not have enough cash.",
         noLogo: true,
@@ -85,7 +85,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Money Removed ${STAR}",
+        `${STAR} Money Removed ${STAR}`,
       description: desc,
       noLogo: true,
     });
@@ -98,7 +98,7 @@ module.exports = {
     try {
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "${STAR} Money Removed ${STAR}",
+          `${STAR} Money Removed ${STAR}`,
         description:
           `> ${BULLETPOINT} **By:** ${hrMember.user.username} (HR)\n` +
           `> ${BULLETPOINT} **Amount Removed:** $${amount.toLocaleString()}\n` +

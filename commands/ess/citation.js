@@ -58,9 +58,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Access Denied ${STAR}",
+          `${STAR} Access Denied ${STAR}`,
         description:
-          "> ${ARROW} You are not authorized to issue citations.",
+          `> ${ARROW} You are not authorized to issue citations.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -109,7 +109,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Citation Added ${STAR}",
+        `${STAR} Citation Added ${STAR}`,
       description: desc,
       noLogo: true,
     });

@@ -49,9 +49,9 @@ module.exports = {
     if (!isLEO) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} Access Denied ${STAR}",
+          `${STAR} Access Denied ${STAR}`,
         description:
-          "> ${ARROW} You are not authorized to issue warrants.",
+          `> ${ARROW} You are not authorized to issue warrants.`,
       });
       return interaction.editReply({ embeds: [embed] });
     }
@@ -95,7 +95,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Warrant Issued ${STAR}",
+        `${STAR} Warrant Issued ${STAR}`,
       description: desc,
       noLogo: true,
     });

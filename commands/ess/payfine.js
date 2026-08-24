@@ -27,9 +27,9 @@ module.exports = {
     if (!userRecord.records || !userRecord.records.citations) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} No Citations ${STAR}",
+          `${STAR} No Citations ${STAR}`,
         description:
-          "> ${ARROW} You have no outstanding citations.",
+          `> ${ARROW} You have no outstanding citations.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -40,9 +40,9 @@ module.exports = {
     if (citations.length === 0) {
       const { embed } = embedTemplate({
         title:
-          "${STAR} No Citations ${STAR}",
+          `${STAR} No Citations ${STAR}`,
         description:
-          "> ${ARROW} You have no outstanding citations.",
+          `> ${ARROW} You have no outstanding citations.`,
         noLogo: true,
       });
       return interaction.editReply({ embeds: [embed] });
@@ -64,9 +64,9 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Pay a Citation ${STAR}",
+        `${STAR} Pay a Citation ${STAR}`,
       description:
-        "> ${ARROW} Select a citation from the menu below.",
+        `> ${ARROW} Select a citation from the menu below.`,
       noLogo: true,
     });
 

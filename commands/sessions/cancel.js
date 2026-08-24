@@ -51,7 +51,7 @@ module.exports = {
 
     const { embed, files } = embedTemplate({
       title:
-        "${STAR} Greenville Community - *__Session Cancelled__* ${STAR}",
+        `${STAR} Greenville Community - *__Session Cancelled__* ${STAR}`,
       description,
       banner: path.join(__dirname, "../../graphics/gvccancelled.png"),
     });

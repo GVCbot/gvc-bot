@@ -53,8 +53,8 @@ module.exports = {
         description:
           `> ${ARROW} You can only register **${limit} vehicles**.\n` +
           (hasPremium
-            ? "> ${ARROW} You already have the premium role."
-            : "> ${ARROW} Unlock **15 slots** with the premium role.")
+            ? `> ${ARROW} You already have the premium role.`
+            : `> ${ARROW} Unlock **15 slots** with the premium role.`)
       });
 
       embed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }));
@@ -92,7 +92,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Vehicle Registered ${STAR}",
+        `${STAR} Vehicle Registered ${STAR}`,
       description: desc
     });
 

@@ -57,10 +57,8 @@ module.exports = {
       });
     }
 
-    let link = protect.sanitize(interaction.options.getString("link"));
-    if (!link.startsWith("http://") && !link.startsWith("https://")) {
-      link = `https://${link}`;
-    }
+    // Greenville private server code (raw)
+    const code = interaction.options.getString("link").trim();
 
     const aorp = protect.sanitize(interaction.options.getString("aorp"));
     const frp = interaction.options.getInteger("frplimit");
@@ -80,11 +78,10 @@ module.exports = {
       `> ${BULLETPOINT} **Fail RP Speeds:** ${frp}MPH\n` +
       `> ${BULLETPOINT} **Public Service Status:** ${ps}\n` +
       `> ${BULLETPOINT} **Area of Roleplay:** ${aorp}\n\n` +
-      `> ${ARROW} Click the button below to receive the session link privately.\n`;
+      `> ${ARROW} Click the button below to receive the session code privately.\n`;
 
     const { embed, files } = embedTemplate({
-      title:
-        "${STAR} Greenville Community - *__Session Release__* ${STAR}",
+      title: `${STAR} Greenville Community - *__Session Release__* ${STAR}`,
       description,
       banner: path.join(__dirname, "../../graphics/gvcrelease.png"),
     });
@@ -108,7 +105,7 @@ module.exports = {
       allowedMentions: { parse: ["roles"] },
     });
 
-    sent.sessionLink = link;
+    sent.sessionCode = code;
 
     await interaction.editReply({
       content: "Session release embed sent successfully.",

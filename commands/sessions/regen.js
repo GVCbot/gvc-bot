@@ -36,7 +36,7 @@ module.exports = {
 
     const { embed } = embedTemplate({
       title:
-        "${STAR} Greenville Community - *__Link Regenerated__* ${STAR}",
+        `${STAR} Greenville Community - *__Link Regenerated__* ${STAR}`,
       description,
     });
 

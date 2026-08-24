@@ -87,7 +87,7 @@ module.exports = {
     try {
       const { embed: dmEmbed } = embedTemplate({
         title:
-          "${STAR} Money Received ${STAR}",
+          `${STAR} Money Received ${STAR}`,
         description:
           `> ${BULLETPOINT} **From:** ${hrMember.user.username} (HR)\n` +
           `> ${BULLETPOINT} **Amount:** $${amount.toLocaleString()}\n` +

@@ -1587,12 +1587,11 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
       // 📢 AUTO-SEND SESSION SETUP EMBED
       // ===============================
       const { embed: setupEmbed, files } = embedTemplate({
-        title:
-          "${STAR} Greenville Community - *__Session Setup__* ${STAR}",
+        title: `${STAR} Greenville Community - *__Session Setup__* ${STAR}`,
         description:
-          "> ${ARROW} The reaction goal has been reached!\n" +
-          "> ${ARROW} The host is now setting up the session.\n" +
-          "> ${ARROW} Please be patient.",
+          `> ${ARROW} The reaction goal has been reached!\n` +
+          `> ${ARROW} The host is now setting up the session.\n` +
+          `> ${ARROW} Please be patient.`,
       });
 
       await message.channel.send({ embeds: [setupEmbed], files });

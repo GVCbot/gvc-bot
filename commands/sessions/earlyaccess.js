@@ -17,8 +17,8 @@ module.exports = {
     .setDescription("Send the early access embed")
     .addStringOption((option) =>
       option
-        .setName("link")
-        .setDescription("Early access session link")
+        .setName("code")
+        .setDescription("Greenville private server code")
         .setRequired(true),
     ),
 
@@ -35,22 +35,18 @@ module.exports = {
       });
     }
 
-    let link = protect.sanitize(interaction.options.getString("link"));
-    if (!link.startsWith("http://") && !link.startsWith("https://")) {
-      link = `https://${link}`;
-    }
-
+    // Raw Greenville private server code
+    const code = interaction.options.getString("code").trim();
     const host = interaction.user;
 
     await interaction.deferReply({ flags: 64 });
 
     const description =
       `> ${ARROW} ${host} has opened **Early Access**.\n` +
-      `> ${ARROW} Use the button below to get the link.`;
+      `> ${ARROW} Use the button below to get the session code.`;
 
     const { embed, files } = embedTemplate({
-      title:
-        "${STAR} Greenville Community - *__Early Access__* ${STAR}",
+      title: `${STAR} Greenville Community - *__Early Access__* ${STAR}`,
       description,
       banner: path.join(__dirname, "../../graphics/gvcearlyaccess.png"),
     });
@@ -62,7 +58,7 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(shortId)
-        .setLabel("Get Early Access Link")
+        .setLabel("Get Early Access Code")
         .setStyle(ButtonStyle.Success),
     );
 
@@ -74,7 +70,8 @@ module.exports = {
       allowedMentions: { parse: ["roles"] },
     });
 
-    sent.sessionLink = link;
+    // Store Greenville code
+    sent.sessionCode = code;
 
     await interaction.editReply({
       content: "Early Access embed sent successfully.",

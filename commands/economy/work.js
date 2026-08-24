@@ -74,7 +74,7 @@ module.exports = {
 
       const { embed } = embedTemplate({
         title:
-          "${STAR} Work Complete ${STAR}",
+          `${STAR} Work Complete ${STAR}`,
         description: desc,
         noLogo: true,
       });
