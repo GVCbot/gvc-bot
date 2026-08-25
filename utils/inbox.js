@@ -1,7 +1,7 @@
 const embedTemplate = require("./embedTemplate");
 
-const SUN = "<a:gvcsunspin:1527220557890850846>";
-const ARROW = "<:arrowright:1534182706836144158>";
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
 
 module.exports = async function handleInbox(message, client) {
   const INBOX_CHANNEL = "1535337995178082444";
@@ -26,7 +26,7 @@ module.exports = async function handleInbox(message, client) {
     `> ${ARROW} **Message:** ${message.content || "*No text content*"}`;
 
   const { embed } = embedTemplate({
-    title: `${SUN} New Inbox Message ${SUN}`,
+    title: `${STAR} New Inbox Message ${STAR}`,
     description,
   });
 
@@ -34,7 +34,7 @@ module.exports = async function handleInbox(message, client) {
 
   if (logChannel) {
     const { embed: logEmbed } = embedTemplate({
-      title: `${SUN} Inbox Logged ${SUN}`,
+      title: `${STAR} Inbox Logged ${STAR}`,
       description,
     });
     await logChannel.send({ embeds: [logEmbed] });

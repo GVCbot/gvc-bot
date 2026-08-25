@@ -56,6 +56,9 @@ const {
 } = require("./economy/economyutils");
 const handleInbox = require("./utils/inbox");
 
+require("./utils/roleLeave")(client);
+require("./utils/welcomeMessage")(client);
+
 boot("Dependencies loaded");
 
 // ===============================
