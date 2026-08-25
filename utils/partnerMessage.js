@@ -13,7 +13,7 @@ module.exports = (client) => {
 
       const description =
         `${ARROW} Tired of constant pings?\n` +
-        `${ARROW} You can mute this channel by clicking on __Notification Settings__, then set it to "nothing".*.`;
+        `${ARROW} You can mute this channel by clicking on __Notification Settings__, then set it to "nothing".`;
 
       const { embed, files } = embedTemplate({
         title: `${STAR} Notification Tip ${STAR}`,

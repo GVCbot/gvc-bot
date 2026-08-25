@@ -10,7 +10,6 @@ module.exports = (client) => {
 
   client.on("guildMemberRemove", async (member) => {
     try {
-      // Only track if they had the staff role
       if (!member.roles.cache.has(STAFF_ROLE)) return;
 
       const logChannel = member.guild.channels.cache.get(LOG_CHANNEL);
@@ -19,7 +18,6 @@ module.exports = (client) => {
       const joinedAt = member.joinedAt
         ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:F>`
         : "Unknown";
-
       const leftAt = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
       const rolesList =
@@ -38,7 +36,7 @@ module.exports = (client) => {
       const { embed, files } = embedTemplate({
         title: "🚨 Staff Member Left the Server",
         description,
-        noLogo: false,
+        noLogo: false, // ✅ keep thumbnail logo only
       });
 
       embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true }));
@@ -53,3 +51,4 @@ module.exports = (client) => {
     }
   });
 };
+  

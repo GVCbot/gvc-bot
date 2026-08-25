@@ -8,16 +8,9 @@ module.exports = (client) => {
   const VERIFICATION_CHANNEL = "1351295142878908613";
   const GVC_CENTER_CHANNEL = "1058639853937492132";
   const PUBLIC_WELCOME_CHANNEL = "1058639114452336690";
-  const WELCOME_BANNER = path.join(
-    __dirname,
-    "..",
-    "graphics",
-    "gvcwelcome.png",
-  );
 
   client.on("guildMemberAdd", async (member) => {
     try {
-      // Count members (excluding bots)
       const totalMembers = member.guild.members.cache.filter(
         (m) => !m.user.bot,
       ).size;
@@ -29,22 +22,15 @@ module.exports = (client) => {
       const { embed, files } = embedTemplate({
         title: `${STAR} Welcome to **Greenville Community** ${STAR}`,
         description,
-        banner: WELCOME_BANNER,
+        noLogo: false, // ✅ keep thumbnail logo, no banner
       });
 
       embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true }));
 
-      // DM the user
-      await member
-        .send({
-          embeds: [embed],
-          files,
-        })
-        .catch(() => {
-          console.warn(`Could not DM ${member.user.tag}.`);
-        });
+      await member.send({ embeds: [embed], files }).catch(() => {
+        console.warn(`Could not DM ${member.user.tag}.`);
+      });
 
-      // Public welcome channel
       const welcomeChannel = member.guild.channels.cache.get(
         PUBLIC_WELCOME_CHANNEL,
       );
