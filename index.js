@@ -332,6 +332,8 @@ const client = new Client({
 client.commands = new Collection();
 boot("Discord Client constructed");
 
+const sessionReadySent = new Set();
+
 // ===============================
 // 📡 ADVANCED GATEWAY MONITORING
 // ===============================
@@ -577,8 +579,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         noLogo: false,
       });
 
-      // Claim state lives in the embed footer, not the channel topic —
-      // topic/name changes are rate-limited to 2 per 10 min per channel
+      // Footer is set once at creation for display only — claim state now
+      // lives in the button's customId, not here, so this is never edited again
       embed.setFooter({ text: "Status: UNCLAIMED" });
 
       const buttons = new ActionRowBuilder().addComponents(
@@ -608,7 +610,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // 🎟️ Support Ticket Claim / Unclaim
     // ===============================
     if (interaction.isButton() && interaction.customId.startsWith("claim_")) {
-      const channelId = interaction.customId.split("_")[1];
+      // Claim state lives in this button's own customId:
+      // "claim_<channelId>" = unclaimed, "claim_<channelId>_<userId>" = claimed by that user
+      const parts = interaction.customId.split("_");
+      const channelId = parts[1];
+      const claimedBy = parts[2] || null;
+
       const channel = interaction.guild.channels.cache.get(channelId);
 
       if (!channel) {
@@ -618,11 +625,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
-      const ticketEmbed = interaction.message.embeds[0];
-      const footerText = ticketEmbed?.footer?.text || "";
-      const claimedMatch = footerText.match(/Claimed by:(\d+)/);
-      const claimedBy = claimedMatch ? claimedMatch[1] : null;
-
       if (claimedBy && claimedBy !== interaction.user.id) {
         return interaction.reply({
           content: `❌ This ticket is already claimed by <@${claimedBy}>.`,
@@ -630,55 +632,51 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
-      const newEmbed = EmbedBuilder.from(ticketEmbed);
-
       // Unclaim
       if (claimedBy && claimedBy === interaction.user.id) {
-        newEmbed.setFooter({ text: "Status: UNCLAIMED" });
-
-        const { embed } = embedTemplate({
+        const { embed, files } = embedTemplate({
           title: `${STAR} Ticket Unclaimed ${STAR}`,
           description: `${ARROW} **${interaction.user}** has unclaimed this ticket.`,
           noLogo: false,
         });
-        await channel.send({ embeds: [embed] });
+        await channel.send({ embeds: [embed], files });
 
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
-            .setCustomId(`claim_${channel.id}`)
+            .setCustomId(`claim_${channelId}`) // reset — no claimer suffix
             .setLabel("Claim Ticket")
             .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
-            .setCustomId(`close_${channel.id}`)
+            .setCustomId(`close_${channelId}`)
             .setLabel("Close Ticket")
             .setStyle(ButtonStyle.Secondary),
         );
 
-        return interaction.update({ embeds: [newEmbed], components: [row] });
+        // Only components change here — embeds untouched
+        return interaction.update({ components: [row] });
       }
 
       // Claim
-      newEmbed.setFooter({ text: `Claimed by:${interaction.user.id}` });
-
-      const { embed } = embedTemplate({
+      const { embed, files } = embedTemplate({
         title: `${STAR} Ticket Claimed ${STAR}`,
         description: `${ARROW} **${interaction.user}** has claimed this ticket.`,
         noLogo: false,
       });
-      await channel.send({ embeds: [embed] });
+      await channel.send({ embeds: [embed], files });
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`claim_${channel.id}`)
+          .setCustomId(`claim_${channelId}_${interaction.user.id}`) // claimer baked in
           .setLabel("Claimed")
           .setStyle(ButtonStyle.Danger),
         new ButtonBuilder()
-          .setCustomId(`close_${channel.id}`)
+          .setCustomId(`close_${channelId}`)
           .setLabel("Close Ticket")
           .setStyle(ButtonStyle.Secondary),
       );
 
-      return interaction.update({ embeds: [newEmbed], components: [row] });
+      // Only components change here — embeds untouched
+      return interaction.update({ components: [row] });
     }
 
     // ===============================
@@ -695,10 +693,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       }
 
-      const ticketEmbed = interaction.message.embeds[0];
-      const footerText = ticketEmbed?.footer?.text || "";
-      const claimedMatch = footerText.match(/Claimed by:(\d+)/);
-      const claimedBy = claimedMatch ? claimedMatch[1] : null;
+      // Claim state no longer lives in the footer — read it from the
+      // Claim button's own customId sitting alongside this Close button
+      const claimButton = interaction.message.components[0]?.components.find(
+        (c) => c.customId?.startsWith("claim_"),
+      );
+      const claimParts = claimButton?.customId.split("_") || [];
+      const claimedBy = claimParts[2] || null;
 
       if (!claimedBy || claimedBy !== interaction.user.id) {
         return interaction.reply({
@@ -730,7 +731,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ],
       });
 
-      const { embed } = embedTemplate({
+      const { embed, files } = embedTemplate({
         title: `${STAR} Ticket Closed ${STAR}`,
         description:
           `${ARROW} Closed by: ${interaction.user}\n` +
@@ -738,7 +739,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         noLogo: false,
       });
 
-      await channel.send({ embeds: [embed] });
+      await channel.send({ embeds: [embed], files });
 
       setTimeout(() => {
         channel.delete().catch(() => {});
@@ -1550,30 +1551,35 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
     if (user.bot) return;
 
+    // Resolve partial reaction/message before reading anything off it
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (err) {
+        console.warn("🟡 Failed to fetch partial reaction:", err.message);
+        return;
+      }
+    }
+
     const message = reaction.message;
     if (!message.embeds.length) return;
     const embed = message.embeds[0];
 
-    // Must be a Session Startup embed
     if (!embed.title || !embed.title.includes("Session Startup")) return;
 
-    // Extract required reactions
     const match = embed.description.match(/Required reactions:\s\*\*(\d+)\*\*/);
     if (!match) return;
 
     const required = parseInt(match[1], 10);
     const reactionCount = reaction.count;
 
-    // Goal reached
     if (reactionCount >= required) {
-      if (message.hasSentReady) return;
-      message.hasSentReady = true;
+      if (sessionReadySent.has(message.id)) return;
+      sessionReadySent.add(message.id);
 
-      // Extract host ID
       const host = embed.description.match(/<@!?(\d+)>/);
       const hostId = host ? host[1] : null;
 
-      // Notify host
       const notifyChannel = message.guild.channels.cache.get(
         "1495828191300948111",
       );
@@ -1583,9 +1589,6 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
         );
       }
 
-      // ===============================
-      // 📢 AUTO-SEND SESSION SETUP EMBED
-      // ===============================
       const { embed: setupEmbed, files } = embedTemplate({
         title: `${STAR} Greenville Community - *__Session Setup__* ${STAR}`,
         description:
