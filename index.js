@@ -56,10 +56,6 @@ const {
 } = require("./economy/economyutils");
 const handleInbox = require("./utils/inbox");
 
-require("./utils/roleLeave")(client);
-require("./utils/welcomeMessage")(client);
-require("./utils/partnerMessage")(client);
-
 boot("Dependencies loaded");
 
 // ===============================
@@ -335,6 +331,13 @@ const client = new Client({
 
 client.commands = new Collection();
 boot("Discord Client constructed");
+
+// ===============================
+// 🛠 Utility Listeners
+// ===============================
+require("./utils/roleLeave")(client);
+require("./utils/welcomeMessage")(client);
+require("./utils/partnerMessage")(client);
 
 const sessionReadySent = new Set();
 
