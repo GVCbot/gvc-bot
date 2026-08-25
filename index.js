@@ -415,6 +415,24 @@ client.on("error", (err) => {
 });
 
 // ===============================
+// 🎮 Activity Loader
+// ===============================
+const activitiesPath = path.join(__dirname, "activities");
+const activityFiles = fs
+  .readdirSync(activitiesPath)
+  .filter((f) => f.endsWith(".js"));
+
+for (const file of activityFiles) {
+  try {
+    const activity = require(path.join(activitiesPath, file));
+    activity(client); // Pass the client to the activity module
+    console.log(`🎮 Loaded activity: ${file}`);
+  } catch (err) {
+    console.error(`❌ Failed to load activity ${file}:`, err.message);
+  }
+}
+
+// ===============================
 // 📂 Command Loader
 // ===============================
 boot("Command loader starting");
