@@ -9,16 +9,16 @@ function calculateDuration(start, finish) {
   const startDate = new Date(`1970-01-01 ${start}`);
   const endDate = new Date(`1970-01-01 ${finish}`);
 
-  // If either time is invalid, return fallback
+  // If either time is invalid → return null
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    return "Not Valid Time";
+    return null;
   }
 
   const diffMs = endDate - startDate;
 
-  // Negative duration also counts as invalid
+  // Negative or zero duration → invalid
   if (diffMs <= 0) {
-    return "Not Valid Time";
+    return null;
   }
 
   const diffMin = Math.floor(diffMs / 60000);
@@ -92,10 +92,18 @@ module.exports = {
     const screenshot = interaction.options.getAttachment("screenshot");
     const host = interaction.user;
 
+    // Calculate duration
     const totalTime = calculateDuration(start, finish);
 
+    // If invalid → stop and notify staff
+    if (!totalTime) {
+      return interaction.editReply({
+        content:
+          "❌ Invalid time format. Please use **10:30 AM** style timestamps.",
+      });
+    }
+
     const description =
-      `**Session Log**\n\n` +
       `- **Username:** ${host}\n` +
       `- **Hosted/Co-Hosted:** ${type}\n` +
       `- **Starting Time:** ${start}\n` +
