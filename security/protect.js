@@ -10,16 +10,35 @@ const safeUsers = {
 };
 
 // -----------------------------------------------------
-// INPUT SANITIZATION (anti-injection, anti-ping)
+// INPUT SANITIZATION (anti-injection, anti-ping, anti-spam)
 // -----------------------------------------------------
 function sanitize(str) {
   if (typeof str !== "string") return str;
 
-  return str
-    .replace(/[<>`]/g, "") // prevent markdown injection
-    .replace(/@everyone/g, "everyone") // prevent mass ping
-    .replace(/@here/g, "here") // prevent mass ping
-    .replace(/\n{3,}/g, "\n\n"); // prevent embed stretching
+  let clean = str;
+
+  // Basic markdown / injection characters
+  clean = clean.replace(/[<>`]/g, "");
+
+  // Prevent mass pings
+  clean = clean.replace(/@everyone/gi, "everyone").replace(/@here/gi, "here");
+
+  // Prevent direct role/user/channel mentions
+  clean = clean.replace(/<@!?(\d+)>/g, "user");
+  clean = clean.replace(/<@&(\d+)>/g, "role");
+  clean = clean.replace(/<#(\d+)>/g, "channel");
+
+  // Collapse excessive whitespace/newlines
+  clean = clean.replace(/\n{3,}/g, "\n\n");
+  clean = clean.replace(/\s{3,}/g, "  ");
+
+  // Hard cap length to avoid embed/message overflow
+  const MAX_LEN = 1500; // below Discord 2000 char limit
+  if (clean.length > MAX_LEN) {
+    clean = clean.slice(0, MAX_LEN) + "…";
+  }
+
+  return clean;
 }
 
 // -----------------------------------------------------
@@ -30,6 +49,7 @@ function sanitizeMongo(obj) {
 
   const clean = {};
   for (const key in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
     if (key.startsWith("$")) continue; // prevent operator injection
     clean[key] = obj[key];
   }
@@ -37,13 +57,19 @@ function sanitizeMongo(obj) {
 }
 
 // -----------------------------------------------------
-// RATE LIMITING (anti-spam)
+// RATE LIMITING (anti-spam for commands & interactions)
 // -----------------------------------------------------
 const rateLimit = new Map();
 
 function applyRateLimit(userId, limitMs = 1500) {
-  if (rateLimit.has(userId)) return false;
-  rateLimit.set(userId, Date.now());
+  if (!userId) return false;
+
+  const now = Date.now();
+  const last = rateLimit.get(userId);
+
+  if (last && now - last < limitMs) return false;
+
+  rateLimit.set(userId, now);
   setTimeout(() => rateLimit.delete(userId), limitMs);
   return true;
 }
@@ -60,16 +86,16 @@ function bypassCooldown(userId) {
 // -----------------------------------------------------
 function requireAdmin(interaction) {
   if (!interaction || !interaction.member) return false;
-  if (interaction.user.id === safeUsers.bypassCooldown) return true;
-  return interaction.member.permissions.has("Administrator");
+  if (interaction.user?.id === safeUsers.bypassCooldown) return true;
+  return interaction.member.permissions?.has("Administrator");
 }
 
 // -----------------------------------------------------
 // ROLE VALIDATION (anti-role spoofing)
 // -----------------------------------------------------
 function hasRole(interaction, roleId) {
-  if (!interaction || !interaction.member) return false;
-  return interaction.member.roles.cache.has(roleId);
+  if (!interaction || !interaction.member || !roleId) return false;
+  return interaction.member.roles?.cache?.has(roleId);
 }
 
 // -----------------------------------------------------

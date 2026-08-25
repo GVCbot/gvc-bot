@@ -1435,7 +1435,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ===============================
-    // 🔗 Session Link Handler
+    // 📟 RAW TEXT SESSION CODE BUTTON HANDLER
     // ===============================
     if (
       interaction.isButton() &&
@@ -1443,6 +1443,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     ) {
       await interaction.deferReply({ flags: 64 });
 
+      // Find the original message that contains the stored raw text
       const messages = await interaction.channel.messages.fetch({ limit: 50 });
       const msg = messages.find(
         (m) =>
@@ -1450,15 +1451,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
           m.components[0].components[0].customId === interaction.customId,
       );
 
-      if (!msg || !msg.sessionLink) {
+      // If no raw text was stored
+      if (!msg || !msg.sessionCode) {
         return interaction.editReply({
-          content: "Link not found. The session message may be too old.",
+          content: "Code not found. The session message may be too old.",
         });
       }
 
+      // Build embed with RAW TEXT (no links, no formatting changes)
       const { embed } = embedTemplate({
-        title: `${STAR} Session Link ${STAR}`,
-        description: `> ${ARROW} Here is your link:\n${msg.sessionLink}`,
+        title: `${STAR} Session Code Retrieved ${STAR}`,
+        description: `> ${ARROW} **Code:** ${msg.sessionCode}`,
+        noLogo: true,
       });
 
       return interaction.editReply({ embeds: [embed] });

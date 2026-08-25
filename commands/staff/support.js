@@ -30,11 +30,7 @@ module.exports = {
     // Single embed — compact, clean, announcement-style
     const { embed, files } = embedTemplate({
       title: `${STAR} Server Support ${STAR}`,
-      description:
-        `${ARROW} Welcome to the Greenville Community Server Support channel.\n` +
-        `${ARROW} In this channel, you can open several different types of tickets — from general assistance to member reports.\n` +
-        `${ARROW} Ensure that you have picked the correct ticket type for your need.\n` +
-        `${ARROW} Any troll or spam tickets will be punished.`,
+      description: `${ARROW} Welcome to the Greenville Community Server Support channel. In this channel, you can open several different types of tickets — from general assistance to member reports. Ensure that you have picked the correct ticket type for your need. Any troll or spam tickets will be punished.`,
       banner: bannerPath,
       noLogo: false,
     });

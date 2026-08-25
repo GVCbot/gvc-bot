@@ -69,7 +69,7 @@ module.exports = {
       console.error("⚠️ Cannot react: message not found.");
     } else {
       try {
-        await sent.react("<:summeryes:1536265772379148298>");
+        await sent.react("<:autumnyes:1541478847281889481>");
       } catch (err) {
         console.error("⚠️ Failed to add reaction:", err.message);
       }
