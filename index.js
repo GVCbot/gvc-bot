@@ -58,6 +58,7 @@ const handleInbox = require("./utils/inbox");
 
 require("./utils/roleLeave")(client);
 require("./utils/welcomeMessage")(client);
+require("./utils/partnerMessage")(client);
 
 boot("Dependencies loaded");
 
