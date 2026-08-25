@@ -9,17 +9,20 @@ module.exports = (client) => {
       let attempts = 0;
 
       await msg.channel.send(
-        "🎮 **Word Game Started!** Guess the 5‑letter word.",
+        "🎮 **Word Game Started!**\nGuess the 5‑letter word.\nYou have **6 attempts**.",
       );
 
       const collector = msg.channel.createMessageCollector({
-        filter: (m) => !m.author.bot,
+        filter: (m) => !m.author.bot && m.author.id === msg.author.id,
         time: 60000,
       });
 
       collector.on("collect", (m) => {
         const guess = m.content.toLowerCase();
-        if (guess.length !== 5) return;
+
+        if (guess.length !== 5) {
+          return m.reply("❗ Your guess must be **exactly 5 letters**.");
+        }
 
         attempts++;
 
@@ -30,14 +33,26 @@ module.exports = (client) => {
           else result += "⬛";
         }
 
-        m.reply(result);
+        m.reply(`Attempt ${attempts}/6:\n${result}`);
 
         if (guess === target) {
-          msg.channel.send(`🎉 Correct! The word was **${target}**.`);
-          collector.stop();
+          msg.channel.send(
+            `🎉 **Correct!** The word was **${target}**.\nYou solved it in **${attempts} attempts**!`,
+          );
+          collector.stop("won");
         } else if (attempts >= 6) {
-          msg.channel.send(`❌ Out of tries! The word was **${target}**.`);
-          collector.stop();
+          msg.channel.send(
+            `❌ **Out of tries!**\nThe word was **${target}**.\nBetter luck next time!`,
+          );
+          collector.stop("lost");
+        }
+      });
+
+      collector.on("end", (_, reason) => {
+        if (reason === "time") {
+          msg.channel.send(
+            `⏱️ **Time's up!** You had 60 seconds.\nThe word was **${target}**.`,
+          );
         }
       });
     }
