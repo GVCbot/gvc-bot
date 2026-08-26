@@ -1578,14 +1578,14 @@ client.on(Events.MessageDeleteBulk, async (messages) => {
 // ===============================
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
-    if (user.bot) return;
+    // Prevent bot's own reaction from triggering the handler
+    if (user.bot || user.id === client.user.id) return;
 
-    // Resolve partial reaction/message before reading anything off it
+    // Resolve partials
     if (reaction.partial) {
       try {
         await reaction.fetch();
       } catch (err) {
-        console.warn("🟡 Failed to fetch partial reaction:", err.message);
         return;
       }
     }
@@ -1596,14 +1596,19 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 
     if (!embed.title || !embed.title.includes("Session Startup")) return;
 
+    // Check reaction threshold early to avoid race conditions
+    if (sessionReadySent.has(message.id)) return;
+
     const match = embed.description.match(/Required reactions:\s\*\*(\d+)\*\*/);
     if (!match) return;
 
     const required = parseInt(match[1], 10);
-    const reactionCount = reaction.count;
 
-    if (reactionCount >= required) {
-      if (sessionReadySent.has(message.id)) return;
+    // Count only non-bot reactions if your bot reacted to its own embed
+    const humanReactions = reaction.users.cache.filter((u) => !u.bot).size;
+
+    if (humanReactions >= required) {
+      // Set key synchronously to prevent race conditions from concurrent calls
       sessionReadySent.add(message.id);
 
       const host = embed.description.match(/<@!?(\d+)>/);
@@ -1612,7 +1617,7 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
       const notifyChannel = message.guild.channels.cache.get(
         "1495828191300948111",
       );
-      if (notifyChannel) {
+      if (notifyChannel && hostId) {
         await notifyChannel.send(
           `<@${hostId}> Your session is ready to start!`,
         );

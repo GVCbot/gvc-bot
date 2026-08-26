@@ -1,0 +1,198 @@
+const { SlashCommandBuilder } = require("discord.js");
+const fs = require("node:fs");
+const path = require("node:path");
+const embedTemplate = require("../../utils/embedTemplate");
+const protect = require("../../security/protect");
+const Cohere = require("cohere-ai");
+
+const STAR = "<a:starspin:1541482139759935558>";
+const ARROW = "<:arrowright:1541479360932876398>";
+
+Cohere.init(process.env.COHERE_API);
+
+// -----------------------------------------------------
+// LOAD SUPPORT FILES
+// -----------------------------------------------------
+function loadSupportData() {
+  const folder = path.join(__dirname, "../../askai-data");
+  const files = fs.readdirSync(folder).filter((f) => f.endsWith(".txt"));
+
+  let text = "";
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(folder, file), "utf8");
+    text += "\n" + content;
+  }
+  return text;
+}
+
+// -----------------------------------------------------
+// SAFETY FILTER (Option B + Option A behavior)
+// -----------------------------------------------------
+function isUnsafe(question) {
+  const q = question.toLowerCase();
+
+  // Keyword-based detection
+  const keywords = [
+    "sex",
+    "sexual",
+    "nude",
+    "nsfw",
+    "porn",
+    "explicit",
+    "drug",
+    "alcohol",
+    "beer",
+    "wine",
+    "vodka",
+    "whiskey",
+    "vape",
+    "cigarette",
+    "smoke",
+    "tobacco",
+    "weapon",
+    "gun",
+    "knife",
+    "bomb",
+    "explosive",
+    "kill",
+    "hurt",
+    "violence",
+    "fight",
+    "suicide",
+    "self harm",
+    "gamble",
+    "casino",
+    "bet",
+    "extremist",
+    "terror",
+    "isis",
+    "al qaeda",
+    "kkk",
+    "illegal",
+    "crime",
+    "steal",
+    "hack",
+  ];
+
+  if (keywords.some((k) => q.includes(k))) return true;
+
+  // Semantic meaning detection (simple heuristic)
+  const unsafePatterns = [
+    /how do i.*(get|buy|make|access).*(alcohol|drug|weapon)/i,
+    /how to.*(vape|smoke|drink)/i,
+    /how do i.*(harm|hurt|kill)/i,
+    /explain.*(sexual|explicit)/i,
+    /what is the best.*(gun|weapon)/i,
+  ];
+
+  if (unsafePatterns.some((p) => p.test(question))) return true;
+
+  return false;
+}
+
+// -----------------------------------------------------
+// SUPPORT ANSWERING (ONLY uses uploaded files)
+// -----------------------------------------------------
+function generateSupportAnswer(question, data) {
+  const lower = question.toLowerCase();
+  const lines = data.split("\n");
+
+  const matches = lines.filter((line) => line.toLowerCase().includes(lower));
+
+  if (matches.length === 0) {
+    return "I couldn't find anything about that in the server documentation.";
+  }
+
+  return matches.slice(0, 5).join("\n");
+}
+
+// -----------------------------------------------------
+// GENERAL ANSWERING (Cohere + Safety)
+// -----------------------------------------------------
+async function generateGeneralAnswer(question) {
+  if (isUnsafe(question)) {
+    return (
+      "I can’t answer that because it involves unsafe or age‑restricted topics. " +
+      "Here’s the safe version: it's important to stay within legal and safe boundaries, " +
+      "and if you're curious about something, focus on the educational or scientific side."
+    );
+  }
+
+  const response = await Cohere.generate({
+    model: "command-light",
+    prompt: `Answer this question in a safe, teen-friendly, educational way:\n\n${question}`,
+    max_tokens: 200,
+    temperature: 0.6,
+  });
+
+  return response.generations[0].text.trim();
+}
+
+// -----------------------------------------------------
+// COMMAND DEFINITION
+// -----------------------------------------------------
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName("askai")
+    .setDescription("AI assistant for GVC")
+    .addSubcommand((sub) =>
+      sub
+        .setName("support")
+        .setDescription("Ask AI about the Discord server")
+        .addStringOption((opt) =>
+          opt
+            .setName("question")
+            .setDescription("Your question")
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("general")
+        .setDescription("Ask AI a general question")
+        .addStringOption((opt) =>
+          opt
+            .setName("question")
+            .setDescription("Your question")
+            .setRequired(true),
+        ),
+    ),
+
+  async execute(interaction) {
+    if (!protect.applyRateLimit(interaction.user.id)) {
+      return interaction.reply({ content: "Slow down.", flags: 64 });
+    }
+
+    const sub = interaction.options.getSubcommand();
+    const question = protect.sanitize(
+      interaction.options.getString("question"),
+    );
+
+    await interaction.deferReply();
+
+    if (sub === "support") {
+      const data = loadSupportData();
+      const answer = generateSupportAnswer(question, data);
+
+      const { embed } = embedTemplate({
+        title: `${STAR} AskAI Support ${STAR}`,
+        description: `> ${ARROW} **Question:** ${question}\n\n> ${ARROW} **Answer:**\n${answer}`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    if (sub === "general") {
+      const answer = await generateGeneralAnswer(question);
+
+      const { embed } = embedTemplate({
+        title: `${STAR} AskAI General ${STAR}`,
+        description: `> ${ARROW} **Question:** ${question}\n\n> ${ARROW} **Answer:**\n${answer}`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+    }
+  },
+};
