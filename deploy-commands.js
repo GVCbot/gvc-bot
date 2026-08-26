@@ -17,6 +17,9 @@ const commandFolders = fs.readdirSync(foldersPath);
 // -----------------------------------------------------
 // LOAD COMMANDS
 // -----------------------------------------------------
+let loadedCount = 0;
+let failedCount = 0;
+
 for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);
   const commandFiles = fs
@@ -25,15 +28,28 @@ for (const folder of commandFolders) {
 
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
 
-    if (command.data && command.data.toJSON) {
-      commands.push(command.data.toJSON());
-    } else {
-      console.warn(`[WARN] Command file missing data.toJSON(): ${file}`);
+    try {
+      const command = require(filePath);
+
+      if (command.data && command.data.toJSON) {
+        commands.push(command.data.toJSON());
+        loadedCount++;
+      } else {
+        console.warn(`⚠️ [WARN] ${folder}/${file} missing data.toJSON()`);
+        failedCount++;
+      }
+    } catch (err) {
+      console.error(`❌ [FAILED TO LOAD] ${folder}/${file}`);
+      console.error(`   Reason: ${err.message}`);
+      failedCount++;
     }
   }
 }
+
+console.log(
+  `\n📦 Loaded ${loadedCount} command(s), ${failedCount} failed to load.\n`,
+);
 
 // -----------------------------------------------------
 // REGISTER COMMANDS

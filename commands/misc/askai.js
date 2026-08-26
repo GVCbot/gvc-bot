@@ -5,28 +5,51 @@ const embedTemplate = require("../../utils/embedTemplate");
 const protect = require("../../security/protect");
 const { CohereClientV2 } = require("cohere-ai");
 
+console.log("🔍 [askai.js] Module loading from commands/misc/askai.js");
+
 const STAR = "<a:starspin:1541482139759935558>";
 const ARROW = "<:arrowright:1541479360932876398>";
 
-const cohere = new CohereClientV2({ token: process.env.COHERE_API });
+// -----------------------------------------------------
+// COHERE CLIENT
+// -----------------------------------------------------
+let cohere = null;
+
+if (!process.env.COHERE_API) {
+  console.warn(
+    "🟡 [askai.js] COHERE_API env var is missing — /askai general will not work until it's set.",
+  );
+} else {
+  cohere = new CohereClientV2({ token: process.env.COHERE_API });
+}
 
 // -----------------------------------------------------
 // LOAD SUPPORT FILES
 // -----------------------------------------------------
 function loadSupportData() {
   const folder = path.join(__dirname, "../../askai-data");
+
+  if (!fs.existsSync(folder)) {
+    console.warn(`🟡 [askai.js] Support data folder not found: ${folder}`);
+    return "";
+  }
+
   const files = fs.readdirSync(folder).filter((f) => f.endsWith(".txt"));
 
   let text = "";
   for (const file of files) {
-    const content = fs.readFileSync(path.join(folder, file), "utf8");
-    text += "\n" + content;
+    try {
+      const content = fs.readFileSync(path.join(folder, file), "utf8");
+      text += "\n" + content;
+    } catch (err) {
+      console.error(`🔴 [askai.js] Failed to read ${file}:`, err.message);
+    }
   }
   return text;
 }
 
 // -----------------------------------------------------
-// SAFETY FILTER (Option B + Option A behavior)
+// SAFETY FILTER
 // -----------------------------------------------------
 function isUnsafe(question) {
   const q = question.toLowerCase();
@@ -83,18 +106,19 @@ function isUnsafe(question) {
     /what is the best.*(gun|weapon)/i,
   ];
 
-  if (unsafePatterns.some((p) => p.test(question))) return true;
-
-  return false;
+  return unsafePatterns.some((p) => p.test(question));
 }
 
 // -----------------------------------------------------
-// SUPPORT ANSWERING (ONLY uses uploaded files)
+// SUPPORT ANSWERING (uses uploaded files only)
 // -----------------------------------------------------
 function generateSupportAnswer(question, data) {
+  if (!data) {
+    return "No server documentation is currently loaded. Please contact staff.";
+  }
+
   const lower = question.toLowerCase();
   const lines = data.split("\n");
-
   const matches = lines.filter((line) => line.toLowerCase().includes(lower));
 
   if (matches.length === 0) {
@@ -105,7 +129,7 @@ function generateSupportAnswer(question, data) {
 }
 
 // -----------------------------------------------------
-// GENERAL ANSWERING (Cohere + Safety)
+// GENERAL ANSWERING (Cohere + safety)
 // -----------------------------------------------------
 async function generateGeneralAnswer(question) {
   if (isUnsafe(question)) {
@@ -114,6 +138,10 @@ async function generateGeneralAnswer(question) {
       "Here’s the safe version: it's important to stay within legal and safe boundaries, " +
       "and if you're curious about something, focus on the educational or scientific side."
     );
+  }
+
+  if (!cohere) {
+    return "AI general answers are currently unavailable — the API key isn't configured.";
   }
 
   try {
@@ -125,14 +153,10 @@ async function generateGeneralAnswer(question) {
           content:
             "Answer questions in a safe, teen-friendly, educational way. Keep responses concise.",
         },
-        {
-          role: "user",
-          content: question,
-        },
+        { role: "user", content: question },
       ],
     });
 
-    // v2 chat responses come back as an array of content blocks
     const text = response.message?.content
       ?.map((block) => block.text)
       .join("")
@@ -140,7 +164,7 @@ async function generateGeneralAnswer(question) {
 
     return text || "I couldn't generate a response for that.";
   } catch (err) {
-    console.error("🔴 Cohere API error:", err.message);
+    console.error("🔴 [askai.js] Cohere API error:", err.message);
     return "Something went wrong while generating a response. Please try again later.";
   }
 }
@@ -176,6 +200,8 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    console.log(`🔍 [askai.js] Executed by ${interaction.user.tag}`);
+
     if (!protect.applyRateLimit(interaction.user.id)) {
       return interaction.reply({ content: "Slow down.", flags: 64 });
     }
@@ -187,29 +213,38 @@ module.exports = {
 
     await interaction.deferReply();
 
-    if (sub === "support") {
-      const data = loadSupportData();
-      const answer = generateSupportAnswer(question, data);
+    try {
+      if (sub === "support") {
+        const data = loadSupportData();
+        const answer = generateSupportAnswer(question, data);
 
-      const { embed } = embedTemplate({
-        title: `${STAR} AskAI Support ${STAR}`,
-        description: `> ${ARROW} **Question:** ${question}\n\n> ${ARROW} **Answer:**\n${answer}`,
-        noLogo: true,
+        const { embed } = embedTemplate({
+          title: `${STAR} AskAI Support ${STAR}`,
+          description: `> ${ARROW} **Question:** ${question}\n\n> ${ARROW} **Answer:**\n${answer}`,
+          noLogo: true,
+        });
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      if (sub === "general") {
+        const answer = await generateGeneralAnswer(question);
+
+        const { embed } = embedTemplate({
+          title: `${STAR} AskAI General ${STAR}`,
+          description: `> ${ARROW} **Question:** ${question}\n\n> ${ARROW} **Answer:**\n${answer}`,
+          noLogo: true,
+        });
+
+        return interaction.editReply({ embeds: [embed] });
+      }
+    } catch (err) {
+      console.error("🔴 [askai.js] Unexpected error in execute():", err);
+      return interaction.editReply({
+        content: "❌ Something went wrong processing your question.",
       });
-
-      return interaction.editReply({ embeds: [embed] });
-    }
-
-    if (sub === "general") {
-      const answer = await generateGeneralAnswer(question);
-
-      const { embed } = embedTemplate({
-        title: `${STAR} AskAI General ${STAR}`,
-        description: `> ${ARROW} **Question:** ${question}\n\n> ${ARROW} **Answer:**\n${answer}`,
-        noLogo: true,
-      });
-
-      return interaction.editReply({ embeds: [embed] });
     }
   },
 };
+
+console.log("🔍 [askai.js] Module loaded successfully, command name: askai");
