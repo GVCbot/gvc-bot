@@ -17,7 +17,7 @@ let cohere = null;
 
 if (!process.env.COHERE_API) {
   console.warn(
-    "🟡 [askai.js] COHERE_API env var is missing — /askai general will not work until it's set.",
+    "🟡 [askai.js] COHERE_API env var is missing — /askai will not work until it's set.",
   );
 } else {
   cohere = new CohereClientV2({ token: process.env.COHERE_API });
@@ -110,22 +110,47 @@ function isUnsafe(question) {
 }
 
 // -----------------------------------------------------
-// SUPPORT ANSWERING (uses uploaded files only)
+// SUPPORT ANSWERING — AI reads the full doc and answers
 // -----------------------------------------------------
-function generateSupportAnswer(question, data) {
+async function generateSupportAnswer(question, data) {
   if (!data) {
     return "No server documentation is currently loaded. Please contact staff.";
   }
 
-  const lower = question.toLowerCase();
-  const lines = data.split("\n");
-  const matches = lines.filter((line) => line.toLowerCase().includes(lower));
-
-  if (matches.length === 0) {
-    return "I couldn't find anything about that in the server documentation.";
+  if (!cohere) {
+    return "AI support answers are currently unavailable — the API key isn't configured.";
   }
 
-  return matches.slice(0, 5).join("\n");
+  try {
+    const response = await cohere.chat({
+      model: "command-a-03-2025",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a support assistant for a Discord server named Greenville Community. Below is the full " +
+            "server documentation. Search through it and answer the user's question " +
+            "using ONLY information found in this documentation. Do not use outside " +
+            "knowledge. If the documentation doesn't contain an answer to the " +
+            "question, say clearly that you couldn't find anything about it — do " +
+            "not guess or make anything up. Keep your answer concise and directly " +
+            "address the question.\n\n" +
+            `--- SERVER DOCUMENTATION ---\n${data}\n--- END DOCUMENTATION ---`,
+        },
+        { role: "user", content: question },
+      ],
+    });
+
+    const text = response.message?.content
+      ?.map((block) => block.text)
+      .join("")
+      .trim();
+
+    return text || "I couldn't generate a response for that.";
+  } catch (err) {
+    console.error("🔴 [askai.js] Cohere API error (support):", err.message);
+    return "Something went wrong while searching the documentation. Please try again later.";
+  }
 }
 
 // -----------------------------------------------------
@@ -164,7 +189,7 @@ async function generateGeneralAnswer(question) {
 
     return text || "I couldn't generate a response for that.";
   } catch (err) {
-    console.error("🔴 [askai.js] Cohere API error:", err.message);
+    console.error("🔴 [askai.js] Cohere API error (general):", err.message);
     return "Something went wrong while generating a response. Please try again later.";
   }
 }
@@ -216,7 +241,7 @@ module.exports = {
     try {
       if (sub === "support") {
         const data = loadSupportData();
-        const answer = generateSupportAnswer(question, data);
+        const answer = await generateSupportAnswer(question, data);
 
         const { embed } = embedTemplate({
           title: `${STAR} AskAI Support ${STAR}`,
