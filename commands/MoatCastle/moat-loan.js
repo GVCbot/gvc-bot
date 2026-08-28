@@ -14,23 +14,6 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
-function parseDuration(str) {
-  const match = str.match(/^(\d+)([mhdw])$/i);
-  if (!match) return null;
-
-  const value = parseInt(match[1]);
-  const unit = match[2].toLowerCase();
-
-  const multipliers = {
-    m: 60 * 1000,
-    h: 60 * 60 * 1000,
-    d: 24 * 60 * 60 * 1000,
-    w: 7 * 24 * 60 * 60 * 1000,
-  };
-
-  return value * multipliers[unit];
-}
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-loan")
@@ -43,7 +26,7 @@ module.exports = {
         .setDescription("Review your active Moat Castle loans."),
     )
 
-    // PAY
+    // PAY (balance only)
     .addSubcommand((sub) =>
       sub
         .setName("pay")
@@ -58,24 +41,6 @@ module.exports = {
           opt
             .setName("amount")
             .setDescription("Amount to pay (number or 'all').")
-            .setRequired(true),
-        )
-        .addIntegerOption((opt) =>
-          opt
-            .setName("points")
-            .setDescription("Castle Points to use (optional).")
-            .setRequired(false),
-        ),
-    )
-
-    .addSubcommand((sub) =>
-      sub
-        .setName("changetime")
-        .setDescription("Change the default Moat Castle loan repayment time.")
-        .addStringOption((opt) =>
-          opt
-            .setName("duration")
-            .setDescription("Example: 1m, 4h, 3d, 2w")
             .setRequired(true),
         ),
     )
@@ -153,7 +118,7 @@ module.exports = {
     }
 
     // ===============================
-    // 💵 PAY LOAN
+    // 💵 PAY LOAN (balance only)
     // ===============================
     if (sub === "pay") {
       const loans = userRecord.moatCastle.loans || [];
@@ -169,7 +134,6 @@ module.exports = {
 
       const loanIndex = interaction.options.getInteger("loan") - 1;
       const amountInput = interaction.options.getString("amount");
-      const pointsInput = interaction.options.getInteger("points") ?? 0;
 
       if (loanIndex < 0 || loanIndex >= loans.length) {
         const { embed, files } = moatembedTemplate({
@@ -198,64 +162,28 @@ module.exports = {
       }
 
       let balance = userRecord.moatCastle.balance;
-      let points = userRecord.moatCastle.rewards;
 
-      if (pointsInput < 0) {
-        const { embed, files } = moatembedTemplate({
-          title: "Invalid Points",
-          description: `${ARROW} Points must be **0 or higher**.`,
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], files });
-      }
-
-      if (pointsInput > points) {
-        const { embed, files } = moatembedTemplate({
-          title: "Not Enough Points",
-          description:
-            `${ARROW} You only have **${points} Castle Points**.\n` +
-            `${ARROW} You cannot use **${pointsInput} points**.`,
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], files });
-      }
-
-      const pointsValue = pointsInput * 1000;
-      const totalAvailable = balance + pointsValue;
-
-      if (totalAvailable < amount) {
+      if (balance < amount) {
         const { embed, files } = moatembedTemplate({
           title: "Insufficient Funds",
           description:
             `${ARROW} You tried to pay **$${amount.toLocaleString()}**.\n\n` +
             `${ARROW} Moat Balance: $${balance.toLocaleString()}\n` +
-            `${ARROW} Points Used: ${pointsInput} (worth $${pointsValue.toLocaleString()})\n\n` +
-            `${ARROW} Total Available: $${totalAvailable.toLocaleString()}\n` +
             `${ARROW} **This is not enough to cover the payment.**`,
           noLogo: true,
         });
         return interaction.editReply({ embeds: [embed], files });
       }
 
-      let amountPaidFromBalance = Math.min(balance, amount);
-      let remainingAfterBalance = amount - amountPaidFromBalance;
-      let amountPaidFromPoints = remainingAfterBalance;
-
-      balance -= amountPaidFromBalance;
-
-      const pointsUsed = Math.ceil(amountPaidFromPoints / 1000);
-      points -= pointsUsed;
-
+      // Pay from balance only
+      balance -= amount;
       loan.remaining -= amount;
 
       userRecord.moatCastle.balance = balance;
-      userRecord.moatCastle.rewards = points;
-
       userRecord.moatCastle.lastLoanPayment = {
         amount,
         timestamp: Date.now(),
       };
-
       userRecord.moatCastle.updatedAt = Date.now();
 
       let refund = 0;
@@ -279,44 +207,13 @@ module.exports = {
         description:
           `${ARROW} **Loan #${loanIndex + 1}**\n` +
           `${ARROW} **Total Payment:** $${amount.toLocaleString()}\n` +
-          `${ARROW} **Paid From Balance:** $${amountPaidFromBalance.toLocaleString()}\n` +
-          `${ARROW} **Paid From Points:** $${amountPaidFromPoints.toLocaleString()} (1 point = 1000)\n` +
+          `${ARROW} **Paid From Balance:** $${amount.toLocaleString()}\n` +
           (refund > 0
             ? `${ARROW} **Refunded Extra:** $${refund.toLocaleString()}\n`
             : "") +
           `${ARROW} **Remaining Loan:** ${finished ? "0" : loan.remaining.toLocaleString()}\n\n` +
-          `${ARROW} **New Moat Balance:** $${balance.toLocaleString()}\n` +
-          `${ARROW} **Remaining Castle Points:** ${points.toLocaleString()}`,
+          `${ARROW} **New Moat Balance:** $${userRecord.moatCastle.balance.toLocaleString()}`,
         noLogo: false,
-      });
-
-      return interaction.editReply({ embeds: [embed], files });
-    }
-
-    // ===============================
-    // 📝 CHANGE LOAN DUE DATE
-    // ===============================
-
-    if (sub === "changetime") {
-      const duration = interaction.options.getString("duration");
-      const ms = parseDuration(duration);
-
-      if (!ms) {
-        const { embed, files } = moatembedTemplate({
-          title: "Invalid Duration",
-          description: `${ARROW} Use formats like **1m**, **4h**, **3d**, **2w**.`,
-          noLogo: true,
-        });
-        return interaction.editReply({ embeds: [embed], files });
-      }
-
-      userRecord.moatCastle.loanConfig.defaultLoanTime = duration;
-      await updateUserRecord(userRecord);
-
-      const { embed, files } = moatembedTemplate({
-        title: "Loan Time Updated",
-        description: `${ARROW} New default loan time: **${duration}**`,
-        noLogo: true,
       });
 
       return interaction.editReply({ embeds: [embed], files });
@@ -332,10 +229,6 @@ module.exports = {
 
       const loanChannelId = "1537722326496452678";
       const loanRoleId = "1537722114176581724";
-
-      const duration = userRecord.moatCastle.loanConfig.defaultLoanTime;
-      const ms = parseDuration(duration);
-      const dueAt = Date.now() + ms;
 
       if (
         userRecord.moatCastle.loans &&
@@ -357,9 +250,6 @@ module.exports = {
         amount,
         reason,
         createdAt: Date.now(),
-        dueAt,
-        overdueDays: 0,
-        lastPenalty: 0,
         status: "pending",
       };
 
@@ -406,10 +296,7 @@ module.exports = {
       }
 
       return interaction.editReply({
-        content:
-          `${ARROW} **Loan Terms:**\n` +
-          `${ARROW} By requesting this loan, you agree to repay it within **${duration}**.\n` +
-          `${ARROW} Failure to repay will result in **daily penalties of $5000**.\n\n``✅ Your Moat Castle loan request for **$${amount.toLocaleString()}** has been submitted.`,
+        content: `${ARROW} Your Moat Castle loan request for **$${amount.toLocaleString()}** has been submitted.`,
       });
     }
   },

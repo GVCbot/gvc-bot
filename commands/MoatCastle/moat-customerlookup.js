@@ -145,7 +145,6 @@ module.exports = {
         `${ARROW} **Card Number:** ${mc.cardNumber}\n` +
         `${ARROW} **Card Status:** ${mc.cardStatus}\n` +
         `${ARROW} **Tier:** ${mc.tier}\n` +
-        `${ARROW} **Rewards:** ${mc.rewards.toLocaleString()} points\n\n` +
         `${ARROW} **Balance:** $${balance.toLocaleString()}\n` +
         `${ARROW} **Created:** ${createdAt}\n` +
         `${ARROW} **Last Updated:** ${updatedAt}\n\n` +

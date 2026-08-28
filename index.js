@@ -1081,52 +1081,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // ===============================
-    // 🏦 Loan Overdue Penalty Helper
-    // ===============================
-    async function applyLoanPenalties(userRecord, client) {
-      const loans = userRecord.moatCastle.loans || [];
-      const now = Date.now();
-
-      for (const loan of loans) {
-        if (loan.remaining <= 0) continue;
-        if (!loan.dueAt) continue;
-
-        if (now > loan.dueAt) {
-          const daysOverdue = Math.floor(
-            (now - loan.dueAt) / (24 * 60 * 60 * 1000),
-          );
-
-          if (daysOverdue > loan.overdueDays) {
-            const newPenalties = (daysOverdue - loan.overdueDays) * 5000;
-            loan.remaining += newPenalties;
-            loan.overdueDays = daysOverdue;
-
-            // Notify user
-            try {
-              await client.users.send(
-                userRecord.userId,
-                `⚠️ Your Moat Castle loan is overdue.\n${ARROW} A penalty of **$${newPenalties.toLocaleString()}** has been added.`,
-              );
-            } catch {}
-
-            // Notify staff
-            const staffChannel = client.channels.cache.get(
-              "1537722326496452678",
-            );
-            if (staffChannel) {
-              staffChannel.send(
-                `⚠️ Loan for <@${userRecord.userId}> is overdue.\n${ARROW} Added **$${newPenalties.toLocaleString()}** penalty.`,
-              );
-            }
-          }
-        }
-      }
-
-      await updateUserRecord(userRecord);
-    }
-
-    // ===============================
-    // 🏦 Moat Castle Loan Accept / Deny Handler
+    // 🏦 Moat Castle Loan Accept / Deny Handler (Clean Version)
     // ===============================
     if (
       interaction.isButton() &&
@@ -1149,7 +1104,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const requestId = parts[4];
 
       const requesterRecord = await getUserRecord(requesterId);
-      await applyLoanPenalties(requesterRecord, interaction.client);
 
       if (!requesterRecord.moatCastle) {
         const { embed } = moatembedTemplate({
@@ -1182,23 +1136,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // ✔ ACCEPT LOAN
       // ===============================
       if (action === "accept") {
-        // Add loan to record
         requesterRecord.moatCastle.loans.push({
           amount: request.amount,
           remaining: request.amount,
           reason: request.reason,
           createdAt: Date.now(),
-          dueAt: request.dueAt,
-          overdueDays: 0,
-          lastPenalty: 0,
+          status: "active",
         });
 
-        // Add funds to balance
         requesterRecord.moatCastle.balance += request.amount;
         requesterRecord.moatCastle.updatedAt = Date.now();
         await updateUserRecord(requesterRecord);
 
-        // Channel log
         channelEmbed = moatembedTemplate({
           title: "✅ Loan Approved",
           description:
@@ -1208,7 +1157,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
           noLogo: false,
         }).embed;
 
-        // DM to requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏦 Moat Castle Loan Approved",
@@ -1240,7 +1188,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
           noLogo: false,
         }).embed;
 
-        // DM to requester
         try {
           const { embed: dmEmbed } = moatembedTemplate({
             title: "🏦 Moat Castle Loan Denied",
@@ -1255,7 +1202,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
       }
 
-      // Reply in staff channel
       await interaction.message.reply({ embeds: [channelEmbed] });
 
       return interaction.editReply({
