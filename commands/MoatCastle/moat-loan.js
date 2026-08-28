@@ -14,6 +14,23 @@ const {
   updateUserRecord,
 } = require("../../economy/economyutils");
 
+function parseDuration(str) {
+  const match = str.match(/^(\d+)([mhdw])$/i);
+  if (!match) return null;
+
+  const value = parseInt(match[1]);
+  const unit = match[2].toLowerCase();
+
+  const multipliers = {
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+    w: 7 * 24 * 60 * 60 * 1000,
+  };
+
+  return value * multipliers[unit];
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("moat-loan")
@@ -48,6 +65,18 @@ module.exports = {
             .setName("points")
             .setDescription("Castle Points to use (optional).")
             .setRequired(false),
+        ),
+    )
+
+    .addSubcommand((sub) =>
+      sub
+        .setName("changetime")
+        .setDescription("Change the default Moat Castle loan repayment time.")
+        .addStringOption((opt) =>
+          opt
+            .setName("duration")
+            .setDescription("Example: 1m, 4h, 3d, 2w")
+            .setRequired(true),
         ),
     )
 
@@ -265,6 +294,35 @@ module.exports = {
     }
 
     // ===============================
+    // 📝 CHANGE LOAN DUE DATE
+    // ===============================
+
+    if (sub === "changetime") {
+      const duration = interaction.options.getString("duration");
+      const ms = parseDuration(duration);
+
+      if (!ms) {
+        const { embed, files } = moatembedTemplate({
+          title: "Invalid Duration",
+          description: `${ARROW} Use formats like **1m**, **4h**, **3d**, **2w**.`,
+          noLogo: true,
+        });
+        return interaction.editReply({ embeds: [embed], files });
+      }
+
+      userRecord.moatCastle.loanConfig.defaultLoanTime = duration;
+      await updateUserRecord(userRecord);
+
+      const { embed, files } = moatembedTemplate({
+        title: "Loan Time Updated",
+        description: `${ARROW} New default loan time: **${duration}**`,
+        noLogo: true,
+      });
+
+      return interaction.editReply({ embeds: [embed], files });
+    }
+
+    // ===============================
     // 📝 REQUEST LOAN
     // ===============================
     if (sub === "request") {
@@ -274,6 +332,10 @@ module.exports = {
 
       const loanChannelId = "1537722326496452678";
       const loanRoleId = "1537722114176581724";
+
+      const duration = userRecord.moatCastle.loanConfig.defaultLoanTime;
+      const ms = parseDuration(duration);
+      const dueAt = Date.now() + ms;
 
       if (
         userRecord.moatCastle.loans &&
@@ -295,6 +357,9 @@ module.exports = {
         amount,
         reason,
         createdAt: Date.now(),
+        dueAt,
+        overdueDays: 0,
+        lastPenalty: 0,
         status: "pending",
       };
 
@@ -341,7 +406,10 @@ module.exports = {
       }
 
       return interaction.editReply({
-        content: `✅ Your Moat Castle loan request for **$${amount.toLocaleString()}** has been submitted.`,
+        content:
+          `${ARROW} **Loan Terms:**\n` +
+          `${ARROW} By requesting this loan, you agree to repay it within **${duration}**.\n` +
+          `${ARROW} Failure to repay will result in **daily penalties of $5000**.\n\n``✅ Your Moat Castle loan request for **$${amount.toLocaleString()}** has been submitted.`,
       });
     }
   },

@@ -167,6 +167,12 @@ function normalizeUserRecord(user) {
     user.moatCastle.loans = user.moatCastle.loans || [];
     user.moatCastle.loanRequests = user.moatCastle.loanRequests || [];
 
+    for (const loan of user.moatCastle.loans) {
+      loan.dueAt = loan.dueAt || Date.now() + 3 * 24 * 60 * 60 * 1000;
+      loan.overdueDays = loan.overdueDays || 0;
+      loan.lastPenalty = loan.lastPenalty || 0;
+    }
+
     // Multi-business support
     user.moatCastle.businesses = user.moatCastle.businesses || [];
     user.moatCastle.businessRequests = user.moatCastle.businessRequests || [];
